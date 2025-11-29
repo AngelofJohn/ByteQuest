@@ -21,14 +21,26 @@ const GameState = {
       helm: null,
       armor: null,
       weapon: null,
-      accessory: null
+      accessory: null,
+      ring: null
     },
     reputation: {},
     completedQuests: [],
     activeQuests: [],
+    failedQuests: [],
+    archivedQuests: [],
+    questCompletions: {}, // Track completion counts and timestamps for repeatable quests
     discoveredLocations: ["dawnmere"],
     metNpcs: [],
-    titles: []
+    titles: [],
+    
+    // Learning stats
+    totalCorrectAnswers: 0,
+    totalWrongAnswers: 0,
+    lessonsCompleted: 0,
+    currentStreak: 0,
+    longestStreak: 0,
+    createdAt: null
   },
 
   // Game progress
@@ -36,6 +48,7 @@ const GameState = {
   currentScreen: "title", // title, game, lesson, inventory, map, questlog
   activeDialog: null,
   selectedQuest: null,
+  questFilter: "all", // all, active, available, completed, daily, weekly
 
   // Lesson state
   lessonState: {
@@ -56,6 +69,9 @@ const GameState = {
     textSpeed: "normal"
   }
 };
+
+// Initialize Quest Manager (after GAME_DATA loads)
+let questManager = null;
 
 // =====================================================
 // Save/Load System
@@ -186,33 +202,104 @@ function getNPCEmoji(npc) {
 
 function renderQuestPanel() {
   const panel = document.querySelector('#right-sidebar .panel-content');
-  const player = GameState.player;
+  const filter = GameState.questFilter;
   
-  let html = '';
+  // Build filter tabs
+  let filterHtml = `
+    <div class="quest-filters">
+      <button class="filter-btn ${filter === 'all' ? 'active' : ''}" data-filter="all">All</button>
+      <button class="filter-btn ${filter === 'active' ? 'active' : ''}" data-filter="active">Active</button>
+      <button class="filter-btn ${filter === 'available' ? 'active' : ''}" data-filter="available">New</button>
+      <button class="filter-btn ${filter === 'daily' ? 'active' : ''}" data-filter="daily">Daily</button>
+      <button class="filter-btn ${filter === 'completed' ? 'active' : ''}" data-filter="completed">Done</button>
+    </div>
+  `;
   
-  // Active quests first
-  const activeQuests = getActiveQuests();
-  if (activeQuests.length > 0) {
-    html += '<div class="quest-section"><h3 style="font-size: 10px; color: var(--accent-gold); margin-bottom: 8px; font-family: var(--font-display);">ACTIVE</h3>';
+  let html = filterHtml;
+  
+  // Get quests based on filter
+  const activeQuests = questManager ? questManager.getActiveQuests() : getActiveQuests();
+  const availableQuests = questManager ? questManager.getAvailableQuests() : getAvailableQuests();
+  const completedQuests = questManager ? questManager.getCompletedQuests() : [];
+  const failedQuests = questManager ? questManager.getFailedQuests() : [];
+  
+  // Filter logic
+  let showActive = filter === 'all' || filter === 'active';
+  let showAvailable = filter === 'all' || filter === 'available';
+  let showCompleted = filter === 'completed';
+  let showDaily = filter === 'daily';
+  
+  // Active quests
+  if (showActive && activeQuests.length > 0) {
+    html += '<div class="quest-section"><h3 class="quest-section-header">⚔️ ACTIVE</h3>';
     activeQuests.forEach(quest => {
-      html += renderQuestItem(quest, 'active');
+      html += renderQuestItem(quest, QuestStatus.ACTIVE);
     });
     html += '</div>';
   }
   
   // Available quests
-  const availableQuests = getAvailableQuests();
-  if (availableQuests.length > 0) {
-    html += '<div class="quest-section" style="margin-top: 16px;"><h3 style="font-size: 10px; color: var(--text-muted); margin-bottom: 8px; font-family: var(--font-display);">AVAILABLE</h3>';
-    availableQuests.forEach(quest => {
-      html += renderQuestItem(quest, 'available');
+  if (showAvailable) {
+    let quests = availableQuests;
+    if (quests.length > 0) {
+      html += '<div class="quest-section"><h3 class="quest-section-header">❗ AVAILABLE</h3>';
+      quests.forEach(quest => {
+        html += renderQuestItem(quest, QuestStatus.AVAILABLE);
+      });
+      html += '</div>';
+    }
+  }
+  
+  // Daily/Weekly quests filter
+  if (showDaily) {
+    const dailyQuests = [...activeQuests, ...availableQuests].filter(q => 
+      q.type === QuestType.DAILY || q.type === QuestType.WEEKLY
+    );
+    if (dailyQuests.length > 0) {
+      html += '<div class="quest-section"><h3 class="quest-section-header">📅 DAILY & WEEKLY</h3>';
+      dailyQuests.forEach(quest => {
+        html += renderQuestItem(quest, quest.status);
+      });
+      html += '</div>';
+    } else {
+      html += '<div class="quest-section"><p class="no-quests">No daily or weekly quests available</p></div>';
+    }
+  }
+  
+  // Completed quests
+  if (showCompleted && completedQuests.length > 0) {
+    html += '<div class="quest-section"><h3 class="quest-section-header">✅ COMPLETED</h3>';
+    completedQuests.slice(0, 10).forEach(quest => { // Show last 10
+      html += renderQuestItem(quest, QuestStatus.COMPLETED);
     });
     html += '</div>';
   }
   
-  panel.innerHTML = html || '<p style="color: var(--text-muted);">No quests available</p>';
+  // Failed quests
+  if (showCompleted && failedQuests.length > 0) {
+    html += '<div class="quest-section"><h3 class="quest-section-header">❌ FAILED</h3>';
+    failedQuests.forEach(quest => {
+      html += renderQuestItem(quest, QuestStatus.FAILED);
+    });
+    html += '</div>';
+  }
   
-  // Add click handlers
+  // Empty state
+  if (html === filterHtml) {
+    html += '<p class="no-quests">No quests to display</p>';
+  }
+  
+  panel.innerHTML = html;
+  
+  // Add filter click handlers
+  panel.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      GameState.questFilter = btn.dataset.filter;
+      renderQuestPanel();
+    });
+  });
+  
+  // Add quest click handlers
   panel.querySelectorAll('.quest-item').forEach(item => {
     item.addEventListener('click', () => {
       const questId = item.dataset.quest;
@@ -225,6 +312,12 @@ function renderQuestItem(quest, status) {
   const isSelected = GameState.selectedQuest === quest.id;
   const questData = GAME_DATA.quests[quest.id] || quest;
   
+  // Get type and category info
+  const typeInfo = getQuestTypeInfo(questData.type);
+  const categoryInfo = getQuestCategoryInfo(questData.category);
+  const statusInfo = getQuestStatusInfo(status);
+  
+  // Build objectives HTML if selected
   let objectivesHtml = '';
   if (isSelected && questData.objectives) {
     objectivesHtml = '<div class="quest-objectives">';
@@ -235,7 +328,7 @@ function renderQuestItem(quest, status) {
       
       let objText = obj.text;
       if (obj.target) {
-        objText = obj.text.replace(/\(.*\)/, `(${count}/${obj.target})`);
+        objText = obj.text.replace(/\(.*\)/, '') + ` (${count}/${obj.target})`;
       }
       
       objectivesHtml += `
@@ -248,12 +341,57 @@ function renderQuestItem(quest, status) {
     objectivesHtml += '</div>';
   }
   
+  // Build timing info (for daily/weekly/timed quests)
+  let timingHtml = '';
+  if (questData.type === QuestType.TIMED && quest.startedAt && questData.timeLimit) {
+    const remaining = questManager ? questManager.getTimeRemaining(quest.id) : null;
+    if (remaining !== null) {
+      timingHtml = `<div class="quest-timing">⏱️ ${formatTimeRemaining(remaining)}</div>`;
+    }
+  } else if ((questData.type === QuestType.DAILY || questData.type === QuestType.WEEKLY) && status === QuestStatus.COMPLETED) {
+    const cooldown = questManager ? questManager.getCooldownRemaining(quest.id) : null;
+    if (cooldown !== null && cooldown > 0) {
+      timingHtml = `<div class="quest-timing">🔄 Resets in ${formatTimeRemaining(cooldown)}</div>`;
+    }
+  }
+  
+  // Repeat indicator
+  let repeatHtml = '';
+  if (quest.isRepeat) {
+    repeatHtml = '<span class="repeat-badge">🔄 REPEAT</span>';
+  }
+  
+  // Chain progress
+  let chainHtml = '';
+  if (questData.chainId) {
+    const chainProgress = questManager ? questManager.getChainProgress(questData.chainId) : null;
+    if (chainProgress) {
+      chainHtml = `<div class="chain-progress">🔗 Part ${questData.chainOrder} of ${chainProgress.total}</div>`;
+    }
+  }
+  
   return `
-    <div class="quest-item ${status} ${isSelected ? 'active' : ''}" data-quest="${quest.id}">
-      <div class="quest-type">${questData.type.toUpperCase()} QUEST</div>
+    <div class="quest-item ${status} ${isSelected ? 'selected' : ''}" data-quest="${quest.id}">
+      <div class="quest-header">
+        <span class="quest-type-badge" style="background: ${typeInfo.color}">${typeInfo.icon} ${typeInfo.label}</span>
+        <span class="quest-category">${categoryInfo.icon}</span>
+        ${repeatHtml}
+      </div>
       <div class="quest-name">${questData.name}</div>
       <div class="quest-desc">${questData.description}</div>
+      ${chainHtml}
+      ${timingHtml}
       ${objectivesHtml}
+      ${isSelected && status === QuestStatus.AVAILABLE ? `
+        <button class="pixel-btn pixel-btn-gold quest-accept-btn" data-quest="${quest.id}" style="margin-top: 8px; font-size: 10px; padding: 8px 12px;">
+          Accept Quest
+        </button>
+      ` : ''}
+      ${isSelected && status === QuestStatus.ACTIVE && quest.objectives?.every(o => o.completed) ? `
+        <button class="pixel-btn pixel-btn-green quest-complete-btn" data-quest="${quest.id}" style="margin-top: 8px; font-size: 10px; padding: 8px 12px;">
+          Complete Quest
+        </button>
+      ` : ''}
     </div>
   `;
 }
@@ -1097,6 +1235,9 @@ function startGame() {
 // =====================================================
 
 function initGame() {
+  // Initialize Quest Manager
+  questManager = new QuestManager(GameState, GAME_DATA);
+  
   // Title screen buttons
   document.getElementById('new-game-btn').addEventListener('click', showCharacterCreation);
   document.getElementById('continue-btn').addEventListener('click', () => {
@@ -1143,6 +1284,94 @@ function initGame() {
         break;
     }
   });
+  
+  // Delegate click handler for quest accept/complete buttons
+  document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('quest-accept-btn')) {
+      const questId = e.target.dataset.quest;
+      handleAcceptQuest(questId);
+    }
+    if (e.target.classList.contains('quest-complete-btn')) {
+      const questId = e.target.dataset.quest;
+      handleCompleteQuest(questId);
+    }
+  });
+  
+  // Start periodic checks for timed quests
+  setInterval(checkTimedQuests, 1000);
+}
+
+function handleAcceptQuest(questId) {
+  if (questManager) {
+    const result = questManager.acceptQuest(questId);
+    if (result.success) {
+      showNotification(result.message, 'success');
+      GameState.selectedQuest = questId;
+      renderQuestPanel();
+      renderNPCs(GAME_DATA.locations[GameState.currentLocation]);
+    } else {
+      showNotification(result.message, 'error');
+    }
+  } else {
+    acceptQuest(questId);
+  }
+}
+
+function handleCompleteQuest(questId) {
+  if (questManager) {
+    const result = questManager.completeQuest(questId);
+    if (result.success) {
+      // Grant rewards
+      const granted = questManager.grantRewards(result.rewards);
+      
+      // Show completion notification
+      showNotification(result.message, 'success');
+      
+      // Show rewards
+      if (granted.xp > 0) showNotification(`+${granted.xp} XP`);
+      if (granted.gold > 0) showNotification(`+${granted.gold} Gold`);
+      granted.items.forEach(itemId => {
+        const item = GAME_DATA.items[itemId];
+        if (item) showNotification(`Received: ${item.name}`);
+      });
+      
+      // Check for level up
+      checkLevelUp();
+      
+      // Update UI
+      GameState.selectedQuest = null;
+      renderHUD();
+      renderQuestPanel();
+      renderNPCs(GAME_DATA.locations[GameState.currentLocation]);
+      saveGame();
+    } else {
+      showNotification(result.message, 'error');
+    }
+  } else {
+    completeQuest(questId);
+  }
+}
+
+function checkTimedQuests() {
+  if (!questManager) return;
+  
+  const expired = questManager.checkExpirations();
+  expired.forEach(questId => {
+    const quest = GAME_DATA.quests[questId];
+    if (quest) {
+      showNotification(`Quest expired: ${quest.name}`, 'error');
+    }
+  });
+  
+  if (expired.length > 0) {
+    renderQuestPanel();
+  }
+}
+
+function checkLevelUp() {
+  while (GameState.player.xp >= GameState.player.xpToNext) {
+    levelUp();
+  }
 }
 
 function handleNavigation(screen) {

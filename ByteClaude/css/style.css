@@ -470,6 +470,53 @@ body {
 }
 
 /* Quest List */
+.quest-filters {
+  display: flex;
+  gap: 4px;
+  margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  font-family: var(--font-display);
+  font-size: 8px;
+  padding: 6px 10px;
+  background: var(--bg-medium);
+  color: var(--text-muted);
+  border: 2px solid var(--border-pixel);
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.filter-btn:hover {
+  background: var(--bg-light);
+  color: var(--text-light);
+}
+
+.filter-btn.active {
+  background: var(--accent-blue);
+  color: var(--text-light);
+  border-color: var(--accent-blue);
+}
+
+.quest-section {
+  margin-bottom: var(--space-md);
+}
+
+.quest-section-header {
+  font-size: 10px;
+  color: var(--accent-gold);
+  margin-bottom: 8px;
+  font-family: var(--font-display);
+}
+
+.no-quests {
+  color: var(--text-muted);
+  font-size: 14px;
+  text-align: center;
+  padding: var(--space-lg);
+}
+
 .quest-item {
   background: var(--bg-medium);
   border: 2px solid var(--border-pixel);
@@ -483,14 +530,47 @@ body {
   border-color: var(--accent-gold);
 }
 
-.quest-item.active {
+.quest-item.selected {
   border-color: var(--accent-blue);
   background: var(--bg-light);
 }
 
 .quest-item.completed {
   border-color: var(--accent-green);
-  opacity: 0.7;
+  opacity: 0.8;
+}
+
+.quest-item.failed {
+  border-color: var(--accent-red);
+  opacity: 0.6;
+}
+
+.quest-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.quest-type-badge {
+  font-family: var(--font-display);
+  font-size: 7px;
+  padding: 3px 6px;
+  color: var(--text-dark);
+  border-radius: 2px;
+}
+
+.quest-category {
+  font-size: 12px;
+}
+
+.repeat-badge {
+  font-family: var(--font-display);
+  font-size: 7px;
+  padding: 2px 4px;
+  background: var(--accent-purple);
+  color: var(--text-light);
 }
 
 .quest-type {
@@ -509,6 +589,22 @@ body {
 .quest-desc {
   font-size: 14px;
   color: var(--text-muted);
+}
+
+.quest-timing {
+  font-family: var(--font-display);
+  font-size: 9px;
+  color: var(--accent-gold);
+  margin-top: 6px;
+  padding: 4px 8px;
+  background: var(--bg-dark);
+  display: inline-block;
+}
+
+.chain-progress {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
 }
 
 .quest-objectives {
