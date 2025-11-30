@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ByteQuest - RPG Language Learning</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
+</head>
+<body>
+    <!-- =====================================================
+         Title Screen
+         ===================================================== -->
+    <div id="title-screen">
+        <div class="title-logo">ByteQuest</div>
+        <div class="title-subtitle">Learn French Through Adventure</div>
+        <div class="title-menu">
+            <button class="pixel-btn pixel-btn-gold" id="new-game-btn">New Game</button>
+            <button class="pixel-btn" id="continue-btn" style="display: none;">Continue</button>
+        </div>
+        <div style="position: absolute; bottom: 40px; color: var(--text-muted); font-size: 14px;">
+            Phase 1 - Dawnmere Vertical Slice
+        </div>
+    </div>
+
+    <!-- =====================================================
+         Main Game Container
+         ===================================================== -->
+    <div id="game-container" style="display: none;">
+        <!-- Top HUD -->
+        <div id="top-hud">
+            <div class="player-info">
+                <div class="player-avatar">🧙</div>
+                <div class="player-stats">
+                    <div class="player-name">Traveler</div>
+                    <div class="player-level">Level 1</div>
+                </div>
+                <div class="stat-bars">
+                    <div class="stat-bar hp-bar">
+                        <span class="stat-label">HP</span>
+                        <div class="bar-container">
+                            <div class="bar-fill" style="width: 100%"></div>
+                        </div>
+                        <span class="stat-value">100/100</span>
+                    </div>
+                    <div class="stat-bar xp-bar">
+                        <span class="stat-label">XP</span>
+                        <div class="bar-container">
+                            <div class="bar-fill" style="width: 0%"></div>
+                        </div>
+                        <span class="stat-value">0/100</span>
+                    </div>
+                </div>
+            </div>
+            <div class="currency-display">
+                <div class="currency gold">
+                    <span class="currency-icon">💰</span>
+                    <span class="currency-value">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div id="main-content">
+            <!-- Left Sidebar - Navigation -->
+            <div id="left-sidebar">
+                <button class="nav-btn active" data-screen="game">
+                    <span class="nav-icon">🏠</span>
+                    World
+                </button>
+                <button class="nav-btn" data-screen="quests">
+                    <span class="nav-icon">📜</span>
+                    Quests
+                </button>
+                <button class="nav-btn" data-screen="inventory">
+                    <span class="nav-icon">🎒</span>
+                    Inventory
+                </button>
+                <button class="nav-btn" data-screen="profile">
+                    <span class="nav-icon">👤</span>
+                    Profile
+                </button>
+                <button class="nav-btn" data-screen="progress">
+                    <span class="nav-icon">📊</span>
+                    Progress
+                </button>
+                <button class="nav-btn" data-screen="map">
+                    <span class="nav-icon">🗺️</span>
+                    Map
+                </button>
+                <div style="flex: 1;"></div>
+                <button class="nav-btn" data-screen="save">
+                    <span class="nav-icon">💾</span>
+                    Save
+                </button>
+            </div>
+
+            <!-- Center - Game View -->
+            <div id="game-view">
+                <!-- Location Header -->
+                <div id="location-header">
+                    <div>
+                        <div class="location-name">Dawnmere</div>
+                        <div class="location-desc">A small frontier settlement seeking prosperity.</div>
+                    </div>
+                </div>
+
+                <!-- Game Scene -->
+                <div id="game-scene">
+                    <!-- NPCs will be rendered here dynamically -->
+                    
+                    <!-- Dialog Box -->
+                    <div id="dialog-box">
+                        <div class="dialog-speaker">NPC Name</div>
+                        <div class="dialog-text">Dialog text goes here...</div>
+                        <div class="dialog-options">
+                            <!-- Options rendered dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Sidebar - Quest Panel -->
+            <div id="right-sidebar">
+                <div class="panel-header">📜 QUEST LOG</div>
+                <div class="panel-content">
+                    <!-- Quests rendered dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         Lesson Modal
+         ===================================================== -->
+    <div id="lesson-modal" class="modal-overlay">
+        <div class="modal-content pixel-border" style="width: 700px; text-align: center;">
+            <div class="lesson-header">
+                <div class="lesson-title">📚 FRENCH LESSON</div>
+                <div class="lesson-progress">
+                    <!-- Progress dots rendered dynamically -->
+                </div>
+            </div>
+            
+            <!-- Streak & Multiplier Display -->
+            <div class="streak-display">
+                <div class="streak-counter">
+                    <span class="streak-flame">💫</span>
+                    <span class="streak-number">0</span>
+                </div>
+                <div class="multiplier-display">
+                    <span class="multiplier-value">1x</span>
+                    <span class="multiplier-progress">0/3</span>
+                </div>
+            </div>
+            
+            <div class="question-container">
+                <div class="question-prompt">What does this mean?</div>
+                <div class="question-word">le mot</div>
+            </div>
+            
+            <div class="answer-options">
+                <!-- Answers rendered dynamically -->
+            </div>
+            
+            <div class="hint-box">
+                💡 Hint: Click for a hint
+            </div>
+            
+            <div class="lesson-feedback"></div>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         Scripts
+         ===================================================== -->
+    <script src="data/vocabulary.js"></script>
+    <script src="data/gamedata.js"></script>
+    <script src="js/questSystem.js"></script>
+    <script src="js/spacedRepetition.js"></script>
+    <script src="js/statsSystem.js"></script>
+    <script src="js/reputationSystem.js"></script>
+    <script src="js/itemSystem.js"></script>
+    <script src="js/shopSystem.js"></script>
+    <script src="js/hintSystem.js"></script>
+    <script src="js/locationSystem.js"></script>
+    <script src="js/bossExamSystem.js"></script>
+    <script src="js/titleSystem.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
