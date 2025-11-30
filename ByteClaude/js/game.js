@@ -21,14 +21,46 @@ const GameState = {
       helm: null,
       armor: null,
       weapon: null,
-      accessory: null
+      accessory: null,
+      ring: null
     },
+    // Stats (managed by StatsManager)
+    stats: null,
+    bonusStats: {},
+    // Progression tracking
     reputation: {},
     completedQuests: [],
     activeQuests: [],
+    failedQuests: [],
+    archivedQuests: [],
+    questCompletions: {}, // Track completion counts and timestamps for repeatable quests
     discoveredLocations: ["dawnmere"],
     metNpcs: [],
-    titles: []
+    // Titles and achievements
+    titles: [],
+    activeTitle: null,
+    unlockedAchievements: [],
+    claimedMilestones: {},
+    // Learning stats
+    vocabulary: {},
+    totalCorrectAnswers: 0,
+    totalWrongAnswers: 0,
+    lessonsCompleted: 0,
+    perfectLessons: 0,
+    currentStreak: 0,
+    longestStreak: 0,
+    // Economy tracking
+    totalGoldEarned: 0,
+    totalGoldSpent: 0,
+    // Special tracking
+    reviewRecoveries: 0,
+    hiddenQuestsFound: 0,
+    seasonalQuestsCompleted: 0,
+    studiedAfterMidnight: false,
+    studiedBeforeSix: false,
+    // Meta
+    createdAt: null,
+    playTime: 0
   },
 
   // Game progress
@@ -36,6 +68,7 @@ const GameState = {
   currentScreen: "title", // title, game, lesson, inventory, map, questlog
   activeDialog: null,
   selectedQuest: null,
+  questFilter: "all", // all, active, available, completed, daily, weekly
 
   // Lesson state
   lessonState: {
@@ -46,7 +79,11 @@ const GameState = {
     questions: [],
     currentQuestion: 0,
     correctAnswers: 0,
-    wrongAnswers: 0
+    wrongAnswers: 0,
+    streak: 0,
+    currentMultiplier: 1.0,
+    totalBonusXP: 0,
+    totalBonusGold: 0
   },
 
   // Settings
@@ -56,6 +93,36 @@ const GameState = {
     textSpeed: "normal"
   }
 };
+
+// Initialize Quest Manager (after GAME_DATA loads)
+let questManager = null;
+
+// Initialize Spaced Repetition Manager
+let srManager = null;
+
+// Initialize Stats Manager
+let statsManager = null;
+
+// Initialize Reputation Manager
+let reputationManager = null;
+
+// Initialize Item Manager
+let itemManager = null;
+
+// Initialize Shop Manager
+let shopManager = null;
+
+// Initialize Hint Manager
+let hintManager = null;
+
+// Initialize Location Manager
+let locationManager = null;
+
+// Initialize Boss Exam Manager
+let bossExamManager = null;
+
+// Initialize Title Manager
+let titleManager = null;
 
 // =====================================================
 // Save/Load System
@@ -113,7 +180,18 @@ function renderHUD() {
 }
 
 function renderLocation() {
-  const location = GAME_DATA.locations[GameState.currentLocation];
+  // Try to use locationManager first, fallback to GAME_DATA
+  let location;
+  if (locationManager) {
+    location = locationManager.getCurrentLocation();
+  } else {
+    location = GAME_DATA.locations[GameState.currentLocation];
+  }
+  
+  if (!location) {
+    console.warn('No location found');
+    return;
+  }
   
   document.querySelector('.location-name').textContent = location.name;
   document.querySelector('.location-desc').textContent = location.description;
@@ -186,33 +264,104 @@ function getNPCEmoji(npc) {
 
 function renderQuestPanel() {
   const panel = document.querySelector('#right-sidebar .panel-content');
-  const player = GameState.player;
+  const filter = GameState.questFilter;
   
-  let html = '';
+  // Build filter tabs
+  let filterHtml = `
+    <div class="quest-filters">
+      <button class="filter-btn ${filter === 'all' ? 'active' : ''}" data-filter="all">All</button>
+      <button class="filter-btn ${filter === 'active' ? 'active' : ''}" data-filter="active">Active</button>
+      <button class="filter-btn ${filter === 'available' ? 'active' : ''}" data-filter="available">New</button>
+      <button class="filter-btn ${filter === 'daily' ? 'active' : ''}" data-filter="daily">Daily</button>
+      <button class="filter-btn ${filter === 'completed' ? 'active' : ''}" data-filter="completed">Done</button>
+    </div>
+  `;
   
-  // Active quests first
-  const activeQuests = getActiveQuests();
-  if (activeQuests.length > 0) {
-    html += '<div class="quest-section"><h3 style="font-size: 10px; color: var(--accent-gold); margin-bottom: 8px; font-family: var(--font-display);">ACTIVE</h3>';
+  let html = filterHtml;
+  
+  // Get quests based on filter
+  const activeQuests = questManager ? questManager.getActiveQuests() : getActiveQuests();
+  const availableQuests = questManager ? questManager.getAvailableQuests() : getAvailableQuests();
+  const completedQuests = questManager ? questManager.getCompletedQuests() : [];
+  const failedQuests = questManager ? questManager.getFailedQuests() : [];
+  
+  // Filter logic
+  let showActive = filter === 'all' || filter === 'active';
+  let showAvailable = filter === 'all' || filter === 'available';
+  let showCompleted = filter === 'completed';
+  let showDaily = filter === 'daily';
+  
+  // Active quests
+  if (showActive && activeQuests.length > 0) {
+    html += '<div class="quest-section"><h3 class="quest-section-header">⚔️ ACTIVE</h3>';
     activeQuests.forEach(quest => {
-      html += renderQuestItem(quest, 'active');
+      html += renderQuestItem(quest, QuestStatus.ACTIVE);
     });
     html += '</div>';
   }
   
   // Available quests
-  const availableQuests = getAvailableQuests();
-  if (availableQuests.length > 0) {
-    html += '<div class="quest-section" style="margin-top: 16px;"><h3 style="font-size: 10px; color: var(--text-muted); margin-bottom: 8px; font-family: var(--font-display);">AVAILABLE</h3>';
-    availableQuests.forEach(quest => {
-      html += renderQuestItem(quest, 'available');
+  if (showAvailable) {
+    let quests = availableQuests;
+    if (quests.length > 0) {
+      html += '<div class="quest-section"><h3 class="quest-section-header">❗ AVAILABLE</h3>';
+      quests.forEach(quest => {
+        html += renderQuestItem(quest, QuestStatus.AVAILABLE);
+      });
+      html += '</div>';
+    }
+  }
+  
+  // Daily/Weekly quests filter
+  if (showDaily) {
+    const dailyQuests = [...activeQuests, ...availableQuests].filter(q => 
+      q.type === QuestType.DAILY || q.type === QuestType.WEEKLY
+    );
+    if (dailyQuests.length > 0) {
+      html += '<div class="quest-section"><h3 class="quest-section-header">📅 DAILY & WEEKLY</h3>';
+      dailyQuests.forEach(quest => {
+        html += renderQuestItem(quest, quest.status);
+      });
+      html += '</div>';
+    } else {
+      html += '<div class="quest-section"><p class="no-quests">No daily or weekly quests available</p></div>';
+    }
+  }
+  
+  // Completed quests
+  if (showCompleted && completedQuests.length > 0) {
+    html += '<div class="quest-section"><h3 class="quest-section-header">✅ COMPLETED</h3>';
+    completedQuests.slice(0, 10).forEach(quest => { // Show last 10
+      html += renderQuestItem(quest, QuestStatus.COMPLETED);
     });
     html += '</div>';
   }
   
-  panel.innerHTML = html || '<p style="color: var(--text-muted);">No quests available</p>';
+  // Failed quests
+  if (showCompleted && failedQuests.length > 0) {
+    html += '<div class="quest-section"><h3 class="quest-section-header">❌ FAILED</h3>';
+    failedQuests.forEach(quest => {
+      html += renderQuestItem(quest, QuestStatus.FAILED);
+    });
+    html += '</div>';
+  }
   
-  // Add click handlers
+  // Empty state
+  if (html === filterHtml) {
+    html += '<p class="no-quests">No quests to display</p>';
+  }
+  
+  panel.innerHTML = html;
+  
+  // Add filter click handlers
+  panel.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      GameState.questFilter = btn.dataset.filter;
+      renderQuestPanel();
+    });
+  });
+  
+  // Add quest click handlers
   panel.querySelectorAll('.quest-item').forEach(item => {
     item.addEventListener('click', () => {
       const questId = item.dataset.quest;
@@ -225,6 +374,12 @@ function renderQuestItem(quest, status) {
   const isSelected = GameState.selectedQuest === quest.id;
   const questData = GAME_DATA.quests[quest.id] || quest;
   
+  // Get type and category info
+  const typeInfo = getQuestTypeInfo(questData.type);
+  const categoryInfo = getQuestCategoryInfo(questData.category);
+  const statusInfo = getQuestStatusInfo(status);
+  
+  // Build objectives HTML if selected
   let objectivesHtml = '';
   if (isSelected && questData.objectives) {
     objectivesHtml = '<div class="quest-objectives">';
@@ -235,7 +390,7 @@ function renderQuestItem(quest, status) {
       
       let objText = obj.text;
       if (obj.target) {
-        objText = obj.text.replace(/\(.*\)/, `(${count}/${obj.target})`);
+        objText = obj.text.replace(/\(.*\)/, '') + ` (${count}/${obj.target})`;
       }
       
       objectivesHtml += `
@@ -248,12 +403,57 @@ function renderQuestItem(quest, status) {
     objectivesHtml += '</div>';
   }
   
+  // Build timing info (for daily/weekly/timed quests)
+  let timingHtml = '';
+  if (questData.type === QuestType.TIMED && quest.startedAt && questData.timeLimit) {
+    const remaining = questManager ? questManager.getTimeRemaining(quest.id) : null;
+    if (remaining !== null) {
+      timingHtml = `<div class="quest-timing">⏱️ ${formatTimeRemaining(remaining)}</div>`;
+    }
+  } else if ((questData.type === QuestType.DAILY || questData.type === QuestType.WEEKLY) && status === QuestStatus.COMPLETED) {
+    const cooldown = questManager ? questManager.getCooldownRemaining(quest.id) : null;
+    if (cooldown !== null && cooldown > 0) {
+      timingHtml = `<div class="quest-timing">🔄 Resets in ${formatTimeRemaining(cooldown)}</div>`;
+    }
+  }
+  
+  // Repeat indicator
+  let repeatHtml = '';
+  if (quest.isRepeat) {
+    repeatHtml = '<span class="repeat-badge">🔄 REPEAT</span>';
+  }
+  
+  // Chain progress
+  let chainHtml = '';
+  if (questData.chainId) {
+    const chainProgress = questManager ? questManager.getChainProgress(questData.chainId) : null;
+    if (chainProgress) {
+      chainHtml = `<div class="chain-progress">🔗 Part ${questData.chainOrder} of ${chainProgress.total}</div>`;
+    }
+  }
+  
   return `
-    <div class="quest-item ${status} ${isSelected ? 'active' : ''}" data-quest="${quest.id}">
-      <div class="quest-type">${questData.type.toUpperCase()} QUEST</div>
+    <div class="quest-item ${status} ${isSelected ? 'selected' : ''}" data-quest="${quest.id}">
+      <div class="quest-header">
+        <span class="quest-type-badge" style="background: ${typeInfo.color}">${typeInfo.icon} ${typeInfo.label}</span>
+        <span class="quest-category">${categoryInfo.icon}</span>
+        ${repeatHtml}
+      </div>
       <div class="quest-name">${questData.name}</div>
       <div class="quest-desc">${questData.description}</div>
+      ${chainHtml}
+      ${timingHtml}
       ${objectivesHtml}
+      ${isSelected && status === QuestStatus.AVAILABLE ? `
+        <button class="pixel-btn pixel-btn-gold quest-accept-btn" data-quest="${quest.id}" style="margin-top: 8px; font-size: 10px; padding: 8px 12px;">
+          Accept Quest
+        </button>
+      ` : ''}
+      ${isSelected && status === QuestStatus.ACTIVE && quest.objectives?.every(o => o.completed) ? `
+        <button class="pixel-btn pixel-btn-green quest-complete-btn" data-quest="${quest.id}" style="margin-top: 8px; font-size: 10px; padding: 8px 12px;">
+          Complete Quest
+        </button>
+      ` : ''}
     </div>
   `;
 }
@@ -422,8 +622,20 @@ function unlockDependentQuests(completedQuestId) {
 // =====================================================
 
 function addXP(amount) {
-  GameState.player.xp += amount;
-  showNotification(`+${amount} XP`);
+  // Apply wisdom multiplier if stats manager is available
+  let finalAmount = amount;
+  if (statsManager) {
+    const multiplier = statsManager.calculateXpMultiplier();
+    finalAmount = Math.floor(amount * multiplier);
+  }
+  
+  GameState.player.xp += finalAmount;
+  
+  if (finalAmount > amount) {
+    showNotification(`+${finalAmount} XP (Wisdom bonus!)`);
+  } else {
+    showNotification(`+${finalAmount} XP`);
+  }
   
   // Check for level up
   while (GameState.player.xp >= GameState.player.xpToNext) {
@@ -441,11 +653,29 @@ function levelUp() {
   const nextLevel = GAME_DATA.levelTable.find(l => l.level === GameState.player.level + 1);
   GameState.player.xpToNext = nextLevel ? nextLevel.xpRequired : GameState.player.xpToNext * 1.5;
   
-  // Increase max HP
-  GameState.player.maxHp += 10;
+  // Handle stat increase via stats manager
+  let statResult = null;
+  if (statsManager) {
+    statResult = statsManager.handleLevelUp(GameState.player.level);
+    // Recalculate max HP based on new Stamina
+    GameState.player.maxHp = statsManager.calculateMaxHp();
+  } else {
+    // Fallback if stats manager not ready
+    GameState.player.maxHp += 10;
+  }
+  
+  // Restore HP on level up
   GameState.player.hp = GameState.player.maxHp;
   
-  showNotification(`Level Up! You are now level ${GameState.player.level}!`, 'success');
+  // Show notification
+  if (statResult) {
+    showNotification(`Level Up! You are now level ${GameState.player.level}! +1 ${statResult.statName}`, 'success');
+  } else {
+    showNotification(`Level Up! You are now level ${GameState.player.level}!`, 'success');
+  }
+  
+  // Check for new achievements
+  checkAchievements();
 }
 
 // =====================================================
@@ -474,42 +704,142 @@ function healPlayer(amount) {
 }
 
 function handlePlayerDeath() {
-  // In language learning context, "death" means reviewing old content
+  // Get vocabulary stats if available
+  let statsHtml = '';
+  if (srManager) {
+    const stats = srManager.getMasteryStats();
+    if (stats.total > 0) {
+      statsHtml = `
+        <div style="margin: 16px 0; padding: 12px; background: var(--bg-medium); border: 2px solid var(--border-pixel);">
+          <div style="font-family: var(--font-display); font-size: 10px; color: var(--accent-gold); margin-bottom: 8px;">VOCABULARY STATUS</div>
+          <div style="font-size: 14px; color: var(--text-muted);">
+            ${stats.total} words learned • ${stats.dueCount} due for review
+          </div>
+        </div>
+      `;
+    }
+  }
+  
+  const canReview = srManager && srManager.canReview(4);
+  const reviewButtonText = canReview ? 'Review Vocabulary (Free)' : 'Rest & Recover (Free)';
+  const reviewButtonDesc = canReview 
+    ? 'Practice words you\'ve learned. HP restored based on performance.'
+    : 'Not enough vocabulary yet. Partial HP restored.';
+  
   showModal('death-modal', `
     <div style="text-align: center;">
       <h2 style="font-family: var(--font-display); font-size: 20px; color: var(--accent-red); margin-bottom: 16px;">
-        You've Fallen!
+        💀 You've Fallen!
       </h2>
-      <p style="margin-bottom: 24px;">
-        Your health has been depleted. Perhaps it's time to review some earlier lessons to regain your strength.
+      <p style="margin-bottom: 16px;">
+        Your health has been depleted. Time to recover your strength.
       </p>
-      <button class="pixel-btn pixel-btn-gold" onclick="reviewLessons()">
-        Review Lessons
-      </button>
-      <button class="pixel-btn" onclick="restAtInn()" style="margin-left: 16px;">
-        Rest at Inn (10 Gold)
-      </button>
+      ${statsHtml}
+      <div style="display: flex; flex-direction: column; gap: 12px; max-width: 300px; margin: 0 auto;">
+        <div>
+          <button class="pixel-btn pixel-btn-green" onclick="reviewLessons()" style="width: 100%;">
+            ${reviewButtonText}
+          </button>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+            ${reviewButtonDesc}
+          </div>
+        </div>
+        <div>
+          <button class="pixel-btn pixel-btn-gold" onclick="restAtInn()" style="width: 100%;">
+            🏨 Rest at Inn (50 Gold)
+          </button>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+            Full HP restored instantly. Premium option.
+          </div>
+        </div>
+      </div>
+      <div style="margin-top: 16px; font-size: 12px; color: var(--text-muted);">
+        Current Gold: <span style="color: var(--accent-gold);">${GameState.player.gold}</span>
+      </div>
     </div>
   `);
 }
 
 function reviewLessons() {
-  // Reset HP to half
-  GameState.player.hp = Math.floor(GameState.player.maxHp / 2);
   hideModal('death-modal');
-  renderHUD();
-  // TODO: Start a review lesson
+  
+  // Check if player has enough words to review
+  if (!srManager || !srManager.canReview(4)) {
+    // Not enough words learned yet - give partial HP and explain
+    GameState.player.hp = Math.floor(GameState.player.maxHp * 0.5);
+    renderHUD();
+    showNotification("Not enough vocabulary learned yet. HP partially restored.", 'info');
+    return;
+  }
+  
+  // Build review session
+  const reviewWords = srManager.buildReviewSession(8);
+  
+  if (reviewWords.length < 4) {
+    // Fallback if not enough words
+    GameState.player.hp = Math.floor(GameState.player.maxHp * 0.5);
+    renderHUD();
+    showNotification("Not enough vocabulary for review. HP partially restored.", 'info');
+    return;
+  }
+  
+  // Generate questions from review words
+  const allVocab = getAllVocabularyFlat();
+  const questions = srManager.generateReviewQuestions(reviewWords, allVocab);
+  
+  if (questions.length < 4) {
+    // Fallback
+    GameState.player.hp = Math.floor(GameState.player.maxHp * 0.5);
+    renderHUD();
+    showNotification("Could not generate review. HP partially restored.", 'info');
+    return;
+  }
+  
+  // Initialize hint system for review
+  let hintInfo = { charges: 0, maxCharges: 0 };
+  if (hintManager) {
+    hintInfo = hintManager.initializeForLesson();
+  }
+  
+  // Start review lesson
+  GameState.lessonState = {
+    active: true,
+    questId: null,
+    objectiveId: null,
+    vocabulary: reviewWords,
+    questions: questions,
+    currentQuestion: 0,
+    correctAnswers: 0,
+    wrongAnswers: 0,
+    streak: 0,
+    currentMultiplier: 1.0,
+    totalBonusXP: 0,
+    totalBonusGold: 0,
+    isReview: true,
+    hintCharges: hintInfo.charges,
+    maxHintCharges: hintInfo.maxCharges,
+    isBossExam: false
+  };
+  
+  // Update lesson modal title
+  const lessonTitle = document.querySelector('.lesson-title');
+  if (lessonTitle) {
+    lessonTitle.innerHTML = '📖 REVIEW SESSION';
+  }
+  
+  showLessonModal();
 }
 
 function restAtInn() {
-  if (GameState.player.gold >= 10) {
-    GameState.player.gold -= 10;
+  if (GameState.player.gold >= 50) {
+    GameState.player.gold -= 50;
     GameState.player.hp = GameState.player.maxHp;
     hideModal('death-modal');
     renderHUD();
-    showNotification("You feel fully rested!");
+    showNotification("You feel fully rested!", 'success');
+    saveGame();
   } else {
-    showNotification("Not enough gold!", 'error');
+    showNotification("Not enough gold! You need 50 gold.", 'error');
   }
 }
 
@@ -747,25 +1077,199 @@ function hideDialog() {
 }
 
 // =====================================================
+// Streak & Multiplier System
+// =====================================================
+
+const MULTIPLIER_TABLE = [
+  { minStreak: 0, multiplier: 1.0 },
+  { minStreak: 3, multiplier: 1.25 },
+  { minStreak: 5, multiplier: 1.5 },
+  { minStreak: 7, multiplier: 1.75 },
+  { minStreak: 10, multiplier: 2.0 },
+  { minStreak: 15, multiplier: 2.5 },
+  { minStreak: 20, multiplier: 3.0 }  // Cap
+];
+
+function getMultiplierForStreak(streak) {
+  let multiplier = 1.0;
+  for (const tier of MULTIPLIER_TABLE) {
+    if (streak >= tier.minStreak) {
+      multiplier = tier.multiplier;
+    } else {
+      break;
+    }
+  }
+  return multiplier;
+}
+
+function getNextMultiplierThreshold(streak) {
+  for (const tier of MULTIPLIER_TABLE) {
+    if (streak < tier.minStreak) {
+      return tier.minStreak;
+    }
+  }
+  return null; // Already at max
+}
+
+// =====================================================
+// Achievement & Milestone Checking
+// =====================================================
+
+function checkAchievements() {
+  if (!statsManager) return;
+  
+  const newlyUnlocked = statsManager.checkAllAchievements();
+  
+  for (const result of newlyUnlocked) {
+    showNotification(`🏆 Achievement: ${result.achievement.name}!`, 'success');
+    
+    // Show reward notifications
+    for (const reward of result.rewards) {
+      if (reward.type === 'stat') {
+        setTimeout(() => {
+          showNotification(`+${reward.amount} ${reward.statName}`, 'info');
+        }, 500);
+      }
+      if (reward.type === 'title') {
+        setTimeout(() => {
+          showNotification(`Title Unlocked: ${reward.title}`, 'info');
+        }, 500);
+      }
+    }
+  }
+  
+  return newlyUnlocked;
+}
+
+function checkMilestones() {
+  if (!statsManager) return [];
+  
+  const allProgress = statsManager.getAllMilestoneProgress();
+  const claimable = allProgress.filter(p => p.hasUnclaimedReward);
+  
+  return claimable;
+}
+
+function checkStudyTime() {
+  const hour = new Date().getHours();
+  
+  // Night owl: after midnight (0-4 AM)
+  if (hour >= 0 && hour < 5) {
+    if (!GameState.player.studiedAfterMidnight) {
+      GameState.player.studiedAfterMidnight = true;
+      checkAchievements();
+    }
+  }
+  
+  // Early bird: before 6 AM (5-6 AM)
+  if (hour >= 5 && hour < 6) {
+    if (!GameState.player.studiedBeforeSix) {
+      GameState.player.studiedBeforeSix = true;
+      checkAchievements();
+    }
+  }
+}
+
+function trackLongestStreak(currentStreak) {
+  if (currentStreak > GameState.player.longestStreak) {
+    GameState.player.longestStreak = currentStreak;
+    checkAchievements();
+  }
+}
+
+function renderStreakDisplay() {
+  const state = GameState.lessonState;
+  const streakDisplay = document.querySelector('.streak-display');
+  
+  if (!streakDisplay) return;
+  
+  const nextThreshold = getNextMultiplierThreshold(state.streak);
+  const progressToNext = nextThreshold 
+    ? `${state.streak}/${nextThreshold}` 
+    : 'MAX';
+  
+  streakDisplay.innerHTML = `
+    <div class="streak-counter ${state.streak >= 3 ? 'active' : ''}">
+      <span class="streak-flame">${state.streak >= 3 ? '🔥' : '💫'}</span>
+      <span class="streak-number">${state.streak}</span>
+    </div>
+    <div class="multiplier-display ${state.currentMultiplier > 1 ? 'active' : ''}">
+      <span class="multiplier-value">${state.currentMultiplier}x</span>
+      ${nextThreshold ? `<span class="multiplier-progress">${progressToNext}</span>` : '<span class="multiplier-max">MAX!</span>'}
+    </div>
+  `;
+  
+  // Add animation class if multiplier just increased
+  if (state.currentMultiplier > 1) {
+    streakDisplay.classList.add('has-bonus');
+  } else {
+    streakDisplay.classList.remove('has-bonus');
+  }
+}
+
+function animateMultiplierIncrease() {
+  const multiplierDisplay = document.querySelector('.multiplier-display');
+  if (multiplierDisplay) {
+    multiplierDisplay.classList.add('multiplier-up');
+    setTimeout(() => multiplierDisplay.classList.remove('multiplier-up'), 500);
+  }
+}
+
+function animateStreakBreak() {
+  const streakDisplay = document.querySelector('.streak-display');
+  if (streakDisplay) {
+    streakDisplay.classList.add('streak-break');
+    setTimeout(() => streakDisplay.classList.remove('streak-break'), 500);
+  }
+}
+
+// =====================================================
 // Lesson System
 // =====================================================
 
 function startLesson(questId, objectiveId) {
   const quest = GAME_DATA.quests[questId];
-  if (!quest) return;
+  if (!quest) {
+    console.error('Quest not found:', questId);
+    showNotification('Error: Quest not found!', 'error');
+    return;
+  }
   
   // Gather vocabulary for this quest
   const vocabCategories = quest.vocabulary || [];
   let allVocab = [];
   
+  console.log('Starting lesson for quest:', questId, 'with vocabulary categories:', vocabCategories);
+  
   vocabCategories.forEach(cat => {
     const [category, subcategory] = cat.split('.');
     const vocab = VOCABULARY[category]?.[subcategory] || [];
+    console.log(`Vocabulary category ${cat}: found ${vocab.length} words`);
     allVocab = allVocab.concat(vocab);
   });
   
+  // Check if we have enough vocabulary
+  if (allVocab.length < 4) {
+    console.error('Not enough vocabulary for lesson. Found:', allVocab.length, 'words');
+    showNotification(`Error: Not enough vocabulary for this lesson (found ${allVocab.length}, need at least 4)`, 'error');
+    return;
+  }
+  
   // Generate questions
   const questions = generateQuestionsFromVocab(allVocab, 8);
+  
+  console.log('Generated', questions.length, 'questions');
+  
+  if (questions.length === 0) {
+    showNotification('Error: Could not generate questions!', 'error');
+    return;
+  }
+  
+  // Initialize hint system for this lesson
+  let hintInfo = { charges: 0, maxCharges: 0 };
+  if (hintManager) {
+    hintInfo = hintManager.initializeForLesson();
+  }
   
   GameState.lessonState = {
     active: true,
@@ -775,7 +1279,14 @@ function startLesson(questId, objectiveId) {
     questions,
     currentQuestion: 0,
     correctAnswers: 0,
-    wrongAnswers: 0
+    wrongAnswers: 0,
+    streak: 0,
+    currentMultiplier: 1.0,
+    totalBonusXP: 0,
+    totalBonusGold: 0,
+    hintCharges: hintInfo.charges,
+    maxHintCharges: hintInfo.maxCharges,
+    isBossExam: false
   };
   
   showLessonModal();
@@ -814,15 +1325,115 @@ function generateQuestionsFromVocab(vocab, count) {
   return questions;
 }
 
+// =====================================================
+// Boss Exam Functions
+// =====================================================
+
+function startBossExam(locationId) {
+  if (!bossExamManager) {
+    showNotification("Exam system not initialized!", 'error');
+    return;
+  }
+  
+  const result = bossExamManager.startExam(locationId);
+  
+  if (!result.success) {
+    showNotification(result.message, 'error');
+    return;
+  }
+  
+  // Set the lesson state
+  GameState.lessonState = result.lessonState;
+  
+  // Update lesson modal title for exam
+  const lessonTitle = document.querySelector('.lesson-title');
+  if (lessonTitle) {
+    lessonTitle.innerHTML = '📜 BOSS EXAM';
+  }
+  
+  showLessonModal();
+}
+
+function showExamInfo(locationId) {
+  if (!bossExamManager) return;
+  
+  const examInfo = bossExamManager.getExamInfo(locationId);
+  if (!examInfo) {
+    showNotification("No exam at this location.", 'info');
+    return;
+  }
+  
+  const history = examInfo.history;
+  const config = examInfo.config;
+  
+  let historyHtml = '';
+  if (history.attempts > 0) {
+    historyHtml = `
+      <div style="margin: 16px 0; padding: 12px; background: var(--bg-medium); border: 2px solid var(--border-pixel);">
+        <div style="font-family: var(--font-display); font-size: 10px; color: var(--accent-gold); margin-bottom: 8px;">YOUR HISTORY</div>
+        <div style="font-size: 14px;">Attempts: ${history.attempts}</div>
+        <div style="font-size: 14px;">Best Score: ${history.bestScore}%</div>
+        <div style="font-size: 14px;">Status: ${history.passed ? '<span style="color: var(--accent-green);">PASSED</span>' : '<span style="color: var(--accent-red);">Not Passed</span>'}</div>
+      </div>
+    `;
+  }
+  
+  showModal('exam-info-modal', `
+    <div style="text-align: center; max-width: 400px;">
+      <h2 style="font-family: var(--font-display); font-size: 16px; color: var(--accent-gold); margin-bottom: 16px;">
+        📜 ${examInfo.locationName} Exam
+      </h2>
+      
+      <div style="text-align: left; margin-bottom: 16px;">
+        <p style="margin-bottom: 8px;"><strong>Questions:</strong> ${config.questionCount}</p>
+        <p style="margin-bottom: 8px;"><strong>Pass Threshold:</strong> ${config.passThreshold}%</p>
+        <p style="margin-bottom: 8px;"><strong>HP Penalty:</strong> ${config.hpPenalty} per wrong answer</p>
+        <p style="margin-bottom: 8px;"><strong>Hints:</strong> ${config.hintMultiplier === 0 ? 'Disabled' : 'Limited'}</p>
+      </div>
+      
+      ${historyHtml}
+      
+      ${examInfo.canAttempt 
+        ? `<button class="pixel-btn pixel-btn-gold" onclick="hideModal('exam-info-modal'); startBossExam('${locationId}');">
+            Begin Exam
+          </button>`
+        : `<p style="color: var(--accent-red); margin-bottom: 16px;">${examInfo.canAttemptReason}</p>`
+      }
+      
+      <button class="pixel-btn" onclick="hideModal('exam-info-modal')" style="margin-left: 8px;">
+        Close
+      </button>
+    </div>
+  `);
+}
+
 function showLessonModal() {
   const modal = document.getElementById('lesson-modal');
   modal.classList.add('active');
   renderQuestion();
+  renderStreakDisplay();
 }
 
 function renderQuestion() {
   const state = GameState.lessonState;
+  
+  // Guard against empty questions
+  if (!state.questions || state.questions.length === 0) {
+    console.error('No questions generated for lesson');
+    showNotification('Error: No vocabulary found for this lesson!', 'error');
+    document.getElementById('lesson-modal').classList.remove('active');
+    resetLessonState();
+    return;
+  }
+  
   const question = state.questions[state.currentQuestion];
+  
+  // Guard against undefined question
+  if (!question) {
+    console.error('Question not found at index:', state.currentQuestion);
+    completeLessonSession();
+    return;
+  }
   
   // Update progress dots
   const progressHtml = state.questions.map((_, i) => {
@@ -847,8 +1458,8 @@ function renderQuestion() {
   ).join('');
   document.querySelector('.answer-options').innerHTML = answersHtml;
   
-  // Update hint
-  document.querySelector('.hint-box').textContent = `💡 Hint: ${question.hint || 'No hint available'}`;
+  // Update hint display with new system
+  renderHintBox(question);
   
   // Clear feedback
   document.querySelector('.lesson-feedback').textContent = '';
@@ -860,10 +1471,101 @@ function renderQuestion() {
   });
 }
 
+function renderHintBox(question) {
+  const hintBox = document.querySelector('.hint-box');
+  
+  // Get word data for hint checking
+  const wordData = {
+    french: question.type === 'to_english' ? question.word : question.correctAnswer,
+    english: question.type === 'to_english' ? question.correctAnswer : question.word,
+    hint: question.hint
+  };
+  
+  // Check hint availability
+  if (!hintManager) {
+    // Fallback if no hint manager
+    hintBox.innerHTML = `<span class="hint-locked">💡 Hints unavailable</span>`;
+    return;
+  }
+  
+  const status = hintManager.getHintStatus(wordData);
+  const progress = hintManager.getUnlockProgress(wordData);
+  const state = GameState.lessonState;
+  
+  // Boss exam mode - no hints
+  if (state.isBossExam && state.maxHintCharges === 0) {
+    hintBox.innerHTML = `<span class="hint-locked">🚫 Hints disabled for exam</span>`;
+    return;
+  }
+  
+  // Render hint charges display
+  const chargesDisplay = `<span class="hint-charges">${hintManager.lessonCharges}/${hintManager.maxCharges} 💡</span>`;
+  
+  if (status.available) {
+    // Hint available - show button to reveal
+    hintBox.innerHTML = `
+      ${chargesDisplay}
+      <button class="hint-reveal-btn" onclick="revealHint()">
+        Reveal Hint (costs 1 charge)
+      </button>
+    `;
+    hintBox.className = 'hint-box hint-available';
+  } else if (!status.unlocked) {
+    // Hint locked for this word
+    hintBox.innerHTML = `
+      ${chargesDisplay}
+      <span class="hint-locked">🔒 Hint locked</span>
+      <span class="hint-progress">${progress.current}/${progress.required} correct to unlock</span>
+    `;
+    hintBox.className = 'hint-box hint-locked-state';
+  } else {
+    // Hint unlocked but no charges
+    hintBox.innerHTML = `
+      ${chargesDisplay}
+      <span class="hint-no-charges">No charges remaining</span>
+    `;
+    hintBox.className = 'hint-box hint-no-charges-state';
+  }
+}
+
+function revealHint() {
+  const state = GameState.lessonState;
+  const question = state.questions[state.currentQuestion];
+  
+  const wordData = {
+    french: question.type === 'to_english' ? question.word : question.correctAnswer,
+    english: question.type === 'to_english' ? question.correctAnswer : question.word,
+    hint: question.hint
+  };
+  
+  if (!hintManager) return;
+  
+  const result = hintManager.useHint(wordData, question.hint);
+  
+  if (result.success) {
+    // Show the hint
+    const hintBox = document.querySelector('.hint-box');
+    const chargesDisplay = `<span class="hint-charges">${result.chargesRemaining}/${hintManager.maxCharges} 💡</span>`;
+    
+    hintBox.innerHTML = `
+      ${chargesDisplay}
+      <span class="hint-revealed">💡 ${result.hint || 'No hint available'}</span>
+    `;
+    hintBox.className = 'hint-box hint-revealed-state';
+    
+    // Update lesson state
+    state.hintCharges = result.chargesRemaining;
+  } else {
+    showNotification(result.message, 'error');
+  }
+}
+
 function handleAnswer(answer) {
   const state = GameState.lessonState;
   const question = state.questions[state.currentQuestion];
   const isCorrect = answer === question.correctAnswer;
+  
+  const previousMultiplier = state.currentMultiplier;
   
   // Disable all buttons
   document.querySelectorAll('.answer-btn').forEach(btn => {
@@ -875,20 +1577,96 @@ function handleAnswer(answer) {
     }
   });
   
+  // Track word in spaced repetition system
+  const wordData = question.wordData || {
+    french: question.type === 'to_english' ? question.word : question.correctAnswer,
+    english: question.type === 'to_english' ? question.correctAnswer : question.word,
+    hint: question.hint
+  };
+  
+  if (srManager) {
+    srManager.recordWordSeen(wordData);
+  }
+  
   // Show feedback
   const feedback = document.querySelector('.lesson-feedback');
   if (isCorrect) {
-    feedback.textContent = '✓ Correct!';
-    feedback.className = 'lesson-feedback correct';
+    // Track correct in SR system
+    let srResult = null;
+    if (srManager) {
+      srResult = srManager.recordCorrect(wordData);
+    }
+    
+    // Increase streak
+    state.streak++;
     state.correctAnswers++;
     question.wasCorrect = true;
+    
+    // Update multiplier
+    state.currentMultiplier = getMultiplierForStreak(state.streak);
+    
+    // Build feedback message
+    let feedbackMsg = '✓ Correct!';
+    
+    // Check if multiplier increased
+    if (state.currentMultiplier > previousMultiplier) {
+      animateMultiplierIncrease();
+      feedbackMsg = `✓ Correct! <span class="multiplier-increase">🔥 ${state.currentMultiplier}x MULTIPLIER!</span>`;
+    } else if (state.streak >= 3) {
+      feedbackMsg = `✓ Correct! <span class="streak-bonus">🔥 ${state.streak} streak!</span>`;
+    }
+    
+    // Add mastery level up notification
+    if (srResult && srResult.leveledUp) {
+      feedbackMsg += ` <span class="mastery-up">📈 ${srResult.levelName}!</span>`;
+    }
+    
+    feedback.innerHTML = feedbackMsg;
+    feedback.className = 'lesson-feedback correct';
+    
+    // Track player stats
+    GameState.player.totalCorrectAnswers++;
+    
+    // Track longest streak
+    trackLongestStreak(state.streak);
+    
+    // Track study time for achievements
+    checkStudyTime();
+    
   } else {
-    feedback.textContent = `✗ Wrong! The answer was: ${question.correctAnswer}`;
-    feedback.className = 'lesson-feedback wrong';
+    // Track wrong in SR system
+    let srResult = null;
+    if (srManager) {
+      srResult = srManager.recordWrong(wordData);
+    }
+    
+    // Break streak
+    const hadStreak = state.streak >= 3;
+    state.streak = 0;
+    state.currentMultiplier = 1.0;
     state.wrongAnswers++;
     question.wasCorrect = false;
-    damagePlayer(10); // HP penalty for wrong answer
+    
+    // Build feedback message
+    let feedbackMsg = `✗ Wrong! The answer was: <strong>${question.correctAnswer}</strong>`;
+    
+    if (hadStreak) {
+      animateStreakBreak();
+      feedbackMsg = `✗ Wrong! Streak lost! The answer was: <strong>${question.correctAnswer}</strong>`;
+    }
+    
+    feedback.innerHTML = feedbackMsg;
+    feedback.className = 'lesson-feedback wrong';
+    
+    // HP penalty
+    damagePlayer(10);
+    
+    // Track player stats
+    GameState.player.totalWrongAnswers++;
   }
+  
+  // Update streak display
+  renderStreakDisplay();
   
   // Move to next question after delay
   setTimeout(() => {
@@ -905,27 +1683,171 @@ function handleAnswer(answer) {
 function completeLessonSession() {
   const state = GameState.lessonState;
   const successRate = state.correctAnswers / state.questions.length;
+  const isReview = state.isReview || false;
+  const isBossExam = state.isBossExam || false;
   
   // Hide lesson modal
   document.getElementById('lesson-modal').classList.remove('active');
   
-  // Show results
+  // Reset lesson title for next time
+  const lessonTitle = document.querySelector('.lesson-title');
+  if (lessonTitle) {
+    lessonTitle.innerHTML = '📚 FRENCH LESSON';
+  }
+  
+  // Reset hint manager
+  if (hintManager) {
+    hintManager.resetLesson();
+  }
+  
+  // Handle boss exam completion
+  if (isBossExam && bossExamManager) {
+    const result = bossExamManager.completeExam(state);
+    
+    // Update player stats
+    GameState.player.lessonsCompleted++;
+    if (successRate === 1) {
+      GameState.player.perfectLessons++;
+    }
+    
+    if (result.passed) {
+      // Award XP with multiplier
+      const xpReward = result.rewards?.xp || 100;
+      addXP(xpReward);
+      
+      showNotification(`🎉 EXAM PASSED! ${result.scorePercent}%`, 'success');
+      
+      if (result.rewards?.gold) {
+        setTimeout(() => {
+          showNotification(`+${result.rewards.gold} gold!`, 'success');
+        }, 500);
+      }
+      
+      if (result.rewards?.unlockedLocations?.length > 0) {
+        setTimeout(() => {
+          result.rewards.unlockedLocations.forEach(loc => {
+            showNotification(`🗺️ Unlocked: ${loc.name}!`, 'success');
+          });
+        }, 1000);
+      }
+      
+      // Award exam title if first pass
+      if (!result.wasAlreadyPassed && titleManager) {
+        titleManager.awardTitle('exam_conqueror');
+        if (result.scorePercent === 100) {
+          titleManager.awardTitle('perfect_exam');
+        }
+      }
+    } else {
+      showNotification(`Exam Failed. ${result.scorePercent}% (need ${result.passThreshold}%)`, 'error');
+      setTimeout(() => {
+        showNotification('Complete a review session to retry.', 'info');
+      }, 500);
+    }
+    
+    // Check achievements
+    checkAchievements();
+    
+    renderHUD();
+    saveGame();
+    resetLessonState();
+    return;
+  }
+  
+  // Handle review session completion
+  if (isReview) {
+    // HP recovery based on performance
+    const hpRecovery = Math.floor(GameState.player.maxHp * successRate);
+    GameState.player.hp = Math.min(GameState.player.maxHp, GameState.player.hp + hpRecovery);
+    
+    // Track review recovery for achievement
+    GameState.player.reviewRecoveries++;
+    
+    // Small XP reward for reviewing
+    const reviewXP = Math.floor(15 * successRate);
+    if (reviewXP > 0) {
+      addXP(reviewXP);
+    }
+    
+    // Update player stats
+    GameState.player.lessonsCompleted++;
+    
+    // Track perfect lesson
+    if (successRate === 1) {
+      GameState.player.perfectLessons++;
+    }
+    
+    // Show results
+    showNotification(`Review Complete! ${Math.floor(successRate * 100)}%`, 'success');
+    setTimeout(() => {
+      showNotification(`💚 Restored ${hpRecovery} HP`, 'success');
+    }, 500);
+    
+    // Check achievements
+    checkAchievements();
+    
+    renderHUD();
+    saveGame();
+    
+    // Reset lesson state
+    resetLessonState();
+    return;
+  }
+  
+  // Regular lesson completion
   const passed = successRate >= 0.6;
   
   if (passed) {
     // Update quest progress
     updateQuestProgress(state.questId, state.objectiveId);
     
-    // Award XP based on performance
-    const bonusXP = Math.floor(successRate * 50);
-    addXP(25 + bonusXP);
+    // Calculate base XP
+    const baseXP = 25 + Math.floor(successRate * 50);
     
-    showNotification(`Lesson Complete! ${Math.floor(successRate * 100)}% correct`, 'success');
+    // Calculate average multiplier earned (simplified: use final streak's worth)
+    const bestMultiplier = getMultiplierForStreak(state.correctAnswers);
+    const bonusXP = Math.floor(baseXP * (bestMultiplier - 1));
+    const totalXP = baseXP + bonusXP;
+    
+    // Award XP
+    addXP(totalXP);
+    
+    // Update player lesson stats
+    GameState.player.lessonsCompleted++;
+    
+    // Track perfect lesson
+    if (successRate === 1) {
+      GameState.player.perfectLessons++;
+    }
+    
+    // Show completion message
+    if (bonusXP > 0) {
+      showNotification(`Lesson Complete! ${Math.floor(successRate * 100)}%`, 'success');
+      setTimeout(() => {
+        showNotification(`🔥 Streak Bonus: +${bonusXP} XP!`, 'success');
+      }, 500);
+    } else {
+      showNotification(`Lesson Complete! ${Math.floor(successRate * 100)}% correct`, 'success');
+    }
+    
+    // Check for hidden quest triggers
+    checkHiddenQuestTriggers();
+    
+    // Check achievements
+    checkAchievements();
+    
   } else {
     showNotification(`Need 60% to pass. You got ${Math.floor(successRate * 100)}%. Try again!`, 'error');
   }
   
   // Reset lesson state
+  resetLessonState();
+  
+  // Save progress
+  saveGame();
+}
+
+function resetLessonState() {
   GameState.lessonState = {
     active: false,
     questId: null,
@@ -934,8 +1856,33 @@ function completeLessonSession() {
     questions: [],
     currentQuestion: 0,
     correctAnswers: 0,
-    wrongAnswers: 0
+    wrongAnswers: 0,
+    streak: 0,
+    currentMultiplier: 1.0,
+    totalBonusXP: 0,
+    totalBonusGold: 0,
+    isReview: false
   };
+}
+
+function checkHiddenQuestTriggers() {
+  // Check if any hidden quests should now be revealed
+  if (questManager) {
+    const location = GAME_DATA.locations[GameState.currentLocation];
+    if (location && location.quests) {
+      location.quests.forEach(questId => {
+        const quest = GAME_DATA.quests[questId];
+        if (quest && quest.type === 'hidden') {
+          if (questManager.checkHiddenTrigger(questId)) {
+            // Quest is now available!
+            showNotification(`Something new has appeared...`, 'info');
+            renderQuestPanel();
+            renderNPCs(location);
+          }
+        }
+      });
+    }
+  }
 }
 
 // =====================================================
@@ -991,8 +1938,466 @@ function hideModal(id) {
 
 function openShop(npcId) {
   hideDialog();
-  // TODO: Implement shop UI
-  showNotification("Shop coming soon!");
+  
+  if (!shopManager) {
+    showNotification("Shop system not initialized!", 'error');
+    return;
+  }
+  
+  // Find shop by NPC
+  const shop = shopManager.getShopByNpc(npcId);
+  if (!shop) {
+    showNotification("This person doesn't have a shop.", 'info');
+    return;
+  }
+  
+  // Open the shop
+  shopManager.openShop(shop.id);
+  
+  // Render shop UI
+  renderShopScreen(shop.id);
+}
+
+function renderShopScreen(shopId) {
+  const shop = shopManager.getShop(shopId);
+  if (!shop) return;
+  
+  const inventory = shopManager.getShopInventory(shopId);
+  const playerGold = shopManager.getPlayerGold();
+  
+  let inventoryHtml = '';
+  
+  if (inventory.length === 0) {
+    inventoryHtml = '<p style="color: var(--text-muted); text-align: center;">No items available.</p>';
+  } else {
+    inventoryHtml = inventory.map(entry => {
+      const item = entry.item;
+      const canAfford = playerGold >= entry.price;
+      const rarityInfo = ItemRarityInfo[item.rarity] || { color: '#ffffff', name: 'Common' };
+      
+      return `
+        <div class="shop-item ${canAfford ? '' : 'cannot-afford'}">
+          <div class="shop-item-icon">${item.icon || '❓'}</div>
+          <div class="shop-item-info">
+            <div class="shop-item-name" style="color: ${rarityInfo.color};">${item.name}</div>
+            <div class="shop-item-desc">${item.description || ''}</div>
+          </div>
+          <div class="shop-item-price">
+            <span class="price-value">${entry.price}</span>
+            <span class="price-icon">💰</span>
+          </div>
+          <button class="pixel-btn shop-buy-btn" 
+                  onclick="buyFromShop('${shopId}', '${entry.itemId}')"
+                  ${canAfford ? '' : 'disabled'}>
+            Buy
+          </button>
+        </div>
+      `;
+    }).join('');
+  }
+  
+  showModal('shop-modal', `
+    <div class="shop-screen">
+      <div class="shop-header">
+        <div class="shop-icon">${shop.icon || '🏪'}</div>
+        <div class="shop-title">
+          <h2>${shop.name}</h2>
+          <p>${shop.description || ''}</p>
+        </div>
+        <div class="shop-gold">
+          <span class="gold-icon">💰</span>
+          <span class="gold-value">${playerGold}</span>
+        </div>
+      </div>
+      
+      <div class="shop-inventory">
+        ${inventoryHtml}
+      </div>
+      
+      <div class="shop-footer">
+        <button class="pixel-btn" onclick="closeShopScreen()">Close</button>
+      </div>
+    </div>
+  `);
+}
+
+function buyFromShop(shopId, itemId) {
+  if (!shopManager) return;
+  
+  const result = shopManager.purchaseItem(shopId, itemId, 1);
+  
+  if (result.success) {
+    showNotification(`Purchased: ${result.item.name}`, 'success');
+    
+    // Check achievements (for spending gold)
+    checkAchievements();
+    
+    // Refresh shop UI
+    renderShopScreen(shopId);
+    
+    // Update HUD (gold changed)
+    renderHUD();
+    
+    // Save game
+    saveGame();
+  } else {
+    showNotification(result.message, 'error');
+  }
+}
+
+function closeShopScreen() {
+  if (shopManager) {
+    shopManager.closeShop();
+  }
+  hideModal('shop-modal');
+}
+
+// =====================================================
+// Profile Screen
+// =====================================================
+
+function showProfileScreen() {
+  const player = GameState.player;
+  const stats = statsManager ? statsManager.getAllStats() : {};
+  const majorStats = statsManager ? statsManager.getMajorStats() : [];
+  const minorStats = statsManager ? statsManager.getMinorStats() : [];
+  const activeTitle = statsManager ? statsManager.getActiveTitle() : null;
+  
+  // Equipment display
+  const equipSlots = ['helm', 'armor', 'weapon', 'accessory', 'ring'];
+  const equipmentHtml = equipSlots.map(slot => {
+    const itemId = player.equipment[slot];
+    const item = itemId ? GAME_DATA.items[itemId] : null;
+    return `
+      <div class="profile-equip-slot">
+        <div class="profile-equip-icon">${item ? item.icon : '—'}</div>
+        <div class="profile-equip-name">${item ? item.name : slot.charAt(0).toUpperCase() + slot.slice(1)}</div>
+      </div>
+    `;
+  }).join('');
+  
+  // Major stats display
+  const majorStatsHtml = majorStats.map(stat => `
+    <div class="profile-stat">
+      <span class="profile-stat-icon">${stat.definition.icon}</span>
+      <span class="profile-stat-name">${stat.definition.name}</span>
+      <span class="profile-stat-value">${stat.base}${stat.bonus > 0 ? ` <span class="stat-bonus">+${stat.bonus}</span>` : ''}</span>
+    </div>
+  `).join('');
+  
+  // Minor stats display
+  const minorStatsHtml = minorStats.map(stat => `
+    <div class="profile-stat minor">
+      <span class="profile-stat-icon">${stat.definition.icon}</span>
+      <span class="profile-stat-name">${stat.definition.name}</span>
+      <span class="profile-stat-value">${stat.base}${stat.bonus > 0 ? ` <span class="stat-bonus">+${stat.bonus}</span>` : ''}</span>
+    </div>
+  `).join('');
+  
+  // Class icon
+  const classIcons = { scholar: '📚', warrior: '⚔️', traveler: '🗺️' };
+  const classIcon = classIcons[player.class] || '👤';
+  
+  showModal('profile-modal', `
+    <div class="profile-screen">
+      <div class="profile-header">
+        <div class="profile-avatar">${classIcon}</div>
+        <div class="profile-identity">
+          <div class="profile-name">${player.name}</div>
+          <div class="profile-title">${activeTitle || player.class?.charAt(0).toUpperCase() + player.class?.slice(1) || 'Adventurer'}</div>
+          <div class="profile-level">Level ${player.level}</div>
+        </div>
+      </div>
+      
+      <div class="profile-sections">
+        <div class="profile-section">
+          <div class="profile-section-title">MAJOR STATS</div>
+          <div class="profile-stats-grid">
+            ${majorStatsHtml}
+          </div>
+        </div>
+        
+        <div class="profile-section">
+          <div class="profile-section-title">MINOR STATS</div>
+          <div class="profile-stats-grid minor">
+            ${minorStatsHtml}
+          </div>
+        </div>
+        
+        <div class="profile-section">
+          <div class="profile-section-title">EQUIPMENT</div>
+          <div class="profile-equipment">
+            ${equipmentHtml}
+          </div>
+        </div>
+      </div>
+      
+      <div style="text-align: right; margin-top: 16px;">
+        <button class="pixel-btn" onclick="hideModal('profile-modal')">Close</button>
+      </div>
+    </div>
+  `);
+}
+
+// =====================================================
+// Progress Screen (Milestones, Achievements, Learning)
+// =====================================================
+
+let progressTab = 'milestones';
+
+function showProgressScreen() {
+  renderProgressScreen();
+}
+
+function renderProgressScreen() {
+  const tabsHtml = `
+    <div class="progress-tabs">
+      <button class="progress-tab ${progressTab === 'milestones' ? 'active' : ''}" onclick="setProgressTab('milestones')">Milestones</button>
+      <button class="progress-tab ${progressTab === 'achievements' ? 'active' : ''}" onclick="setProgressTab('achievements')">Achievements</button>
+      <button class="progress-tab ${progressTab === 'reputation' ? 'active' : ''}" onclick="setProgressTab('reputation')">Reputation</button>
+      <button class="progress-tab ${progressTab === 'learning' ? 'active' : ''}" onclick="setProgressTab('learning')">Learning</button>
+    </div>
+  `;
+  
+  let contentHtml = '';
+  
+  switch (progressTab) {
+    case 'milestones':
+      contentHtml = renderMilestonesTab();
+      break;
+    case 'achievements':
+      contentHtml = renderAchievementsTab();
+      break;
+    case 'reputation':
+      contentHtml = renderReputationTab();
+      break;
+    case 'learning':
+      contentHtml = renderLearningTab();
+      break;
+  }
+  
+  showModal('progress-modal', `
+    <div class="progress-screen">
+      <h2 style="font-family: var(--font-display); font-size: 14px; color: var(--accent-gold); margin-bottom: 16px; text-align: center;">
+        PROGRESS
+      </h2>
+      ${tabsHtml}
+      <div class="progress-content">
+        ${contentHtml}
+      </div>
+      <div style="text-align: right; margin-top: 16px;">
+        <button class="pixel-btn" onclick="hideModal('progress-modal')">Close</button>
+      </div>
+    </div>
+  `);
+}
+
+function setProgressTab(tab) {
+  progressTab = tab;
+  renderProgressScreen();
+}
+
+function renderMilestonesTab() {
+  if (!statsManager) return '<p>Stats system not initialized.</p>';
+  
+  const milestones = statsManager.getAllMilestoneProgress();
+  
+  return milestones.map(progress => {
+    const milestone = progress.milestone;
+    const currentTier = progress.currentTier;
+    const nextTier = progress.nextTier;
+    
+    // Calculate progress bar
+    let progressPercent = 0;
+    let progressText = '';
+    
+    if (progress.isMaxed) {
+      progressPercent = 100;
+      progressText = 'MAXED';
+    } else if (nextTier) {
+      progressPercent = Math.min(100, (progress.currentValue / nextTier.threshold) * 100);
+      progressText = `${progress.currentValue} / ${nextTier.threshold}`;
+    }
+    
+    const claimable = progress.hasUnclaimedReward;
+    
+    return `
+      <div class="milestone-item ${claimable ? 'claimable' : ''}">
+        <div class="milestone-header">
+          <span class="milestone-icon">${milestone.icon}</span>
+          <span class="milestone-name">${milestone.name}</span>
+          ${currentTier ? `<span class="milestone-tier">${currentTier.label}</span>` : ''}
+        </div>
+        <div class="milestone-desc">${milestone.description}</div>
+        <div class="milestone-progress-bar">
+          <div class="milestone-progress-fill" style="width: ${progressPercent}%"></div>
+          <span class="milestone-progress-text">${progressText}</span>
+        </div>
+        ${claimable ? `<button class="pixel-btn pixel-btn-gold milestone-claim-btn" onclick="claimMilestoneReward('${milestone.id}')">Claim Reward</button>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function renderAchievementsTab() {
+  if (!statsManager) return '<p>Stats system not initialized.</p>';
+  
+  const achievements = statsManager.getVisibleAchievements();
+  
+  return `
+    <div class="achievements-grid">
+      ${achievements.map(a => {
+        const achievement = a.achievement;
+        return `
+          <div class="achievement-item ${a.unlocked ? 'unlocked' : 'locked'}">
+            <div class="achievement-icon">${a.unlocked ? achievement.icon : '❓'}</div>
+            <div class="achievement-info">
+              <div class="achievement-name">${a.unlocked ? achievement.name : '???'}</div>
+              <div class="achievement-desc">${a.unlocked ? achievement.description : 'Keep playing to discover...'}</div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderLearningTab() {
+  const player = GameState.player;
+  const vocabCount = Object.keys(player.vocabulary || {}).length;
+  
+  // Get mastery breakdown if srManager exists
+  let masteryBreakdown = '';
+  if (srManager) {
+    const stats = srManager.getMasteryStats();
+    masteryBreakdown = `
+      <div class="learning-mastery">
+        <div class="mastery-row"><span class="mastery-label">New</span><span class="mastery-value">${stats[0] || 0}</span></div>
+        <div class="mastery-row"><span class="mastery-label">Learning</span><span class="mastery-value">${stats[1] || 0}</span></div>
+        <div class="mastery-row"><span class="mastery-label">Familiar</span><span class="mastery-value">${stats[2] || 0}</span></div>
+        <div class="mastery-row"><span class="mastery-label">Practiced</span><span class="mastery-value">${stats[3] || 0}</span></div>
+        <div class="mastery-row"><span class="mastery-label">Known</span><span class="mastery-value">${stats[4] || 0}</span></div>
+        <div class="mastery-row"><span class="mastery-label">Mastered</span><span class="mastery-value">${stats[5] || 0}</span></div>
+      </div>
+    `;
+  }
+  
+  // Calculate accuracy
+  const totalAnswers = player.totalCorrectAnswers + player.totalWrongAnswers;
+  const accuracy = totalAnswers > 0 ? Math.round((player.totalCorrectAnswers / totalAnswers) * 100) : 0;
+  
+  return `
+    <div class="learning-stats">
+      <div class="learning-stat-card">
+        <div class="learning-stat-value">${vocabCount}</div>
+        <div class="learning-stat-label">Words Learned</div>
+      </div>
+      <div class="learning-stat-card">
+        <div class="learning-stat-value">${player.lessonsCompleted || 0}</div>
+        <div class="learning-stat-label">Lessons Completed</div>
+      </div>
+      <div class="learning-stat-card">
+        <div class="learning-stat-value">${accuracy}%</div>
+        <div class="learning-stat-label">Accuracy</div>
+      </div>
+      <div class="learning-stat-card">
+        <div class="learning-stat-value">${player.longestStreak || 0}</div>
+        <div class="learning-stat-label">Best Streak</div>
+      </div>
+    </div>
+    
+    <div class="learning-section-title">MASTERY BREAKDOWN</div>
+    ${masteryBreakdown}
+  `;
+}
+
+function renderReputationTab() {
+  if (!reputationManager) return '<p>Reputation system not initialized.</p>';
+  
+  const majorFactions = reputationManager.getMajorFactionStatuses();
+  const minorFactions = reputationManager.getMinorFactionStatuses();
+  
+  const renderFactionItem = (status) => {
+    const faction = status.faction;
+    const maxRep = reputationManager.getMaxRank(faction.id).reputation;
+    
+    return `
+      <div class="reputation-item">
+        <div class="reputation-header">
+          <span class="reputation-icon" style="background: ${faction.color};">${faction.icon}</span>
+          <div class="reputation-info">
+            <div class="reputation-name">${faction.name}</div>
+            <div class="reputation-rank">${status.currentRank.name}</div>
+          </div>
+        </div>
+        <div class="reputation-bar-container">
+          <div class="reputation-bar-fill" style="width: ${status.isMaxed ? 100 : status.progress}%; background: ${faction.color};"></div>
+          <span class="reputation-bar-text">${status.reputation} / ${status.isMaxed ? maxRep : status.nextRank.reputation}</span>
+        </div>
+        ${status.isMaxed ? '<div class="reputation-maxed">MAX RANK</div>' : ''}
+      </div>
+    `;
+  };
+  
+  return `
+    <div class="reputation-section">
+      <div class="reputation-section-title">MAJOR FACTIONS</div>
+      ${majorFactions.map(renderFactionItem).join('')}
+    </div>
+    
+    <div class="reputation-section">
+      <div class="reputation-section-title">MINOR FACTIONS</div>
+      ${minorFactions.map(renderFactionItem).join('')}
+    </div>
+  `;
+}
+
+function claimMilestoneReward(milestoneId) {
+  if (!statsManager) return;
+  
+  const rewards = statsManager.claimMilestoneReward(milestoneId);
+  
+  if (rewards && rewards.length > 0) {
+    rewards.forEach(reward => {
+      if (reward.type === 'stat') {
+        showNotification(`+${reward.amount} ${reward.statName}!`, 'success');
+      }
+      if (reward.type === 'title') {
+        showNotification(`Title Unlocked: ${reward.title}!`, 'success');
+      }
+    });
+    
+    // Refresh the screen
+    renderProgressScreen();
+    saveGame();
+  }
+}
+
+// =====================================================
+// Reputation Helpers
+// =====================================================
+
+function addReputationWithNotification(factionId, amount) {
+  if (!reputationManager) return null;
+  
+  const result = reputationManager.addReputation(factionId, amount);
+  
+  if (result) {
+    // Show reputation gain notification
+    showNotification(`+${result.change} ${result.factionName} reputation`, 'info');
+    
+    // Show rank up notification if applicable
+    if (result.rankIncreased) {
+      setTimeout(() => {
+        showNotification(`🎉 ${result.factionName}: ${result.newRank.name}!`, 'success');
+      }, 500);
+      
+      // Check if this triggers any achievements or milestones
+      checkAchievements();
+    }
+  }
+  
+  return result;
 }
 
 // =====================================================
@@ -1062,13 +2467,25 @@ function startNewGame(name, classId) {
   
   GameState.player.name = name;
   GameState.player.class = classId;
-  GameState.player.maxHp = classData.startingStats.maxHp;
-  GameState.player.hp = classData.startingStats.maxHp;
+  GameState.player.createdAt = Date.now();
+  
+  // Initialize stats system
+  if (statsManager) {
+    statsManager.initializeStats();
+    // Calculate max HP based on stats
+    GameState.player.maxHp = statsManager.calculateMaxHp();
+  } else {
+    GameState.player.maxHp = classData.startingStats.maxHp;
+  }
+  GameState.player.hp = GameState.player.maxHp;
   
   // Add starting items
   classData.startingItems.forEach(itemId => {
     addItemToInventory(itemId);
   });
+  
+  // Check class achievement
+  checkAchievements();
   
   hideModal('character-creation');
   startGame();
@@ -1097,6 +2514,36 @@ function startGame() {
 // =====================================================
 
 function initGame() {
+  // Initialize Quest Manager
+  questManager = new QuestManager(GameState, GAME_DATA);
+  
+  // Initialize Spaced Repetition Manager
+  srManager = new SpacedRepetitionManager(GameState);
+  
+  // Initialize Stats Manager
+  statsManager = new StatsManager(GameState);
+  
+  // Initialize Reputation Manager
+  reputationManager = new ReputationManager(GameState);
+  
+  // Initialize Item Manager
+  itemManager = new ItemManager(GameState, GAME_DATA.items);
+  
+  // Initialize Shop Manager
+  shopManager = new ShopManager(GameState, SHOP_DEFINITIONS, itemManager);
+  
+  // Initialize Hint Manager
+  hintManager = new HintManager(GameState, srManager);
+  
+  // Initialize Location Manager
+  locationManager = new LocationManager(GameState);
+  
+  // Initialize Boss Exam Manager
+  bossExamManager = new BossExamManager(GameState, locationManager, hintManager, srManager);
+  
+  // Initialize Title Manager
+  titleManager = new TitleManager(GameState);
+  
   // Title screen buttons
   document.getElementById('new-game-btn').addEventListener('click', showCharacterCreation);
   document.getElementById('continue-btn').addEventListener('click', () => {
@@ -1143,6 +2590,94 @@ function initGame() {
         break;
     }
   });
+  
+  // Delegate click handler for quest accept/complete buttons
+  document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('quest-accept-btn')) {
+      const questId = e.target.dataset.quest;
+      handleAcceptQuest(questId);
+    }
+    if (e.target.classList.contains('quest-complete-btn')) {
+      const questId = e.target.dataset.quest;
+      handleCompleteQuest(questId);
+    }
+  });
+  
+  // Start periodic checks for timed quests
+  setInterval(checkTimedQuests, 1000);
+}
+
+function handleAcceptQuest(questId) {
+  if (questManager) {
+    const result = questManager.acceptQuest(questId);
+    if (result.success) {
+      showNotification(result.message, 'success');
+      GameState.selectedQuest = questId;
+      renderQuestPanel();
+      renderNPCs(GAME_DATA.locations[GameState.currentLocation]);
+    } else {
+      showNotification(result.message, 'error');
+    }
+  } else {
+    acceptQuest(questId);
+  }
+}
+
+function handleCompleteQuest(questId) {
+  if (questManager) {
+    const result = questManager.completeQuest(questId);
+    if (result.success) {
+      // Grant rewards
+      const granted = questManager.grantRewards(result.rewards);
+      
+      // Show completion notification
+      showNotification(result.message, 'success');
+      
+      // Show rewards
+      if (granted.xp > 0) showNotification(`+${granted.xp} XP`);
+      if (granted.gold > 0) showNotification(`+${granted.gold} Gold`);
+      granted.items.forEach(itemId => {
+        const item = GAME_DATA.items[itemId];
+        if (item) showNotification(`Received: ${item.name}`);
+      });
+      
+      // Check for level up
+      checkLevelUp();
+      
+      // Update UI
+      GameState.selectedQuest = null;
+      renderHUD();
+      renderQuestPanel();
+      renderNPCs(GAME_DATA.locations[GameState.currentLocation]);
+      saveGame();
+    } else {
+      showNotification(result.message, 'error');
+    }
+  } else {
+    completeQuest(questId);
+  }
+}
+
+function checkTimedQuests() {
+  if (!questManager) return;
+  
+  const expired = questManager.checkExpirations();
+  expired.forEach(questId => {
+    const quest = GAME_DATA.quests[questId];
+    if (quest) {
+      showNotification(`Quest expired: ${quest.name}`, 'error');
+    }
+  });
+  
+  if (expired.length > 0) {
+    renderQuestPanel();
+  }
+}
+
+function checkLevelUp() {
+  while (GameState.player.xp >= GameState.player.xpToNext) {
+    levelUp();
+  }
 }
 
 function handleNavigation(screen) {
@@ -1156,11 +2691,20 @@ function handleNavigation(screen) {
     case 'inventory':
       showInventoryScreen();
       break;
+    case 'profile':
+      showProfileScreen();
+      break;
+    case 'progress':
+      showProgressScreen();
+      break;
     case 'quests':
       // Quest panel is always visible, just highlight it
       break;
     case 'map':
-      showNotification("Map coming in Phase 2!");
+      showMapScreen();
+      break;
+    case 'titles':
+      showTitlesScreen();
       break;
     case 'save':
       saveGame();
@@ -1222,6 +2766,222 @@ function showInventoryScreen() {
       showInventoryScreen(); // Refresh
     });
   });
+}
+
+// =====================================================
+// Map Screen
+// =====================================================
+
+function showMapScreen() {
+  if (!locationManager) {
+    showNotification("Map system not initialized!", 'error');
+    return;
+  }
+  
+  const currentLocation = locationManager.getCurrentLocation();
+  const allStatuses = locationManager.getAllLocationStatuses();
+  
+  // Generate location cards
+  const locationsHtml = allStatuses.map(status => {
+    const loc = status.location;
+    const isCurrent = status.isCurrent;
+    const isUnlocked = status.unlocked;
+    const isDiscovered = status.discovered;
+    
+    let statusClass = 'location-undiscovered';
+    let statusText = '???';
+    let canTravel = false;
+    
+    if (isDiscovered) {
+      if (isUnlocked) {
+        statusClass = isCurrent ? 'location-current' : 'location-unlocked';
+        statusText = isCurrent ? 'You are here' : 'Travel';
+        canTravel = !isCurrent;
+      } else {
+        statusClass = 'location-locked';
+        statusText = status.lockedReason || 'Locked';
+      }
+    }
+    
+    // Only show discovered locations (or all for testing)
+    if (!isDiscovered) {
+      return `
+        <div class="map-location ${statusClass}">
+          <div class="map-location-icon">❓</div>
+          <div class="map-location-info">
+            <div class="map-location-name">Undiscovered</div>
+            <div class="map-location-status">Explore to discover</div>
+          </div>
+        </div>
+      `;
+    }
+    
+    return `
+      <div class="map-location ${statusClass}" data-location="${loc.id}">
+        <div class="map-location-icon" style="background: ${loc.color};">${loc.icon}</div>
+        <div class="map-location-info">
+          <div class="map-location-name">${loc.name}</div>
+          <div class="map-location-desc">${loc.description}</div>
+          <div class="map-location-level">Level ${loc.levelRequired}+</div>
+        </div>
+        <div class="map-location-action">
+          ${canTravel 
+            ? `<button class="pixel-btn pixel-btn-gold" onclick="travelToLocation('${loc.id}')">Travel</button>`
+            : `<span class="map-location-status">${statusText}</span>`
+          }
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  showModal('map-modal', `
+    <div class="map-screen">
+      <h2 style="font-family: var(--font-display); font-size: 14px; color: var(--accent-gold); margin-bottom: 8px;">
+        🗺️ WORLD MAP
+      </h2>
+      <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 16px;">
+        Current Location: <span style="color: var(--accent-gold);">${currentLocation.name}</span>
+      </p>
+      
+      <div class="map-locations">
+        ${locationsHtml}
+      </div>
+      
+      <div style="text-align: right; margin-top: 16px;">
+        <button class="pixel-btn" onclick="hideModal('map-modal')">Close</button>
+      </div>
+    </div>
+  `);
+}
+
+function travelToLocation(locationId) {
+  if (!locationManager) return;
+  
+  const result = locationManager.travelTo(locationId);
+  
+  if (result.success) {
+    hideModal('map-modal');
+    showNotification(result.message, 'success');
+    
+    // Update game view for new location
+    renderLocation();
+    renderQuestPanel();
+    saveGame();
+  } else {
+    showNotification(result.message, 'error');
+  }
+}
+
+// =====================================================
+// Titles Screen
+// =====================================================
+
+function showTitlesScreen() {
+  if (!titleManager) {
+    showNotification("Title system not initialized!", 'error');
+    return;
+  }
+  
+  const earnedTitles = titleManager.getEarnedTitles();
+  const equippedTitleId = titleManager.getEquippedTitleId();
+  const allTitles = titleManager.getAllTitlesWithInfo();
+  
+  // Separate earned and locked titles
+  const earnedHtml = earnedTitles.length > 0 
+    ? earnedTitles.map(title => {
+        const isEquipped = title.id === equippedTitleId;
+        return `
+          <div class="title-item ${isEquipped ? 'equipped' : ''}" data-title="${title.id}">
+            <div class="title-name" style="color: ${title.color};">${title.name}</div>
+            <div class="title-desc">${title.description}</div>
+            <div class="title-action">
+              ${isEquipped 
+                ? `<button class="pixel-btn" onclick="unequipTitle()">Unequip</button>`
+                : `<button class="pixel-btn pixel-btn-gold" onclick="equipTitleById('${title.id}')">Equip</button>`
+              }
+            </div>
+          </div>
+        `;
+      }).join('')
+    : '<p style="color: var(--text-muted);">No titles earned yet. Complete milestones and achievements to earn titles!</p>';
+  
+  // Show locked titles as preview
+  const lockedTitles = allTitles.filter(t => !t.earned);
+  const lockedHtml = lockedTitles.length > 0
+    ? lockedTitles.slice(0, 5).map(title => `
+        <div class="title-item locked">
+          <div class="title-name" style="color: var(--text-muted);">🔒 ${title.name}</div>
+          <div class="title-desc">${title.description}</div>
+        </div>
+      `).join('') + (lockedTitles.length > 5 ? `<p style="color: var(--text-muted);">...and ${lockedTitles.length - 5} more to discover</p>` : '')
+    : '';
+  
+  const currentTitle = titleManager.getEquippedTitle();
+  const currentDisplay = currentTitle 
+    ? `<span style="color: ${currentTitle.color};">${currentTitle.name}</span>` 
+    : '<span style="color: var(--text-muted);">None</span>';
+  
+  showModal('titles-modal', `
+    <div class="titles-screen">
+      <h2 style="font-family: var(--font-display); font-size: 14px; color: var(--accent-gold); margin-bottom: 8px;">
+        🏆 TITLES
+      </h2>
+      <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 16px;">
+        Current Title: ${currentDisplay}
+      </p>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
+        Earned: ${earnedTitles.length} / ${allTitles.length}
+      </p>
+      
+      <div class="titles-section">
+        <h3 style="font-family: var(--font-display); font-size: 10px; color: var(--accent-gold); margin-bottom: 8px;">EARNED TITLES</h3>
+        <div class="titles-list">
+          ${earnedHtml}
+        </div>
+      </div>
+      
+      ${lockedHtml ? `
+        <div class="titles-section" style="margin-top: 16px;">
+          <h3 style="font-family: var(--font-display); font-size: 10px; color: var(--text-muted); margin-bottom: 8px;">LOCKED TITLES</h3>
+          <div class="titles-list">
+            ${lockedHtml}
+          </div>
+        </div>
+      ` : ''}
+      
+      <div style="text-align: right; margin-top: 16px;">
+        <button class="pixel-btn" onclick="hideModal('titles-modal')">Close</button>
+      </div>
+    </div>
+  `);
+}
+
+function equipTitleById(titleId) {
+  if (!titleManager) return;
+  
+  const result = titleManager.equipTitle(titleId);
+  
+  if (result.success) {
+    showNotification(result.message, 'success');
+    showTitlesScreen(); // Refresh
+    renderHUD(); // Update display name if shown
+    saveGame();
+  } else {
+    showNotification(result.message, 'error');
+  }
+}
+
+function unequipTitle() {
+  if (!titleManager) return;
+  
+  const result = titleManager.unequipTitle();
+  
+  if (result.success) {
+    showNotification(result.message, 'info');
+    showTitlesScreen(); // Refresh
+    renderHUD();
+    saveGame();
+  }
 }
 
 // Start when DOM is ready
