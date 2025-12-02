@@ -955,7 +955,7 @@ const GAME_DATA = {
       name: "Scholar",
       description: "You came to study the divine light and the cathedrals.",
       startingStats: { maxHp: 80, attack: 3 },
-      startingItems: ["traveler_cloak"],
+      startingItems: [],
       bonus: "Extra hints during lessons",
       icon: "📚"
     },

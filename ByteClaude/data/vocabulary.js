@@ -101,6 +101,57 @@ const VOCABULARY = {
       { french: "D'où venez-vous?", english: "Where are you from?", audio: null },
       { french: "Je viens de...", english: "I come from...", audio: null }
     ]
+  },
+
+  // Food vocabulary for baker's dozen and other food-related quests
+  food: {
+    beginner: [
+      { french: "le pain", english: "the bread", audio: null, hint: "Staple food" },
+      { french: "le gâteau", english: "the cake", audio: null, hint: "Sweet dessert" },
+      { french: "la farine", english: "the flour", audio: null, hint: "Made from wheat" },
+      { french: "le beurre", english: "the butter", audio: null, hint: "Dairy product" },
+      { french: "le sucre", english: "the sugar", audio: null, hint: "Sweet crystals" },
+      { french: "le sel", english: "the salt", audio: null, hint: "Salty seasoning" },
+      { french: "l'œuf", english: "the egg", audio: null, hint: "From chickens" },
+      { french: "le lait", english: "the milk", audio: null, hint: "White dairy drink" },
+      { french: "l'eau", english: "the water", audio: null, hint: "Essential liquid" },
+      { french: "le fromage", english: "the cheese", audio: null, hint: "France is famous for this" },
+      { french: "la pomme", english: "the apple", audio: null, hint: "Red or green fruit" },
+      { french: "le croissant", english: "the croissant", audio: null, hint: "Crescent-shaped pastry" }
+    ],
+    intermediate: [
+      { french: "la boulangerie", english: "the bakery", audio: null, hint: "Where bread is made" },
+      { french: "le boulanger", english: "the baker (male)", audio: null, hint: "One who bakes" },
+      { french: "la boulangère", english: "the baker (female)", audio: null, hint: "Female baker" },
+      { french: "le four", english: "the oven", audio: null, hint: "For baking" },
+      { french: "pétrir", english: "to knead", audio: null, hint: "Work the dough" },
+      { french: "cuire", english: "to bake/cook", audio: null, hint: "Apply heat to food" },
+      { french: "la pâte", english: "the dough", audio: null, hint: "Before it's baked" },
+      { french: "la levure", english: "the yeast", audio: null, hint: "Makes bread rise" }
+    ],
+    phrases: [
+      { french: "Je voudrais du pain", english: "I would like some bread", audio: null },
+      { french: "C'est délicieux!", english: "It's delicious!", audio: null },
+      { french: "Combien ça coûte?", english: "How much does it cost?", audio: null },
+      { french: "Une baguette, s'il vous plaît", english: "A baguette, please", audio: null },
+      { french: "C'est frais", english: "It's fresh", audio: null }
+    ]
+  },
+
+  // Time vocabulary
+  time: {
+    basic: [
+      { french: "le jour", english: "the day", audio: null, hint: "24 hours" },
+      { french: "la nuit", english: "the night", audio: null, hint: "Dark time" },
+      { french: "le matin", english: "the morning", audio: null, hint: "Early day" },
+      { french: "l'après-midi", english: "the afternoon", audio: null, hint: "After noon" },
+      { french: "le soir", english: "the evening", audio: null, hint: "Late day" },
+      { french: "aujourd'hui", english: "today", audio: null, hint: "This day" },
+      { french: "demain", english: "tomorrow", audio: null, hint: "Next day" },
+      { french: "hier", english: "yesterday", audio: null, hint: "Previous day" },
+      { french: "la semaine", english: "the week", audio: null, hint: "7 days" },
+      { french: "le mois", english: "the month", audio: null, hint: "About 30 days" }
+    ]
   }
 };
 

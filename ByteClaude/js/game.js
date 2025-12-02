@@ -377,7 +377,6 @@ function renderQuestItem(quest, status) {
   // Get type and category info
   const typeInfo = getQuestTypeInfo(questData.type);
   const categoryInfo = getQuestCategoryInfo(questData.category);
-  const statusInfo = getQuestStatusInfo(status);
   
   // Build objectives HTML if selected
   let objectivesHtml = '';
@@ -1635,9 +1634,8 @@ function handleAnswer(answer) {
     
   } else {
     // Track wrong in SR system
-    let srResult = null;
     if (srManager) {
-      srResult = srManager.recordWrong(wordData);
+      srManager.recordWrong(wordData);
     }
     
     // Break streak
@@ -1890,6 +1888,10 @@ function checkHiddenQuestTriggers() {
 // =====================================================
 
 function showNotification(message, type = 'info') {
+  // Remove any existing notifications
+  const existingNotifications = document.querySelectorAll('.notification');
+  existingNotifications.forEach(notif => notif.remove());
+
   const notification = document.createElement('div');
   notification.className = `notification ${type}`;
   notification.style.cssText = `
@@ -1907,7 +1909,7 @@ function showNotification(message, type = 'info') {
   `;
   notification.textContent = message;
   document.body.appendChild(notification);
-  
+
   setTimeout(() => {
     notification.style.animation = 'fadeIn 0.3s ease reverse';
     setTimeout(() => notification.remove(), 300);
@@ -2058,7 +2060,6 @@ function closeShopScreen() {
 
 function showProfileScreen() {
   const player = GameState.player;
-  const stats = statsManager ? statsManager.getAllStats() : {};
   const majorStats = statsManager ? statsManager.getMajorStats() : [];
   const minorStats = statsManager ? statsManager.getMinorStats() : [];
   const activeTitle = statsManager ? statsManager.getActiveTitle() : null;
@@ -2514,35 +2515,57 @@ function startGame() {
 // =====================================================
 
 function initGame() {
-  // Initialize Quest Manager
-  questManager = new QuestManager(GameState, GAME_DATA);
-  
-  // Initialize Spaced Repetition Manager
-  srManager = new SpacedRepetitionManager(GameState);
-  
-  // Initialize Stats Manager
-  statsManager = new StatsManager(GameState);
-  
-  // Initialize Reputation Manager
-  reputationManager = new ReputationManager(GameState);
-  
-  // Initialize Item Manager
-  itemManager = new ItemManager(GameState, GAME_DATA.items);
-  
-  // Initialize Shop Manager
-  shopManager = new ShopManager(GameState, SHOP_DEFINITIONS, itemManager);
-  
-  // Initialize Hint Manager
-  hintManager = new HintManager(GameState, srManager);
-  
-  // Initialize Location Manager
-  locationManager = new LocationManager(GameState);
-  
-  // Initialize Boss Exam Manager
-  bossExamManager = new BossExamManager(GameState, locationManager, hintManager, srManager);
-  
-  // Initialize Title Manager
-  titleManager = new TitleManager(GameState);
+  try {
+    // Initialize Quest Manager
+    questManager = new QuestManager(GameState, GAME_DATA);
+
+    // Initialize Spaced Repetition Manager
+    if (typeof SpacedRepetitionManager !== 'undefined') {
+      srManager = new SpacedRepetitionManager(GameState);
+    }
+
+    // Initialize Stats Manager
+    if (typeof StatsManager !== 'undefined') {
+      statsManager = new StatsManager(GameState);
+    }
+
+    // Initialize Reputation Manager
+    if (typeof ReputationManager !== 'undefined') {
+      reputationManager = new ReputationManager(GameState);
+    }
+
+    // Initialize Item Manager
+    if (typeof ItemManager !== 'undefined') {
+      itemManager = new ItemManager(GameState, GAME_DATA.items);
+    }
+
+    // Initialize Shop Manager
+    if (typeof ShopManager !== 'undefined' && typeof SHOP_DEFINITIONS !== 'undefined' && itemManager) {
+      shopManager = new ShopManager(GameState, SHOP_DEFINITIONS, itemManager);
+    }
+
+    // Initialize Hint Manager
+    if (typeof HintManager !== 'undefined' && srManager) {
+      hintManager = new HintManager(GameState, srManager);
+    }
+
+    // Initialize Location Manager
+    if (typeof LocationManager !== 'undefined') {
+      locationManager = new LocationManager(GameState);
+    }
+
+    // Initialize Boss Exam Manager
+    if (typeof BossExamManager !== 'undefined' && locationManager && hintManager && srManager) {
+      bossExamManager = new BossExamManager(GameState, locationManager, hintManager, srManager);
+    }
+
+    // Initialize Title Manager
+    if (typeof TitleManager !== 'undefined') {
+      titleManager = new TitleManager(GameState);
+    }
+  } catch (error) {
+    console.error('Error initializing game systems:', error);
+  }
   
   // Title screen buttons
   document.getElementById('new-game-btn').addEventListener('click', showCharacterCreation);
@@ -2562,7 +2585,12 @@ function initGame() {
       handleNavigation(screen);
     });
   });
-  
+
+  // Player avatar click to show profile
+  document.querySelector('.player-avatar').addEventListener('click', () => {
+    showProfileScreen();
+  });
+
   // Check for existing save
   if (localStorage.getItem('bytequest_save')) {
     document.getElementById('continue-btn').style.display = 'block';
