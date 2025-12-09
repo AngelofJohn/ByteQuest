@@ -893,6 +893,29 @@ Raw ideas that haven't been fully considered. Capture first, evaluate later.
 | Collect/Deliver quest objectives | New objective types for item gathering and delivery quests. Requires inventory integration, item spawning system, NPC delivery handlers. | Dec 7 |
 | Timed quest system | Quest timer display, failure handling, time extension items. Festival_feast originally designed as timed. | Dec 7 |
 
+### Language Selection System (New - Dec 9)
+| Item | Notes | Status |
+|------|-------|--------|
+| **Testing Checklist** | | |
+| New game flow | Verify screen appears after name/class selection, before game start | Pending |
+| French selection | Click French card, verify it highlights, Continue button enables | Pending |
+| Locked languages | Spanish/German/Italian should not be selectable, show "Coming Soon" | Pending |
+| Continue button | Should be disabled until a language is selected | Pending |
+| GameState storage | Verify `GameState.player.language` is set to 'french' after selection | Pending |
+| Save/Load | Verify language persists in saved games | Pending |
+| Existing saves | Test loading saves created before this feature (should default to null/french) | Pending |
+| **Known Issues** | | |
+| No back button | Cannot return to character creation from language screen | Low |
+| Keyboard nav | No keyboard support for language selection (mouse only) | Low |
+| **Future Work** | | |
+| Add more languages | Set `available: true` for new languages in `showLanguageSelection()` | When content ready |
+| Language-specific vocabulary | Route to different vocabulary files based on selected language | Phase 3+ |
+| UI localization | Separate from learning language - game interface translation | Phase 4+ |
+| **Files** | | |
+| js/game.js:4297-4349 | `showLanguageSelection()` function | Complete |
+| js/game.js:13 | `GameState.player.language` field | Complete |
+| css/style.css:1657-1721 | Language card styles | Complete |
+
 ### Account Progression System (Draft)
 | Item | Notes | Status |
 |------|-------|--------|
