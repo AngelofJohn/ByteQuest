@@ -973,6 +973,8 @@ Raw ideas that haven't been fully considered. Capture first, evaluate later.
 | Verify bonus notifications | Should show "+55 XP (50 + bonus)" when multiplier active | Pending |
 | Quest rewards with multiplier | Complete quest, verify gold shows bonus amount | Pending |
 | Lesson XP with multiplier | Complete lesson, verify XP shows bonus amount | Pending |
+| **Playtesting Required** | | |
+| Full system playtest | Verify multipliers work correctly and balance gold costs | Pending |
 | **Files** | | |
 | js/accountProgression.js | Core infrastructure | Complete |
 | js/accountProgressionConfig.js | Upgrade definitions (17 upgrades, 5 categories) | Complete |
