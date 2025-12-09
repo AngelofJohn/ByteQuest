@@ -952,26 +952,34 @@ Raw ideas that haven't been fully considered. Capture first, evaluate later.
 | js/game.js:13 | `GameState.player.language` field | Complete |
 | css/style.css:1657-1721 | Language card styles | Complete |
 
-### Account Progression System (Draft)
+### Account Progression System (Integrated - Dec 9)
 | Item | Notes | Status |
 |------|-------|--------|
 | **Implementation Tasks** | | |
-| Hook gold rewards into game events | Call account bonus functions in quest completion, level up, achievements, boss exams | Pending |
-| Integrate into shop system | Account upgrades sold through existing shopSystem.js | Pending |
-| Add NPC upgrade vendors | Certain NPCs offer specific upgrades as one-time purchases | Pending |
+| Hook XP multipliers into rewards | `addXP()` and `addXPSilent()` apply multipliers from account upgrades | ✅ Complete |
+| Hook gold multipliers into rewards | New `addGold()` and `addGoldSilent()` functions with multiplier support | ✅ Complete |
+| Quest rewards integration | Quest gold rewards use `addGoldSilent()` for consistent multiplier application | ✅ Complete |
+| Integrate into shop system | Account upgrades sold through existing shopSystem.js | ✅ Complete |
+| Add NPC upgrade vendors | 3 vendors: Sage Aldric (learning), Merchant (resources), Urma (gameplay) | ✅ Complete |
+| Shop UI for account upgrades | Full `renderAccountUpgradeShop()` with categories, owned status, prerequisites | ✅ Complete |
 | **Balance Questions** | | |
 | Gold costs per upgrade | Current: 500-5000 gold range. Need playtesting | TBD |
-| Account gold earning rates | Current: 10% quest gold, level×10, 50/achievement, 100/boss | TBD |
-| Tier 2 unlock requirements | Ideas: quests completed, level reached, NPCs met, vocab mastered | TBD |
-| Tier 3 unlock requirements | Ideas: story complete, boss exams passed, reputation ranks | TBD |
+| Tier 2/3 unlock requirements | Currently placeholder - define achievement triggers | TBD |
 | Stackable upgrade max stacks | Current values set, may need adjustment | TBD |
 | Effect strength values | XP/gold multipliers, health bonuses, inventory slots | TBD |
-| Which NPCs sell which upgrades | Map upgrades to specific NPCs/locations | TBD |
+| **Testing Checklist** | | |
+| Buy upgrade from Sage Aldric | Test XP multiplier purchase and effect | Pending |
+| Buy upgrade from Merchant | Test gold multiplier purchase and effect | Pending |
+| Verify bonus notifications | Should show "+55 XP (50 + bonus)" when multiplier active | Pending |
+| Quest rewards with multiplier | Complete quest, verify gold shows bonus amount | Pending |
+| Lesson XP with multiplier | Complete lesson, verify XP shows bonus amount | Pending |
 | **Files** | | |
 | js/accountProgression.js | Core infrastructure | Complete |
-| js/accountProgressionConfig.js | Upgrade definitions, costs, effects | Complete |
+| js/accountProgressionConfig.js | Upgrade definitions (17 upgrades, 5 categories) | Complete |
 | js/gameIntegration.js | Game hooks and debug helpers | Complete |
-| js/accountProgressionUI.js | Standalone UI - may merge into shopSystem later | Draft |
+| js/shopSystem.js:121-194 | 3 NPC upgrade shop definitions | Complete |
+| js/game.js:887-925 | addGold/addGoldSilent functions | Complete |
+| js/game.js:1113-1137 | addXP with multiplier | Complete |
 
 ### Monetization Ideas
 | Idea | Notes | Added |
