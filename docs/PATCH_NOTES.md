@@ -1141,6 +1141,102 @@ Endgame (Ruins):
 3. Do relics unlock a "Truth Log" the player can review?
 4. Should finding all relics unlock a special ending or revelation?
 
+#### Proposed Historical Timeline Expansion
+
+The current WORLD_BIBLE.md timeline has many `[TBD]` gaps. This expanded timeline would support the relic system by establishing when different relic types were created.
+
+**Current Timeline Gaps:**
+
+| Era | Current Status |
+|-----|----------------|
+| Ancient Times | Vague - "Founding of Lurenium" only |
+| Establishment of Verandum | [TBD] |
+| Reign of King Dran | [TBD] |
+| Birth of Hermeau and Layne | [TBD] |
+| The War | Some detail |
+| Post-War | Some detail |
+
+**Proposed Expanded Timeline:**
+
+| Era | Years Ago | Event | Relic Connection |
+|-----|-----------|-------|------------------|
+| **The Ancients** | 1000+ | Lurenium built "as a seal" | Ancient Tablets - deepest mysteries |
+| **The Silence** | 1000-500 | Ancient civilization falls, knowledge lost | — |
+| **The Founding** | ~500 | Verandum established, Lurenium rediscovered | — |
+| **The Faith** | ~400 | Order of Dawn founded, temples built | Dawn Prayer Books - original teachings |
+| **Golden Age** | 400-100 | Prosperity, scholarship, King Dran's ancestors | Royal Archives - how things were |
+| **King Dran's Reign** | 100-30 | Stability, two princes born and raised | Pre-War records |
+| **The Divide** | 30-20 | Hermeau and Layne grow apart, tensions rise | — |
+| **The War** | ~20 | Corruption unleashed, King assassinated | War Journals - what really happened |
+| **The Exile** | 20-Present | Layne flees, Hermeau rewrites history | Layne's Letters - the exiled truth |
+| **Present Day** | Now | Player arrives in Dawnmere | — |
+
+**Era Details for Relic Context:**
+
+**The Ancients (1000+ years ago)**
+- Built Lurenium not as a city, but as a seal
+- Spoke a language before French
+- Light and Dark were not always separate forces
+- The Corruption "is not new - it is a return"
+- Their fall is a mystery - what happened?
+
+**The Silence (1000-500 years ago)**
+- Period after Ancient civilization collapsed
+- Knowledge lost, ruins overgrown
+- Scattered tribes, no unified kingdom
+- Lurenium abandoned, purpose forgotten
+
+**The Founding (~500 years ago)**
+- Verandum kingdom established
+- Lurenium rediscovered but not understood
+- New civilization builds on Ancient ruins
+- French becomes the official language
+
+**The Faith (~400 years ago)**
+- Order of Dawn founded
+- Temples of the Light built across the land
+- Original teachings: humility, service, truth
+- Religious texts written - later corrupted under Hermeau
+
+**Golden Age (400-100 years ago)**
+- Multiple generations of prosperity
+- Scholarly institutions flourish
+- Royal archives maintained
+- Trade routes established between regions
+
+**King Dran's Reign (100-30 years ago)**
+- Long period of stability
+- Hermeau and Layne born and raised
+- The princes educated together, then grow apart
+- Seeds of conflict planted
+
+**The Divide (30-20 years ago)**
+- Hermeau's ambition becomes apparent
+- Layne discovers dark magic experiments?
+- Political factions form
+- Tensions build toward breaking point
+
+**The War (~20 years ago)**
+- Corruption unleashed on farmlands
+- King Dran assassinated (by Hermeau's plot)
+- Dark magic used on large scale for first time
+- Survivors witness the truth, write journals
+
+**The Exile (20 years ago - Present)**
+- Layne exiled for "knowing too much"
+- Hermeau takes throne, rewrites history
+- Propaganda spreads, truth suppressed
+- Order of Dawn goes underground
+- Layne hides documents for future discovery
+
+**Timeline Open Questions:**
+
+1. Are these year numbers final, or just relative placeholders?
+2. What exactly did the Ancients seal in Lurenium?
+3. How did the Ancient civilization fall?
+4. Did Layne discover Hermeau's plot before or during the war?
+5. Where did Layne go during exile? Is he still alive?
+
 ### Language Selection System (New - Dec 9)
 | Item | Notes | Status |
 |------|-------|--------|
