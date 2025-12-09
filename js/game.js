@@ -10,6 +10,7 @@ const GameState = {
   player: {
     name: "Traveler",
     class: null,
+    language: null,
     level: 1,
     xp: 0,
     xpToNext: 100,
@@ -4287,16 +4288,72 @@ function showCharacterCreation() {
   document.getElementById('start-adventure-btn').addEventListener('click', () => {
     const name = nameInput.value.trim();
     if (name && selectedClass) {
-      startNewGame(name, selectedClass);
+      hideModal('character-creation');
+      showLanguageSelection(name, selectedClass);
     }
   });
 }
 
-function startNewGame(name, classId) {
+// Language Selection Screen
+function showLanguageSelection(playerName, classId) {
+  const languages = [
+    { id: 'french', name: 'French', nativeName: 'Français', icon: '🇫🇷', available: true },
+    { id: 'spanish', name: 'Spanish', nativeName: 'Español', icon: '🇪🇸', available: false },
+    { id: 'german', name: 'German', nativeName: 'Deutsch', icon: '🇩🇪', available: false },
+    { id: 'italian', name: 'Italian', nativeName: 'Italiano', icon: '🇮🇹', available: false }
+  ];
+
+  const languageCards = languages.map(lang => `
+    <div class="language-card ${lang.available ? '' : 'locked'}" data-language="${lang.id}" ${!lang.available ? 'title="Coming Soon"' : ''}>
+      <div class="language-icon">${lang.icon}</div>
+      <div class="language-name">${lang.name}</div>
+      <div class="language-native">${lang.nativeName}</div>
+      ${!lang.available ? '<div class="language-locked-badge">Coming Soon</div>' : ''}
+    </div>
+  `).join('');
+
+  showModal('language-selection', `
+    <h2 style="font-family: var(--font-display); font-size: 16px; color: var(--accent-gold); margin-bottom: 8px; text-align: center;">
+      Choose Your Language
+    </h2>
+    <p style="font-family: var(--font-body); font-size: 10px; color: var(--text-dim); margin-bottom: 24px; text-align: center;">
+      Select the language you want to learn
+    </p>
+    <div class="language-options">
+      ${languageCards}
+    </div>
+    <div style="text-align: center; margin-top: 24px;">
+      <button class="pixel-btn pixel-btn-gold" id="confirm-language-btn" disabled>
+        Continue
+      </button>
+    </div>
+  `);
+
+  let selectedLanguage = null;
+
+  document.querySelectorAll('.language-card:not(.locked)').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.language-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      selectedLanguage = card.dataset.language;
+      document.getElementById('confirm-language-btn').disabled = false;
+    });
+  });
+
+  document.getElementById('confirm-language-btn').addEventListener('click', () => {
+    if (selectedLanguage) {
+      hideModal('language-selection');
+      startNewGame(playerName, classId, selectedLanguage);
+    }
+  });
+}
+
+function startNewGame(name, classId, language = 'french') {
   const classData = GAME_DATA.classes[classId];
-  
+
   GameState.player.name = name;
   GameState.player.class = classId;
+  GameState.player.language = language;
   GameState.player.createdAt = Date.now();
   
   // Initialize stats system
