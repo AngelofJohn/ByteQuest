@@ -769,10 +769,11 @@ function completeQuest(questId) {
       }
     }
     
-    // Gold
+    // Gold (with account progression multiplier)
     if (questData.rewards.gold) {
-      GameState.player.gold += questData.rewards.gold;
-      rewardData.gold = questData.rewards.gold;
+      const actualGold = addGoldSilent(questData.rewards.gold);
+      rewardData.gold = actualGold;
+      rewardData.baseGold = questData.rewards.gold;
     }
 
     // Items
@@ -865,13 +866,63 @@ function completeQuest(questId) {
 
 // Silent versions that don't show notifications (for rewards screen)
 function addXPSilent(amount) {
-  GameState.player.xp += amount;
-  
+  // Apply account progression XP multiplier
+  let finalAmount = amount;
+  if (typeof accountProgression !== 'undefined' && accountProgression) {
+    const effects = accountProgression.getActiveEffects();
+    if (effects.xpMultiplier && effects.xpMultiplier > 1) {
+      finalAmount = Math.floor(amount * effects.xpMultiplier);
+    }
+  }
+
+  GameState.player.xp += finalAmount;
+
   while (GameState.player.xp >= GameState.player.xpToNext) {
     levelUpSilent();
   }
-  
+
   renderHUD();
+  return finalAmount; // Return actual amount for display
+}
+
+function addGold(amount) {
+  // Apply account progression gold multiplier
+  let finalAmount = amount;
+  if (typeof accountProgression !== 'undefined' && accountProgression) {
+    const effects = accountProgression.getActiveEffects();
+    if (effects.goldMultiplier && effects.goldMultiplier > 1) {
+      finalAmount = Math.floor(amount * effects.goldMultiplier);
+    }
+  }
+
+  GameState.player.gold += finalAmount;
+  GameState.player.totalGoldEarned = (GameState.player.totalGoldEarned || 0) + finalAmount;
+
+  if (finalAmount > amount) {
+    showNotification(`+${finalAmount} gold (${amount} + bonus)`, 'success');
+  } else {
+    showNotification(`+${finalAmount} gold`, 'success');
+  }
+
+  renderHUD();
+  return finalAmount;
+}
+
+function addGoldSilent(amount) {
+  // Apply account progression gold multiplier
+  let finalAmount = amount;
+  if (typeof accountProgression !== 'undefined' && accountProgression) {
+    const effects = accountProgression.getActiveEffects();
+    if (effects.goldMultiplier && effects.goldMultiplier > 1) {
+      finalAmount = Math.floor(amount * effects.goldMultiplier);
+    }
+  }
+
+  GameState.player.gold += finalAmount;
+  GameState.player.totalGoldEarned = (GameState.player.totalGoldEarned || 0) + finalAmount;
+
+  renderHUD();
+  return finalAmount;
 }
 
 function levelUpSilent() {
@@ -1061,15 +1112,30 @@ function unlockDependentQuests(completedQuestId) {
 // =====================================================
 
 function addXP(amount) {
-  GameState.player.xp += amount;
-  showNotification(`+${amount} XP`);
-  
+  // Apply account progression XP multiplier
+  let finalAmount = amount;
+  if (typeof accountProgression !== 'undefined' && accountProgression) {
+    const effects = accountProgression.getActiveEffects();
+    if (effects.xpMultiplier && effects.xpMultiplier > 1) {
+      finalAmount = Math.floor(amount * effects.xpMultiplier);
+    }
+  }
+
+  GameState.player.xp += finalAmount;
+
+  if (finalAmount > amount) {
+    showNotification(`+${finalAmount} XP (${amount} + bonus)`);
+  } else {
+    showNotification(`+${finalAmount} XP`);
+  }
+
   // Check for level up
   while (GameState.player.xp >= GameState.player.xpToNext) {
     levelUp();
   }
-  
+
   renderHUD();
+  return finalAmount;
 }
 
 function levelUp() {
