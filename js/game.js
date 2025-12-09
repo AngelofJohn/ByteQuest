@@ -10,6 +10,7 @@ const GameState = {
   player: {
     name: "Traveler",
     class: null,
+    language: null,
     level: 1,
     xp: 0,
     xpToNext: 100,
@@ -768,10 +769,11 @@ function completeQuest(questId) {
       }
     }
     
-    // Gold
+    // Gold (with account progression multiplier)
     if (questData.rewards.gold) {
-      GameState.player.gold += questData.rewards.gold;
-      rewardData.gold = questData.rewards.gold;
+      const actualGold = addGoldSilent(questData.rewards.gold);
+      rewardData.gold = actualGold;
+      rewardData.baseGold = questData.rewards.gold;
     }
 
     // Items
@@ -864,13 +866,63 @@ function completeQuest(questId) {
 
 // Silent versions that don't show notifications (for rewards screen)
 function addXPSilent(amount) {
-  GameState.player.xp += amount;
-  
+  // Apply account progression XP multiplier
+  let finalAmount = amount;
+  if (typeof accountProgression !== 'undefined' && accountProgression) {
+    const effects = accountProgression.getActiveEffects();
+    if (effects.xpMultiplier && effects.xpMultiplier > 1) {
+      finalAmount = Math.floor(amount * effects.xpMultiplier);
+    }
+  }
+
+  GameState.player.xp += finalAmount;
+
   while (GameState.player.xp >= GameState.player.xpToNext) {
     levelUpSilent();
   }
-  
+
   renderHUD();
+  return finalAmount; // Return actual amount for display
+}
+
+function addGold(amount) {
+  // Apply account progression gold multiplier
+  let finalAmount = amount;
+  if (typeof accountProgression !== 'undefined' && accountProgression) {
+    const effects = accountProgression.getActiveEffects();
+    if (effects.goldMultiplier && effects.goldMultiplier > 1) {
+      finalAmount = Math.floor(amount * effects.goldMultiplier);
+    }
+  }
+
+  GameState.player.gold += finalAmount;
+  GameState.player.totalGoldEarned = (GameState.player.totalGoldEarned || 0) + finalAmount;
+
+  if (finalAmount > amount) {
+    showNotification(`+${finalAmount} gold (${amount} + bonus)`, 'success');
+  } else {
+    showNotification(`+${finalAmount} gold`, 'success');
+  }
+
+  renderHUD();
+  return finalAmount;
+}
+
+function addGoldSilent(amount) {
+  // Apply account progression gold multiplier
+  let finalAmount = amount;
+  if (typeof accountProgression !== 'undefined' && accountProgression) {
+    const effects = accountProgression.getActiveEffects();
+    if (effects.goldMultiplier && effects.goldMultiplier > 1) {
+      finalAmount = Math.floor(amount * effects.goldMultiplier);
+    }
+  }
+
+  GameState.player.gold += finalAmount;
+  GameState.player.totalGoldEarned = (GameState.player.totalGoldEarned || 0) + finalAmount;
+
+  renderHUD();
+  return finalAmount;
 }
 
 function levelUpSilent() {
@@ -1060,15 +1112,30 @@ function unlockDependentQuests(completedQuestId) {
 // =====================================================
 
 function addXP(amount) {
-  GameState.player.xp += amount;
-  showNotification(`+${amount} XP`);
-  
+  // Apply account progression XP multiplier
+  let finalAmount = amount;
+  if (typeof accountProgression !== 'undefined' && accountProgression) {
+    const effects = accountProgression.getActiveEffects();
+    if (effects.xpMultiplier && effects.xpMultiplier > 1) {
+      finalAmount = Math.floor(amount * effects.xpMultiplier);
+    }
+  }
+
+  GameState.player.xp += finalAmount;
+
+  if (finalAmount > amount) {
+    showNotification(`+${finalAmount} XP (${amount} + bonus)`);
+  } else {
+    showNotification(`+${finalAmount} XP`);
+  }
+
   // Check for level up
   while (GameState.player.xp >= GameState.player.xpToNext) {
     levelUp();
   }
-  
+
   renderHUD();
+  return finalAmount;
 }
 
 function levelUp() {
@@ -4287,16 +4354,72 @@ function showCharacterCreation() {
   document.getElementById('start-adventure-btn').addEventListener('click', () => {
     const name = nameInput.value.trim();
     if (name && selectedClass) {
-      startNewGame(name, selectedClass);
+      hideModal('character-creation');
+      showLanguageSelection(name, selectedClass);
     }
   });
 }
 
-function startNewGame(name, classId) {
+// Language Selection Screen
+function showLanguageSelection(playerName, classId) {
+  const languages = [
+    { id: 'french', name: 'French', nativeName: 'Français', icon: '🇫🇷', available: true },
+    { id: 'spanish', name: 'Spanish', nativeName: 'Español', icon: '🇪🇸', available: false },
+    { id: 'german', name: 'German', nativeName: 'Deutsch', icon: '🇩🇪', available: false },
+    { id: 'italian', name: 'Italian', nativeName: 'Italiano', icon: '🇮🇹', available: false }
+  ];
+
+  const languageCards = languages.map(lang => `
+    <div class="language-card ${lang.available ? '' : 'locked'}" data-language="${lang.id}" ${!lang.available ? 'title="Coming Soon"' : ''}>
+      <div class="language-icon">${lang.icon}</div>
+      <div class="language-name">${lang.name}</div>
+      <div class="language-native">${lang.nativeName}</div>
+      ${!lang.available ? '<div class="language-locked-badge">Coming Soon</div>' : ''}
+    </div>
+  `).join('');
+
+  showModal('language-selection', `
+    <h2 style="font-family: var(--font-display); font-size: 16px; color: var(--accent-gold); margin-bottom: 8px; text-align: center;">
+      Choose Your Language
+    </h2>
+    <p style="font-family: var(--font-body); font-size: 10px; color: var(--text-dim); margin-bottom: 24px; text-align: center;">
+      Select the language you want to learn
+    </p>
+    <div class="language-options">
+      ${languageCards}
+    </div>
+    <div style="text-align: center; margin-top: 24px;">
+      <button class="pixel-btn pixel-btn-gold" id="confirm-language-btn" disabled>
+        Continue
+      </button>
+    </div>
+  `);
+
+  let selectedLanguage = null;
+
+  document.querySelectorAll('.language-card:not(.locked)').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.language-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      selectedLanguage = card.dataset.language;
+      document.getElementById('confirm-language-btn').disabled = false;
+    });
+  });
+
+  document.getElementById('confirm-language-btn').addEventListener('click', () => {
+    if (selectedLanguage) {
+      hideModal('language-selection');
+      startNewGame(playerName, classId, selectedLanguage);
+    }
+  });
+}
+
+function startNewGame(name, classId, language = 'french') {
   const classData = GAME_DATA.classes[classId];
-  
+
   GameState.player.name = name;
   GameState.player.class = classId;
+  GameState.player.language = language;
   GameState.player.createdAt = Date.now();
   
   // Initialize stats system

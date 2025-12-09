@@ -837,6 +837,41 @@ This document tracks bugs, fixes, cleanup tasks, open questions, and ideas for B
 | Launch discount | Percentage? Duration? | Pending |
 | Wishlist/mailing list | How to collect interested users pre-launch? | Pending |
 
+#### Product Scope & Positioning (Decision Made - Dec 9)
+
+**What ByteQuest Teaches:**
+- ✅ Vocabulary fundamentals
+- ✅ Basic grammar
+- ✅ Sentence structure
+- ✅ Confidence with French basics
+- ✅ Reduced intimidation
+
+**What ByteQuest Does NOT Promise:**
+- ❌ Fluency
+- ❌ Conversational ability
+- ❌ Advanced proficiency
+
+**Positioning Statement:**
+> "Learn French fundamentals through an RPG story" — NOT "Become fluent through gaming"
+
+**Competitive Edge:**
+| vs. Competitor | ByteQuest Advantage |
+|----------------|---------------------|
+| Duolingo | More engaging (story, RPG mechanics) |
+| "Play French games" | More structured (pedagogy built-in) |
+| Fluency-promising apps | More honest (realistic scope) |
+| Subscription apps | Better value (one-time purchase) |
+
+**Core Loop (Complete):**
+- ✅ Learn vocabulary through quests
+- ✅ Practice grammar through lessons
+- ✅ Review through Alchemy system
+- ✅ RPG progression keeps it engaging
+- ✅ Story provides context
+- ✅ One-time purchase, no predatory tactics
+
+**Action Item:** Make scope crystal clear to players ("teaches fundamentals, not fluency") so expectations are appropriate and players don't feel misled.
+
 **Total Open Questions: 145**
 
 ---
@@ -862,6 +897,7 @@ Raw ideas that haven't been fully considered. Capture first, evaluate later.
 | Idea | Notes | Added |
 |------|-------|-------|
 | Filler Quests Design | **Decision made.** Character-first approach. Quest types: vocab reinforcement, world-building flavor, pacing/leveling gates, side character mini-arcs. Lengths: micro (1-2 steps, ~2min), short (3-5 steps, ~5-10min), mini-arcs (2-4 connected quests, ~20-30min). NPCs ready: Dawnmere (Yris, Brother Varek, Tommen, Widow Senna, Old Jorel), Haari Fields (Venn, Rask, The Veiled One), Special (Old Pieron). Philosophy: "Anti-Duolingo" means no meaningless repetition - filler quests build world, develop characters, make Elorath feel lived-in. | Dec 8 |
+| Tiered Crafting by Zone | **Decision made.** Zone-based progression for gathering/crafting systems. **Dawnmere (Starter):** Gathering only - mining, herbalism, woodcutting, fishing. Uses existing 8 resource minigames. Sells raw materials to vendors. Simple, immediate rewards. **Haari Fields (Zone 2):** Crafting unlocks - smithing, alchemy, cooking. Uses materials from Dawnmere + Haari. Recipes, skill progression. Dave teaches basic smithing after harvest quest. **Later Zones:** Advanced crafting (enchanting, legendary recipes), specializations (master smith vs master alchemist), cross-profession synergies. **Benefits:** Reduces new player complexity, natural tutorial pacing, content pipeline matches dev work, zone identity (Dawnmere = gathering hub, Haari = crafting hub). | Dec 9 |
 
 ### Story/Narrative Ideas
 | Idea | Notes | Added |
@@ -893,31 +929,387 @@ Raw ideas that haven't been fully considered. Capture first, evaluate later.
 | Collect/Deliver quest objectives | New objective types for item gathering and delivery quests. Requires inventory integration, item spawning system, NPC delivery handlers. | Dec 7 |
 | Timed quest system | Quest timer display, failure handling, time extension items. Festival_feast originally designed as timed. | Dec 7 |
 
-### Account Progression System (Draft)
+### Relic System + Reading Comprehension (Design Discussion - Dec 9)
+
+#### Core Concept
+
+Relics are collectible items that tie into language practice through reading comprehension:
+
+```
+Find Relic → Read French Inscription → Answer Comprehension Questions → Unlock Lore/Reward
+```
+
+This creates a natural progression after vocabulary + grammar, testing understanding in context rather than isolated memorization. Builds real-world confidence and makes relics feel meaningful rather than pure collectible fluff.
+
+#### Existing Relic References (from WORLD_BIBLE)
+
+| Category | Source | Examples |
+|----------|--------|----------|
+| Royal Relics | Story rewards | Crown, Scepter, Royal Seal |
+| Faction Pinnacles | Max reputation | Dawn Amulet, Guard Banner |
+| Ancient Lurenium | Exploration | Builder artifacts, golden relics |
+| Forged Legends | Crafting | Player-made unique gear |
+
+Design note: 5-10 total relics keeps them feeling special. Named items with lore connections (King Dran's Crown, Layne's Exile Blade).
+
+#### Difficulty Tiers (matching "fundamentals" scope)
+
+| Tier | French Level | Example |
+|------|--------------|---------|
+| Common | Single sentences | "Le roi habite dans le château." |
+| Uncommon | 2-3 sentences | Short description of a place or person |
+| Rare | Short paragraph | A brief story or historical note |
+| Legendary | Full passage | Lore entry with multiple details |
+
+#### Text Length Recommendations
+
+| Tier | Words | Sentences | Reading Time |
+|------|-------|-----------|--------------|
+| Common | 10-20 | 1-2 | ~10 sec |
+| Uncommon | 25-40 | 3-4 | ~20 sec |
+| Rare | 50-75 | 5-7 | ~45 sec |
+| Legendary | 80-120 | 8-12 | ~90 sec |
+
+**Why shorter texts:**
+- Builds confidence (completable)
+- Respects player time
+- Quality over quantity
+- Matches vocabulary they actually know
+- Feels like a reward, not homework
+
+#### Text Examples at Each Tier
+
+**Common (15 words):**
+> "Le chat noir dort sur la chaise. Il est très fatigué."
+
+**Uncommon (35 words):**
+> "Marie habite dans une petite maison près de la forêt. Chaque matin, elle marche jusqu'au village pour acheter du pain. Les villageois l'aiment beaucoup."
+
+**Rare (60 words):**
+> A short scene or lore snippet - maybe 2 small paragraphs
+
+**Legendary (100 words):**
+> A meaningful lore reveal - still under 1 minute of reading
+
+#### Question Format: Multiple Choice
+
+Multiple choice is the chosen format because:
+- Accessible for beginners
+- Clear feedback (right/wrong)
+- Reduces frustration vs free-text input
+- Can test comprehension without requiring production
+- Matches existing lesson format
+
+**Answer Structure:**
+- 4 choices (like current lessons)
+- 1 correct, 3 plausible distractors
+- Distractors test common misreadings
+
+#### Question Types
+
+| Type | Tests | Example |
+|------|-------|---------|
+| Main Idea | Overall understanding | "What is this passage about?" |
+| Detail | Specific information | "Where did the sage live?" |
+| Vocabulary | Word meaning in context | "What does 'aidait' mean here?" |
+| Inference | Reading between lines | "How did the villagers feel about the sage?" |
+| Translation | Direct comprehension | "What does this say?" |
+| True/False | Comprehension verification | "The sage lived near the river. True or false?" |
+
+#### Example Flow
+
+```
+🏺 You found: Ancient Tablet
+
+"Le vieux sage habitait près de la rivière.
+Il aidait les voyageurs perdus."
+
+Q1: Where did the sage live?
+  A) Near the mountain
+  B) Near the river ✓
+  C) In the castle
+  D) In the forest
+
+Q2: What did he do?
+  A) Helped lost travelers ✓
+  B) Sold potions
+  C) Guarded the king
+  D) Taught children
+
+→ Tablet Activated! Lore unlocked.
+```
+
+#### Scoring Ideas
+
+- Pass threshold (e.g., 3/4 correct to "unlock" the relic)
+- Or: Each correct answer charges the relic partially
+- Perfect score = bonus reward?
+
+#### Replay Value
+
+- Once unlocked, relic lore is readable anytime
+- Or: Relics can be "studied" again for XP/essence
+
+#### Open Questions
+
+1. Should the French text use only vocabulary the player has already learned?
+2. Allow hints/word lookups during reading, or pure comprehension test?
+3. How does this fit the relic "find" experience - exploration? Quest rewards? Both?
+4. How many comprehension questions per relic? (2-4 feels right?)
+5. Should wrong answers have consequences (HP loss like lessons, or just retry)?
+6. Should this be a separate "Examine Relic" screen, or integrated into the lesson modal?
+7. Should relics be permanent stat boosts, cosmetic, or unlock features?
+8. One-time find, or ongoing engagement (charge/feed them)?
+9. Tied to specific vocabulary sets, or general practice?
+
+#### Alternative Ideas Considered (for reference)
+
+1. **Relics as Mastery Rewards** - Earn relic fragments by mastering vocabulary categories. "Master all Greetings words → Relic of First Words". Encourages deep learning over rushing through content.
+
+2. **Relics Require Translation to Unlock** - Find a relic → Must translate inscription to activate it. Higher tier relics = harder French passages. Combines exploration reward with language practice.
+
+3. **Relics Power Up Through Practice** - Relic starts "dormant". Feed it with review sessions / correct answers to charge it. Creates ongoing reason to practice even after "completing" content.
+
+4. **Relic + Alchemy Integration** - Combine Linguistic Essence (from reviews) with relic fragments. Creates crafting loop tied to language practice.
+
+#### Lore Direction: Relics as Counter-Propaganda (Chosen)
+
+Relics tie directly into the core narrative conflict (Two Lores - truth vs propaganda). Reading relics in French = deciphering forbidden knowledge that reveals the actual history of Turuem.
+
+**Relic Categories by Era:**
+
+| Era | Source | What They Reveal |
+|-----|--------|------------------|
+| **Pre-War** | Royal archives, temple records | How things really were under King Dran |
+| **War Period** | Battlefield journals, witness accounts | What actually happened - dark magic, Hermeau's betrayal |
+| **Layne's Exile** | Hidden letters, exile writings | The truth from the exiled prince's perspective |
+| **Order of Dawn** | Smuggled scriptures, hidden prayers | The uncorrupted faith before Hermeau's influence |
+| **Ancient** | Lurenium fragments | Deeper truths even the "Actual Lore" doesn't explain |
+
+**Who Hid These Relics & Why:**
+
+| Hider | Motivation | Relic Type |
+|-------|------------|------------|
+| **Layne** | Preserve truth for future generations | Personal accounts, royal documents he saved |
+| **Order of Dawn** | Protect uncorrupted teachings | Religious texts, prophecies |
+| **Scholars** | Academic duty to truth | Historical records, contradicting evidence |
+| **Survivors** | Bear witness | War journals, family letters |
+| **The Ancients** | Unknown purpose | Warnings? Instructions? |
+
+**Why They're in French:**
+
+- Official Verandum language - all records written in it
+- Hermeau's propaganda is also in French (player learns to read both)
+- Reading skill = power to discern truth from lies
+- The Ancients' relics could be "older French" - more challenging
+
+**Narrative Progression Through Relics:**
+
+```
+Early Game (Dawnmere):
+  └─ Simple relics - "Things weren't always this way"
+  └─ Hints that official story has gaps
+
+Mid Game (Haari Fields, Lurenium):
+  └─ War-era relics - "This is what really happened"
+  └─ Layne's exile writings
+  └─ Order of Dawn hidden texts
+
+Late Game (Ingregaard, Frue Desert):
+  └─ Royal documents - Direct evidence of Hermeau's crimes
+  └─ Ancient relics - Deeper mysteries
+
+Endgame (Ruins):
+  └─ Ancient civilization truths
+  └─ Connection to Corruption's origin
+```
+
+**Example Relics:**
+
+| Relic | Era | Location | Reveals |
+|-------|-----|----------|---------|
+| Farmer's Journal | War | Haari Fields | Firsthand account of dark magic attack |
+| Layne's Letter | Exile | Hidden cave | Why he was really exiled |
+| Dawn Prayer Book | Pre-War | Old chapel | Original teachings before corruption |
+| Royal Seal Document | Pre-War | Lurenium | King Dran's actual succession plan |
+| Ancient Tablet | Ancient | Ruins | What Lurenium was built to seal |
+
+**Lore Open Questions:**
+
+1. How many relics total? (5-10 keeps them special, or more for collection?)
+2. Are some relics missable, or all eventually findable?
+3. Do relics unlock a "Truth Log" the player can review?
+4. Should finding all relics unlock a special ending or revelation?
+
+#### Proposed Historical Timeline Expansion
+
+The current WORLD_BIBLE.md timeline has many `[TBD]` gaps. This expanded timeline would support the relic system by establishing when different relic types were created.
+
+**Current Timeline Gaps:**
+
+| Era | Current Status |
+|-----|----------------|
+| Ancient Times | Vague - "Founding of Lurenium" only |
+| Establishment of Verandum | [TBD] |
+| Reign of King Dran | [TBD] |
+| Birth of Hermeau and Layne | [TBD] |
+| The War | Some detail |
+| Post-War | Some detail |
+
+**Proposed Expanded Timeline:**
+
+| Era | Years Ago | Event | Relic Connection |
+|-----|-----------|-------|------------------|
+| **The Ancients** | 1000+ | Lurenium built "as a seal" | Ancient Tablets - deepest mysteries |
+| **The Silence** | 1000-500 | Ancient civilization falls, knowledge lost | — |
+| **The Founding** | ~500 | Verandum established, Lurenium rediscovered | — |
+| **The Faith** | ~400 | Order of Dawn founded, temples built | Dawn Prayer Books - original teachings |
+| **Golden Age** | 400-100 | Prosperity, scholarship, King Dran's ancestors | Royal Archives - how things were |
+| **King Dran's Reign** | 100-30 | Stability, two princes born and raised | Pre-War records |
+| **The Divide** | 30-20 | Hermeau and Layne grow apart, tensions rise | — |
+| **The War** | ~20 | Corruption unleashed, King assassinated | War Journals - what really happened |
+| **The Exile** | 20-Present | Layne flees, Hermeau rewrites history | Layne's Letters - the exiled truth |
+| **Present Day** | Now | Player arrives in Dawnmere | — |
+
+**Era Details for Relic Context:**
+
+**The Ancients (1000+ years ago)**
+- Built Lurenium not as a city, but as a seal
+- Spoke a language before French
+- Light and Dark were not always separate forces
+- The Corruption "is not new - it is a return"
+- Their fall is a mystery - what happened?
+
+**The Silence (1000-500 years ago)**
+- Period after Ancient civilization collapsed
+- Knowledge lost, ruins overgrown
+- Scattered tribes, no unified kingdom
+- Lurenium abandoned, purpose forgotten
+
+**The Founding (~500 years ago)**
+- Verandum kingdom established
+- Lurenium rediscovered but not understood
+- New civilization builds on Ancient ruins
+- French becomes the official language
+
+**The Faith (~400 years ago)**
+- Order of Dawn founded
+- Temples of the Light built across the land
+- Original teachings: humility, service, truth
+- Religious texts written - later corrupted under Hermeau
+
+**Golden Age (400-100 years ago)**
+- Multiple generations of prosperity
+- Scholarly institutions flourish
+- Royal archives maintained
+- Trade routes established between regions
+
+**King Dran's Reign (100-30 years ago)**
+- Long period of stability
+- Hermeau and Layne born and raised
+- The princes educated together, then grow apart
+- Seeds of conflict planted
+
+**The Divide (30-20 years ago)**
+- Hermeau's ambition becomes apparent
+- Layne discovers dark magic experiments?
+- Political factions form
+- Tensions build toward breaking point
+
+**The War (~20 years ago)**
+- Corruption unleashed on farmlands
+- King Dran assassinated (by Hermeau's plot)
+- Dark magic used on large scale for first time
+- Survivors witness the truth, write journals
+
+**The Exile (20 years ago - Present)**
+- Layne exiled for "knowing too much"
+- Hermeau takes throne, rewrites history
+- Propaganda spreads, truth suppressed
+- Order of Dawn goes underground
+- Layne hides documents for future discovery
+
+**Timeline Open Questions:**
+
+1. Are these year numbers final, or just relative placeholders?
+2. What exactly did the Ancients seal in Lurenium?
+3. How did the Ancient civilization fall?
+4. Did Layne discover Hermeau's plot before or during the war?
+5. Where did Layne go during exile? Is he still alive?
+
+### Language Selection System (New - Dec 9)
+| Item | Notes | Status |
+|------|-------|--------|
+| **Testing Checklist** | | |
+| New game flow | Verify screen appears after name/class selection, before game start | Pending |
+| French selection | Click French card, verify it highlights, Continue button enables | Pending |
+| Locked languages | Spanish/German/Italian should not be selectable, show "Coming Soon" | Pending |
+| Continue button | Should be disabled until a language is selected | Pending |
+| GameState storage | Verify `GameState.player.language` is set to 'french' after selection | Pending |
+| Save/Load | Verify language persists in saved games | Pending |
+| Existing saves | Test loading saves created before this feature (should default to null/french) | Pending |
+| **Known Issues** | | |
+| No back button | Cannot return to character creation from language screen | Low |
+| Keyboard nav | No keyboard support for language selection (mouse only) | Low |
+| **Future Work** | | |
+| Add more languages | Set `available: true` for new languages in `showLanguageSelection()` | When content ready |
+| Language-specific vocabulary | Route to different vocabulary files based on selected language | Phase 3+ |
+| UI localization | Separate from learning language - game interface translation | Phase 4+ |
+| **Files** | | |
+| js/game.js:4297-4349 | `showLanguageSelection()` function | Complete |
+| js/game.js:13 | `GameState.player.language` field | Complete |
+| css/style.css:1657-1721 | Language card styles | Complete |
+
+### Account Progression System (Integrated - Dec 9)
 | Item | Notes | Status |
 |------|-------|--------|
 | **Implementation Tasks** | | |
-| Hook gold rewards into game events | Call account bonus functions in quest completion, level up, achievements, boss exams | Pending |
-| Integrate into shop system | Account upgrades sold through existing shopSystem.js | Pending |
-| Add NPC upgrade vendors | Certain NPCs offer specific upgrades as one-time purchases | Pending |
+| Hook XP multipliers into rewards | `addXP()` and `addXPSilent()` apply multipliers from account upgrades | ✅ Complete |
+| Hook gold multipliers into rewards | New `addGold()` and `addGoldSilent()` functions with multiplier support | ✅ Complete |
+| Quest rewards integration | Quest gold rewards use `addGoldSilent()` for consistent multiplier application | ✅ Complete |
+| Integrate into shop system | Account upgrades sold through existing shopSystem.js | ✅ Complete |
+| Add NPC upgrade vendors | 3 vendors: Sage Aldric (learning), Merchant (resources), Urma (gameplay) | ✅ Complete |
+| Shop UI for account upgrades | Full `renderAccountUpgradeShop()` with categories, owned status, prerequisites | ✅ Complete |
 | **Balance Questions** | | |
 | Gold costs per upgrade | Current: 500-5000 gold range. Need playtesting | TBD |
-| Account gold earning rates | Current: 10% quest gold, level×10, 50/achievement, 100/boss | TBD |
-| Tier 2 unlock requirements | Ideas: quests completed, level reached, NPCs met, vocab mastered | TBD |
-| Tier 3 unlock requirements | Ideas: story complete, boss exams passed, reputation ranks | TBD |
+| Tier 2/3 unlock requirements | Currently placeholder - define achievement triggers | TBD |
 | Stackable upgrade max stacks | Current values set, may need adjustment | TBD |
 | Effect strength values | XP/gold multipliers, health bonuses, inventory slots | TBD |
-| Which NPCs sell which upgrades | Map upgrades to specific NPCs/locations | TBD |
+| **Testing Checklist** | | |
+| Buy upgrade from Sage Aldric | Test XP multiplier purchase and effect | Pending |
+| Buy upgrade from Merchant | Test gold multiplier purchase and effect | Pending |
+| Verify bonus notifications | Should show "+55 XP (50 + bonus)" when multiplier active | Pending |
+| Quest rewards with multiplier | Complete quest, verify gold shows bonus amount | Pending |
+| Lesson XP with multiplier | Complete lesson, verify XP shows bonus amount | Pending |
+| **Playtesting Required** | | |
+| Full system playtest | Verify multipliers work correctly and balance gold costs | Pending |
 | **Files** | | |
 | js/accountProgression.js | Core infrastructure | Complete |
-| js/accountProgressionConfig.js | Upgrade definitions, costs, effects | Complete |
+| js/accountProgressionConfig.js | Upgrade definitions (17 upgrades, 5 categories) | Complete |
 | js/gameIntegration.js | Game hooks and debug helpers | Complete |
-| js/accountProgressionUI.js | Standalone UI - may merge into shopSystem later | Draft |
+| js/shopSystem.js:121-194 | 3 NPC upgrade shop definitions | Complete |
+| js/game.js:887-925 | addGold/addGoldSilent functions | Complete |
+| js/game.js:1113-1137 | addXP with multiplier | Complete |
 
 ### Monetization Ideas
 | Idea | Notes | Added |
 |------|-------|-------|
 | Accept cryptocurrency payments | Use Coinbase Commerce or BitPay (~1% fee). Simple integration, no blockchain dev needed. | Dec 7 |
+
+### Expansion System Architecture (Pending Decision)
+| Model | Technical Implications | Notes | Added |
+|-------|------------------------|-------|-------|
+| Free-to-Play with Progression | Simple content gating via boss exams/levels. No ownership tracking needed. Revenue from cosmetics/boosters. | Simplest implementation - works with existing LocationManager and BossExamManager. | Dec 9 |
+| Paid Expansions / DLC | Needs ownership flags, purchase validation, possibly server-side checks. Expansion bundles and sales support. | Requires account system and payment integration. | Dec 9 |
+| Subscription Model | All content unlocked while subscribed. Needs account system, payment integration, subscription status checks. | Continuous content updates expected by subscribers. | Dec 9 |
+| Hybrid (Freemium) | Base zone(s) free, later zones paid. Or free with ads, paid removes ads + unlocks. Mix of above systems. | Most flexible but most complex to implement. | Dec 9 |
+
+**Architecture Options Considered:**
+- **Zone-Based**: Each zone as self-contained expansion file. Aligns with existing location/boss exam systems. Natural for educational progression (vocab/grammar per zone).
+- **Content Module**: Modular packs with manifests and dependencies. Better for user-generated content or complex DLC. More infrastructure needed.
+- **Phase/Chapter**: Story-driven chapters gating content. Similar to zone-based but more narrative focus.
+
+**Decision:** Pending - architecture depends on chosen financial/monetization model.
 
 ### Social/Community Ideas
 | Idea | Notes | Added |

@@ -1654,6 +1654,72 @@ body {
   border-color: var(--accent-gold);
 }
 
+/* Language Selection */
+.language-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-lg);
+  justify-content: center;
+  margin: var(--space-xl) 0;
+}
+
+.language-card {
+  width: 140px;
+  padding: var(--space-lg);
+  background: var(--bg-medium);
+  border: 3px solid var(--border-pixel);
+  cursor: pointer;
+  transition: all 0.1s ease;
+  text-align: center;
+  position: relative;
+}
+
+.language-card:hover:not(.locked) {
+  border-color: var(--accent-gold);
+}
+
+.language-card.selected {
+  border-color: var(--accent-gold);
+  background: var(--bg-light);
+}
+
+.language-card.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.language-icon {
+  font-size: 48px;
+  margin-bottom: var(--space-md);
+}
+
+.language-name {
+  font-family: var(--font-display);
+  font-size: 12px;
+  color: var(--accent-gold);
+  margin-bottom: var(--space-xs);
+}
+
+.language-native {
+  font-family: var(--font-body);
+  font-size: 10px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.language-locked-badge {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-size: 8px;
+  color: var(--text-dim);
+  background: var(--bg-dark);
+  padding: 2px 8px;
+  border: 1px solid var(--border-pixel);
+}
+
 /* =====================================================
    Quests Screen
    ===================================================== */
