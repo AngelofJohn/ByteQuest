@@ -862,6 +862,7 @@ Raw ideas that haven't been fully considered. Capture first, evaluate later.
 | Idea | Notes | Added |
 |------|-------|-------|
 | Filler Quests Design | **Decision made.** Character-first approach. Quest types: vocab reinforcement, world-building flavor, pacing/leveling gates, side character mini-arcs. Lengths: micro (1-2 steps, ~2min), short (3-5 steps, ~5-10min), mini-arcs (2-4 connected quests, ~20-30min). NPCs ready: Dawnmere (Yris, Brother Varek, Tommen, Widow Senna, Old Jorel), Haari Fields (Venn, Rask, The Veiled One), Special (Old Pieron). Philosophy: "Anti-Duolingo" means no meaningless repetition - filler quests build world, develop characters, make Elorath feel lived-in. | Dec 8 |
+| Tiered Crafting by Zone | **Decision made.** Zone-based progression for gathering/crafting systems. **Dawnmere (Starter):** Gathering only - mining, herbalism, woodcutting, fishing. Uses existing 8 resource minigames. Sells raw materials to vendors. Simple, immediate rewards. **Haari Fields (Zone 2):** Crafting unlocks - smithing, alchemy, cooking. Uses materials from Dawnmere + Haari. Recipes, skill progression. Dave teaches basic smithing after harvest quest. **Later Zones:** Advanced crafting (enchanting, legendary recipes), specializations (master smith vs master alchemist), cross-profession synergies. **Benefits:** Reduces new player complexity, natural tutorial pacing, content pipeline matches dev work, zone identity (Dawnmere = gathering hub, Haari = crafting hub). | Dec 9 |
 
 ### Story/Narrative Ideas
 | Idea | Notes | Added |
