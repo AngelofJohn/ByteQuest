@@ -919,6 +919,21 @@ Raw ideas that haven't been fully considered. Capture first, evaluate later.
 |------|-------|-------|
 | Accept cryptocurrency payments | Use Coinbase Commerce or BitPay (~1% fee). Simple integration, no blockchain dev needed. | Dec 7 |
 
+### Expansion System Architecture (Pending Decision)
+| Model | Technical Implications | Notes | Added |
+|-------|------------------------|-------|-------|
+| Free-to-Play with Progression | Simple content gating via boss exams/levels. No ownership tracking needed. Revenue from cosmetics/boosters. | Simplest implementation - works with existing LocationManager and BossExamManager. | Dec 9 |
+| Paid Expansions / DLC | Needs ownership flags, purchase validation, possibly server-side checks. Expansion bundles and sales support. | Requires account system and payment integration. | Dec 9 |
+| Subscription Model | All content unlocked while subscribed. Needs account system, payment integration, subscription status checks. | Continuous content updates expected by subscribers. | Dec 9 |
+| Hybrid (Freemium) | Base zone(s) free, later zones paid. Or free with ads, paid removes ads + unlocks. Mix of above systems. | Most flexible but most complex to implement. | Dec 9 |
+
+**Architecture Options Considered:**
+- **Zone-Based**: Each zone as self-contained expansion file. Aligns with existing location/boss exam systems. Natural for educational progression (vocab/grammar per zone).
+- **Content Module**: Modular packs with manifests and dependencies. Better for user-generated content or complex DLC. More infrastructure needed.
+- **Phase/Chapter**: Story-driven chapters gating content. Similar to zone-based but more narrative focus.
+
+**Decision:** Pending - architecture depends on chosen financial/monetization model.
+
 ### Social/Community Ideas
 | Idea | Notes | Added |
 |------|-------|-------|
