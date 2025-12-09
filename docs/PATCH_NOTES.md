@@ -1072,6 +1072,75 @@ Q2: What did he do?
 
 4. **Relic + Alchemy Integration** - Combine Linguistic Essence (from reviews) with relic fragments. Creates crafting loop tied to language practice.
 
+#### Lore Direction: Relics as Counter-Propaganda (Chosen)
+
+Relics tie directly into the core narrative conflict (Two Lores - truth vs propaganda). Reading relics in French = deciphering forbidden knowledge that reveals the actual history of Turuem.
+
+**Relic Categories by Era:**
+
+| Era | Source | What They Reveal |
+|-----|--------|------------------|
+| **Pre-War** | Royal archives, temple records | How things really were under King Dran |
+| **War Period** | Battlefield journals, witness accounts | What actually happened - dark magic, Hermeau's betrayal |
+| **Layne's Exile** | Hidden letters, exile writings | The truth from the exiled prince's perspective |
+| **Order of Dawn** | Smuggled scriptures, hidden prayers | The uncorrupted faith before Hermeau's influence |
+| **Ancient** | Lurenium fragments | Deeper truths even the "Actual Lore" doesn't explain |
+
+**Who Hid These Relics & Why:**
+
+| Hider | Motivation | Relic Type |
+|-------|------------|------------|
+| **Layne** | Preserve truth for future generations | Personal accounts, royal documents he saved |
+| **Order of Dawn** | Protect uncorrupted teachings | Religious texts, prophecies |
+| **Scholars** | Academic duty to truth | Historical records, contradicting evidence |
+| **Survivors** | Bear witness | War journals, family letters |
+| **The Ancients** | Unknown purpose | Warnings? Instructions? |
+
+**Why They're in French:**
+
+- Official Verandum language - all records written in it
+- Hermeau's propaganda is also in French (player learns to read both)
+- Reading skill = power to discern truth from lies
+- The Ancients' relics could be "older French" - more challenging
+
+**Narrative Progression Through Relics:**
+
+```
+Early Game (Dawnmere):
+  └─ Simple relics - "Things weren't always this way"
+  └─ Hints that official story has gaps
+
+Mid Game (Haari Fields, Lurenium):
+  └─ War-era relics - "This is what really happened"
+  └─ Layne's exile writings
+  └─ Order of Dawn hidden texts
+
+Late Game (Ingregaard, Frue Desert):
+  └─ Royal documents - Direct evidence of Hermeau's crimes
+  └─ Ancient relics - Deeper mysteries
+
+Endgame (Ruins):
+  └─ Ancient civilization truths
+  └─ Connection to Corruption's origin
+```
+
+**Example Relics:**
+
+| Relic | Era | Location | Reveals |
+|-------|-----|----------|---------|
+| Farmer's Journal | War | Haari Fields | Firsthand account of dark magic attack |
+| Layne's Letter | Exile | Hidden cave | Why he was really exiled |
+| Dawn Prayer Book | Pre-War | Old chapel | Original teachings before corruption |
+| Royal Seal Document | Pre-War | Lurenium | King Dran's actual succession plan |
+| Ancient Tablet | Ancient | Ruins | What Lurenium was built to seal |
+
+**Lore Open Questions:**
+
+1. How many relics total? (5-10 keeps them special, or more for collection?)
+2. Are some relics missable, or all eventually findable?
+3. Do relics unlock a "Truth Log" the player can review?
+4. Should finding all relics unlock a special ending or revelation?
+
 ### Language Selection System (New - Dec 9)
 | Item | Notes | Status |
 |------|-------|--------|
