@@ -929,6 +929,149 @@ Raw ideas that haven't been fully considered. Capture first, evaluate later.
 | Collect/Deliver quest objectives | New objective types for item gathering and delivery quests. Requires inventory integration, item spawning system, NPC delivery handlers. | Dec 7 |
 | Timed quest system | Quest timer display, failure handling, time extension items. Festival_feast originally designed as timed. | Dec 7 |
 
+### Relic System + Reading Comprehension (Design Discussion - Dec 9)
+
+#### Core Concept
+
+Relics are collectible items that tie into language practice through reading comprehension:
+
+```
+Find Relic → Read French Inscription → Answer Comprehension Questions → Unlock Lore/Reward
+```
+
+This creates a natural progression after vocabulary + grammar, testing understanding in context rather than isolated memorization. Builds real-world confidence and makes relics feel meaningful rather than pure collectible fluff.
+
+#### Existing Relic References (from WORLD_BIBLE)
+
+| Category | Source | Examples |
+|----------|--------|----------|
+| Royal Relics | Story rewards | Crown, Scepter, Royal Seal |
+| Faction Pinnacles | Max reputation | Dawn Amulet, Guard Banner |
+| Ancient Lurenium | Exploration | Builder artifacts, golden relics |
+| Forged Legends | Crafting | Player-made unique gear |
+
+Design note: 5-10 total relics keeps them feeling special. Named items with lore connections (King Dran's Crown, Layne's Exile Blade).
+
+#### Difficulty Tiers (matching "fundamentals" scope)
+
+| Tier | French Level | Example |
+|------|--------------|---------|
+| Common | Single sentences | "Le roi habite dans le château." |
+| Uncommon | 2-3 sentences | Short description of a place or person |
+| Rare | Short paragraph | A brief story or historical note |
+| Legendary | Full passage | Lore entry with multiple details |
+
+#### Text Length Recommendations
+
+| Tier | Words | Sentences | Reading Time |
+|------|-------|-----------|--------------|
+| Common | 10-20 | 1-2 | ~10 sec |
+| Uncommon | 25-40 | 3-4 | ~20 sec |
+| Rare | 50-75 | 5-7 | ~45 sec |
+| Legendary | 80-120 | 8-12 | ~90 sec |
+
+**Why shorter texts:**
+- Builds confidence (completable)
+- Respects player time
+- Quality over quantity
+- Matches vocabulary they actually know
+- Feels like a reward, not homework
+
+#### Text Examples at Each Tier
+
+**Common (15 words):**
+> "Le chat noir dort sur la chaise. Il est très fatigué."
+
+**Uncommon (35 words):**
+> "Marie habite dans une petite maison près de la forêt. Chaque matin, elle marche jusqu'au village pour acheter du pain. Les villageois l'aiment beaucoup."
+
+**Rare (60 words):**
+> A short scene or lore snippet - maybe 2 small paragraphs
+
+**Legendary (100 words):**
+> A meaningful lore reveal - still under 1 minute of reading
+
+#### Question Format: Multiple Choice
+
+Multiple choice is the chosen format because:
+- Accessible for beginners
+- Clear feedback (right/wrong)
+- Reduces frustration vs free-text input
+- Can test comprehension without requiring production
+- Matches existing lesson format
+
+**Answer Structure:**
+- 4 choices (like current lessons)
+- 1 correct, 3 plausible distractors
+- Distractors test common misreadings
+
+#### Question Types
+
+| Type | Tests | Example |
+|------|-------|---------|
+| Main Idea | Overall understanding | "What is this passage about?" |
+| Detail | Specific information | "Where did the sage live?" |
+| Vocabulary | Word meaning in context | "What does 'aidait' mean here?" |
+| Inference | Reading between lines | "How did the villagers feel about the sage?" |
+| Translation | Direct comprehension | "What does this say?" |
+| True/False | Comprehension verification | "The sage lived near the river. True or false?" |
+
+#### Example Flow
+
+```
+🏺 You found: Ancient Tablet
+
+"Le vieux sage habitait près de la rivière.
+Il aidait les voyageurs perdus."
+
+Q1: Where did the sage live?
+  A) Near the mountain
+  B) Near the river ✓
+  C) In the castle
+  D) In the forest
+
+Q2: What did he do?
+  A) Helped lost travelers ✓
+  B) Sold potions
+  C) Guarded the king
+  D) Taught children
+
+→ Tablet Activated! Lore unlocked.
+```
+
+#### Scoring Ideas
+
+- Pass threshold (e.g., 3/4 correct to "unlock" the relic)
+- Or: Each correct answer charges the relic partially
+- Perfect score = bonus reward?
+
+#### Replay Value
+
+- Once unlocked, relic lore is readable anytime
+- Or: Relics can be "studied" again for XP/essence
+
+#### Open Questions
+
+1. Should the French text use only vocabulary the player has already learned?
+2. Allow hints/word lookups during reading, or pure comprehension test?
+3. How does this fit the relic "find" experience - exploration? Quest rewards? Both?
+4. How many comprehension questions per relic? (2-4 feels right?)
+5. Should wrong answers have consequences (HP loss like lessons, or just retry)?
+6. Should this be a separate "Examine Relic" screen, or integrated into the lesson modal?
+7. Should relics be permanent stat boosts, cosmetic, or unlock features?
+8. One-time find, or ongoing engagement (charge/feed them)?
+9. Tied to specific vocabulary sets, or general practice?
+
+#### Alternative Ideas Considered (for reference)
+
+1. **Relics as Mastery Rewards** - Earn relic fragments by mastering vocabulary categories. "Master all Greetings words → Relic of First Words". Encourages deep learning over rushing through content.
+
+2. **Relics Require Translation to Unlock** - Find a relic → Must translate inscription to activate it. Higher tier relics = harder French passages. Combines exploration reward with language practice.
+
+3. **Relics Power Up Through Practice** - Relic starts "dormant". Feed it with review sessions / correct answers to charge it. Creates ongoing reason to practice even after "completing" content.
+
+4. **Relic + Alchemy Integration** - Combine Linguistic Essence (from reviews) with relic fragments. Creates crafting loop tied to language practice.
+
 ### Language Selection System (New - Dec 9)
 | Item | Notes | Status |
 |------|-------|--------|
