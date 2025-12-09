@@ -837,6 +837,41 @@ This document tracks bugs, fixes, cleanup tasks, open questions, and ideas for B
 | Launch discount | Percentage? Duration? | Pending |
 | Wishlist/mailing list | How to collect interested users pre-launch? | Pending |
 
+#### Product Scope & Positioning (Decision Made - Dec 9)
+
+**What ByteQuest Teaches:**
+- ✅ Vocabulary fundamentals
+- ✅ Basic grammar
+- ✅ Sentence structure
+- ✅ Confidence with French basics
+- ✅ Reduced intimidation
+
+**What ByteQuest Does NOT Promise:**
+- ❌ Fluency
+- ❌ Conversational ability
+- ❌ Advanced proficiency
+
+**Positioning Statement:**
+> "Learn French fundamentals through an RPG story" — NOT "Become fluent through gaming"
+
+**Competitive Edge:**
+| vs. Competitor | ByteQuest Advantage |
+|----------------|---------------------|
+| Duolingo | More engaging (story, RPG mechanics) |
+| "Play French games" | More structured (pedagogy built-in) |
+| Fluency-promising apps | More honest (realistic scope) |
+| Subscription apps | Better value (one-time purchase) |
+
+**Core Loop (Complete):**
+- ✅ Learn vocabulary through quests
+- ✅ Practice grammar through lessons
+- ✅ Review through Alchemy system
+- ✅ RPG progression keeps it engaging
+- ✅ Story provides context
+- ✅ One-time purchase, no predatory tactics
+
+**Action Item:** Make scope crystal clear to players ("teaches fundamentals, not fluency") so expectations are appropriate and players don't feel misled.
+
 **Total Open Questions: 145**
 
 ---
