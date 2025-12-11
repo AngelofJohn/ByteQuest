@@ -47,6 +47,8 @@ const GAME_DATA = {
         "grammar_aller_intro",
         "grammar_regular_er",
         "grammar_mixed_practice_1",
+        // Travel quests - Merchant journey chain (starts here)
+        "road_to_haari",
         // Filler quests - NPC mini-arcs
         "river_whispers",
         "lights_below",
@@ -75,6 +77,9 @@ const GAME_DATA = {
         "harvest_time",
         "lyras_garden",
         "corruption_rises",
+        // Travel quests - Merchant journey chain (continues here)
+        "haari_arrival",
+        "merchant_thanks",
         // Filler quests - NPC mini-arcs
         "songs_of_the_road",
         "the_rhyming_trick",
@@ -163,7 +168,7 @@ const GAME_DATA = {
       
       // Rewards
       rewards: {
-        xp: 100,
+        xp: 70,  // was 100
         gold: 15,
         items: ["traveler_cloak"],
         reputation: { dawnmere: 50 }
@@ -229,7 +234,7 @@ const GAME_DATA = {
       },
       
       rewards: {
-        xp: 150,
+        xp: 105,  // was 150
         gold: 25,
         items: ["broken_shovel"],
         reputation: { dawnmere: 75 }
@@ -284,7 +289,7 @@ const GAME_DATA = {
       },
       
       rewards: {
-        xp: 75,
+        xp: 35,  // was 50  // was 75
         gold: 10,
         items: ["bread", "bread", "bread"],
         reputation: { dawnmere: 25 }
@@ -339,7 +344,7 @@ const GAME_DATA = {
       },
       
       rewards: {
-        xp: 25,
+        xp: 20,  // was 25
         gold: 5,
         items: [],
         reputation: { dawnmere: 5 }
@@ -400,7 +405,7 @@ const GAME_DATA = {
       },
       
       rewards: {
-        xp: 200,
+        xp: 140,  // was 200
         gold: 50,
         items: ["health_potion", "health_potion"],
         reputation: { dawnmere: 100 }
@@ -455,7 +460,7 @@ const GAME_DATA = {
       },
       
       rewards: {
-        xp: 30,
+        xp: 20,  // was 30
         gold: 8,
         items: [],
         reputation: { dawnmere: 10 }
@@ -516,7 +521,7 @@ const GAME_DATA = {
       },
       
       rewards: {
-        xp: 150,
+        xp: 105,  // was 150
         gold: 0,
         items: ["scholars_note"],
         reputation: { dawnmere: 50 }
@@ -578,7 +583,7 @@ const GAME_DATA = {
       },
 
       rewards: {
-        xp: 125,
+        xp: 85,  // was 125
         gold: 30,
         items: [],
         reputation: { dawnmere: 75 }
@@ -644,7 +649,7 @@ const GAME_DATA = {
       },
       
       rewards: {
-        xp: 100,
+        xp: 70,  // was 100
         gold: 25,
         items: ["solstice_lantern"],
         reputation: { dawnmere: 50 }
@@ -708,7 +713,7 @@ const GAME_DATA = {
       },
 
       rewards: {
-        xp: 50,
+        xp: 35,  // was 50
         gold: 10,
         items: [],
         reputation: { dawnmere: 25 }
@@ -766,7 +771,7 @@ const GAME_DATA = {
       },
 
       rewards: {
-        xp: 75,
+        xp: 35,  // was 50  // was 75
         gold: 15,
         items: ["river_stone"],
         reputation: { dawnmere: 50 }
@@ -825,7 +830,7 @@ const GAME_DATA = {
       },
 
       rewards: {
-        xp: 50,
+        xp: 35,  // was 50
         gold: 5,
         items: [],
         reputation: { dawnmere: 25, order_of_dawn: 25 }
@@ -883,7 +888,7 @@ const GAME_DATA = {
       },
 
       rewards: {
-        xp: 100,
+        xp: 70,  // was 100
         gold: 0,
         items: ["shrine_blessing"],
         reputation: { dawnmere: 50, order_of_dawn: 50 }
@@ -942,7 +947,7 @@ const GAME_DATA = {
       },
 
       rewards: {
-        xp: 40,
+        xp: 20,  // was 30  // was 40
         gold: 5,
         items: [],
         reputation: { dawnmere: 20 }
@@ -1001,7 +1006,7 @@ const GAME_DATA = {
       },
 
       rewards: {
-        xp: 50,
+        xp: 35,  // was 50
         gold: 10,
         items: ["mended_clothes"],
         reputation: { dawnmere: 30 }
@@ -1059,7 +1064,7 @@ const GAME_DATA = {
       },
 
       rewards: {
-        xp: 75,
+        xp: 35,  // was 50  // was 75
         gold: 15,
         items: [],
         reputation: { dawnmere: 50 }
@@ -1118,7 +1123,7 @@ const GAME_DATA = {
       },
 
       rewards: {
-        xp: 40,
+        xp: 20,  // was 30  // was 40
         gold: 0,
         items: ["jorels_flask"],
         reputation: { dawnmere: 20 }
@@ -1176,7 +1181,7 @@ const GAME_DATA = {
       },
 
       rewards: {
-        xp: 100,
+        xp: 70,  // was 100
         gold: 0,
         items: ["renque_medal"],
         reputation: { dawnmere: 75 }
@@ -1245,7 +1250,7 @@ const GAME_DATA = {
       },
 
       rewards: {
-        xp: 100,
+        xp: 70,  // was 100
         gold: 25,
         items: ["fresh_vegetables"],
         reputation: { haari_fields: 50 }
@@ -1304,7 +1309,7 @@ const GAME_DATA = {
       },
 
       rewards: {
-        xp: 80,
+        xp: 55,  // was 80
         gold: 20,
         items: ["herb_bundle"],
         reputation: { haari_fields: 30 }
@@ -1367,7 +1372,7 @@ const GAME_DATA = {
       },
 
       rewards: {
-        xp: 60,
+        xp: 20,  // was 30  // was 40  // was 60
         gold: 15,
         items: [],
         reputation: { haari_fields: 30 }
@@ -1425,7 +1430,7 @@ const GAME_DATA = {
       },
 
       rewards: {
-        xp: 100,
+        xp: 70,  // was 100
         gold: 25,
         items: ["bards_token"],
         reputation: { haari_fields: 50 }
@@ -1484,7 +1489,7 @@ const GAME_DATA = {
       },
 
       rewards: {
-        xp: 75,
+        xp: 35,  // was 50  // was 75
         gold: 20,
         items: [],
         reputation: { haari_fields: 40 }
@@ -1542,7 +1547,7 @@ const GAME_DATA = {
       },
 
       rewards: {
-        xp: 100,
+        xp: 70,  // was 100
         gold: 0,
         items: ["corrupted_sample"],
         reputation: { haari_fields: 75 }
@@ -1602,7 +1607,7 @@ const GAME_DATA = {
       },
 
       rewards: {
-        xp: 150,
+        xp: 105,  // was 150
         gold: 0,
         items: ["veiled_insight"],
         reputation: {}
@@ -1621,6 +1626,200 @@ const GAME_DATA = {
         timePlayedMinutes: null,
         levelReached: 5
       }
+    },
+
+    // -------------------------------------------------
+    // TRAVEL QUESTS - Cross-zone journeys
+    // -------------------------------------------------
+
+    // MERCHANT JOURNEY - Escort quest from Dawnmere to Haari Fields
+    // Tests the stateOverrides system for NPC movement
+    road_to_haari: {
+      id: "road_to_haari",
+      name: "The Road to Haari",
+      giver: "merchant",
+      location: "dawnmere",
+
+      type: "travel",
+      category: "exploration",
+      status: "available",
+
+      levelRequired: 2,
+      prerequisites: ["meeting_family"],
+      classRequired: null,
+      reputationRequired: null,
+
+      chainId: "merchant_journey",
+      chainOrder: 1,
+      chainNext: "haari_arrival",
+
+      timeLimit: null,
+      cooldown: null,
+      seasonalWindow: null,
+
+      description: "The Traveling Merchant needs an escort to the Haari Fields. The roads have grown dangerous.",
+      objectives: [
+        {
+          id: "learn_travel",
+          type: "lesson",
+          text: "Learn travel vocabulary",
+          target: null
+        },
+        {
+          id: "learn_directions",
+          type: "lesson",
+          text: "Learn direction words",
+          target: null
+        },
+        {
+          id: "prepare_journey",
+          type: "interact",
+          text: "Speak with the Merchant about the journey",
+          target: null
+        }
+      ],
+      dialogue: {
+        intro: "Ah, you look capable! I need to get my wares to the Haari Fields, but the roads... they're not safe anymore. Strange creatures, bandits maybe. Travel with me? I'll make it worth your while.",
+        progress: "We should prepare properly. Do you know the way? The words for travel?",
+        complete: "Excellent! You know enough to guide us. Let's set out - the Fields await!"
+      },
+
+      rewards: {
+        xp: 35,  // was 50  // was 75
+        gold: 25,
+        items: [],
+        reputation: { dawnmere: 25 }
+      },
+      repeatRewardMultiplier: null,
+
+      vocabulary: ["travel.directions", "travel.journey"],
+
+      cannotAbandon: false,
+      hiddenTrigger: null
+    },
+
+    // STORY-ONLY QUEST - No lesson objectives
+    // Pure narrative moment after travel, before next learning beat
+    haari_arrival: {
+      id: "haari_arrival",
+      name: "Arrival at the Fields",
+      giver: "merchant",
+      location: "haari_fields",
+
+      type: "travel",
+      category: "story",  // Changed from exploration - marks as narrative-focused
+      status: "locked",
+
+      levelRequired: 2,
+      prerequisites: ["road_to_haari"],
+      classRequired: null,
+      reputationRequired: null,
+
+      chainId: "merchant_journey",
+      chainOrder: 2,
+      chainNext: "merchant_thanks",
+
+      timeLimit: null,
+      cooldown: null,
+      seasonalWindow: null,
+
+      description: "You've arrived at the Haari Fields with the Merchant. Take in your new surroundings and meet the locals.",
+      objectives: [
+        {
+          id: "travel_to_haari",
+          type: "travel",
+          text: "Travel to the Haari Fields",
+          target: "haari_fields"
+        },
+        {
+          id: "explore_fields",
+          type: "interact",
+          text: "Look around the golden fields",
+          target: null
+        },
+        {
+          id: "meet_dave",
+          type: "interact",
+          text: "Introduce the Merchant to Dave",
+          target: null
+        }
+      ],
+      dialogue: {
+        intro: "We made it! Look at these fields... golden waves stretching to the horizon. The air smells different here - earth and wheat and something wild. Let's find the people who call this place home.",
+        progress: "We should find the locals. I've heard there's a herbalist named Dave who knows everyone.",
+        complete: "Dave seems like good folk. He says I can set up near the old barn - plenty of farmers needing supplies. Thank you, friend. I couldn't have made this journey without you."
+      },
+
+      rewards: {
+        xp: 35,  // was 50  // was 75  // Slightly less XP since no learning component
+        gold: 50,
+        items: ["merchant_map"],
+        reputation: { haari_fields: 50 }
+      },
+      repeatRewardMultiplier: null,
+
+      vocabulary: [],  // Empty - no lesson in this quest
+
+      cannotAbandon: false,
+      hiddenTrigger: null
+    },
+
+    merchant_thanks: {
+      id: "merchant_thanks",
+      name: "A Merchant's Gratitude",
+      giver: "merchant",
+      location: "haari_fields",
+
+      type: "travel",
+      category: "social",
+      status: "locked",
+
+      levelRequired: 2,
+      prerequisites: ["haari_arrival"],
+      classRequired: null,
+      reputationRequired: null,
+
+      chainId: "merchant_journey",
+      chainOrder: 3,
+      chainNext: null,
+
+      timeLimit: null,
+      cooldown: null,
+      seasonalWindow: null,
+
+      description: "The Merchant has settled in and wants to thank you properly.",
+      objectives: [
+        {
+          id: "learn_commerce",
+          type: "lesson",
+          text: "Learn commerce vocabulary",
+          target: null
+        },
+        {
+          id: "receive_thanks",
+          type: "interact",
+          text: "Accept the Merchant's thanks",
+          target: null
+        }
+      ],
+      dialogue: {
+        intro: "My friend! Business here is... different. But good! The farmers need supplies they can't grow themselves. I have something for you - a thank you for the safe journey.",
+        progress: "Come, let me show my appreciation properly.",
+        complete: "Take this. And remember - you always have a friend in the Traveling Merchant. My prices are fair, and for you? Even fairer. Safe travels, wherever the road takes you next!"
+      },
+
+      rewards: {
+        xp: 35,  // was 50  // was 75
+        gold: 100,
+        items: ["lucky_coin"],
+        reputation: { dawnmere: 25, haari_fields: 25 }
+      },
+      repeatRewardMultiplier: null,
+
+      vocabulary: ["commerce.buying", "commerce.selling"],
+
+      cannotAbandon: false,
+      hiddenTrigger: null
     },
 
     // -------------------------------------------------
@@ -1677,7 +1876,7 @@ const GAME_DATA = {
       },
       
       rewards: {
-        xp: 200,
+        xp: 140,  // was 200
         gold: 40,
         items: ["herbalist_pouch"],
         reputation: { dawnmere: 50, old_guard: 25 }
@@ -2292,28 +2491,34 @@ const GAME_DATA = {
     scholar: {
       id: "scholar",
       name: "Scholar",
-      description: "You came to study the divine light and the cathedrals.",
+      description: "You came to study the divine light and ancient texts.",
+      flavor: "Knowledge is the truest power. You seek wisdom in dusty tomes and forgotten lore.",
       startingStats: { maxHp: 80, attack: 3 },
       startingItems: ["scholars_cap"],
       bonus: "Extra hints during lessons",
+      bonusDesc: "+1 hint per lesson",
       icon: "📚"
     },
     warrior: {
       id: "warrior",
       name: "Warrior",
-      description: "You seek the expertise of blade crafting and fighting skills.",
+      description: "You seek mastery of blade and combat.",
+      flavor: "Strength protects. You've trained your body to endure what others cannot.",
       startingStats: { maxHp: 100, attack: 5 },
       startingItems: ["basic_helm"],
       bonus: "Extra HP recovery between battles",
+      bonusDesc: "+20 HP, +2 Attack",
       icon: "⚔️"
     },
     rogue: {
       id: "rogue",
       name: "Rogue",
-      description: "You wish to be one with society and learn their every move.",
+      description: "You move unseen and learn secrets others miss.",
+      flavor: "Every crowd hides opportunity. You read people as easily as signs.",
       startingStats: { maxHp: 90, attack: 4 },
       startingItems: ["health_potion"],
       bonus: "Better shop prices",
+      bonusDesc: "10% discount at shops",
       icon: "🗡️"
     }
   },
@@ -2321,17 +2526,18 @@ const GAME_DATA = {
   // =====================================================
   // Level Progression
   // =====================================================
+  // XP Balance v2: ~50% increase in requirements to allow more lessons per level
   levelTable: [
     { level: 1, xpRequired: 0, totalXp: 0 },
-    { level: 2, xpRequired: 100, totalXp: 100 },
-    { level: 3, xpRequired: 250, totalXp: 350 },
-    { level: 4, xpRequired: 450, totalXp: 800 },
-    { level: 5, xpRequired: 700, totalXp: 1500 },
-    { level: 6, xpRequired: 1000, totalXp: 2500 },
-    { level: 7, xpRequired: 1400, totalXp: 3900 },
-    { level: 8, xpRequired: 1900, totalXp: 5800 },
-    { level: 9, xpRequired: 2500, totalXp: 8300 },
-    { level: 10, xpRequired: 3200, totalXp: 11500 }
+    { level: 2, xpRequired: 150, totalXp: 150 },      // was 100
+    { level: 3, xpRequired: 375, totalXp: 525 },      // was 250
+    { level: 4, xpRequired: 675, totalXp: 1200 },     // was 450
+    { level: 5, xpRequired: 1050, totalXp: 2250 },    // was 700
+    { level: 6, xpRequired: 1500, totalXp: 3750 },    // was 1000
+    { level: 7, xpRequired: 2100, totalXp: 5850 },    // was 1400
+    { level: 8, xpRequired: 2850, totalXp: 8700 },    // was 1900
+    { level: 9, xpRequired: 3750, totalXp: 12450 },   // was 2500
+    { level: 10, xpRequired: 4800, totalXp: 17250 }   // was 3200
   ]
 };
 

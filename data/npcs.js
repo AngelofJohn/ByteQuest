@@ -20,7 +20,11 @@ const NPC_DEFAULTS = {
     quest_intro: null,
     quest_complete: null,
     idle: []
-  }
+  },
+  // State overrides allow NPC properties to change based on conditions
+  // Each override has a "when" condition and properties to apply
+  // Later overrides take priority (last match wins)
+  stateOverrides: []
 };
 
 // =====================================================
@@ -75,7 +79,7 @@ const NPC_DATA = {
     name: "Traveling Merchant",
     title: "Wanderer",
     location: "dawnmere",
-    tags: ["merchant", "shop"],
+    tags: ["merchant", "shop", "quest_giver"],
     dialogue: {
       greeting: "Looking to trade? I've got wares from across Turuem!",
       idle: [
@@ -84,10 +88,53 @@ const NPC_DATA = {
         "I heard strange rumors from the Haari Fields..."
       ]
     },
+    quests: ["road_to_haari"],
     shop: {
       items: ["health_potion", "bread", "basic_helm"],
       currency: "gold"
-    }
+    },
+    // Merchant travels to Haari Fields during quest chain
+    stateOverrides: [
+      {
+        // During active travel quest - still in Dawnmere preparing
+        when: { questActive: "road_to_haari" },
+        dialogue: {
+          greeting: "Ready to set out? I've packed what we need.",
+          idle: [
+            "The journey shouldn't take long if we're careful.",
+            "I hope the farmers there need supplies.",
+            "Together we'll be safer on the road."
+          ]
+        }
+      },
+      {
+        // After road_to_haari complete, during haari_arrival - now in Haari
+        when: { quest: "road_to_haari" },
+        location: "haari_fields",
+        dialogue: {
+          greeting: "Ah, the fresh air of the fields! Much better than dusty roads.",
+          idle: [
+            "These farmers seem like honest folk.",
+            "Good soil here. Good for business too!",
+            "Thank you again for the safe journey."
+          ]
+        }
+      },
+      {
+        // After all travel quests complete - settled in Haari
+        when: { quest: "merchant_thanks" },
+        location: "haari_fields",
+        title: "Field Merchant",
+        dialogue: {
+          greeting: "My friend! What can I get you today? Special prices for my traveling companion!",
+          idle: [
+            "Business is good here. The farmers needed a proper merchant.",
+            "I think I'll stay a while. These fields feel like home now.",
+            "You should visit Dave - he's been asking about you."
+          ]
+        }
+      }
+    ]
   },
 
   baker: {
@@ -204,7 +251,8 @@ const NPC_DATA = {
     title: "Farmhand",
     location: "dawnmere",
     disposition: "eager",
-    tags: ["villager", "flavor", "young"],
+    tags: ["villager", "flavor", "young", "quest_giver"],
+    quests: ["big_dreams"],
     dialogue: {
       greeting: "Oh! A traveler! Are you an adventurer? You look like one!",
       idle: [
@@ -470,25 +518,93 @@ function checkAppearCondition(condition, gameState) {
   return true;
 }
 
+/**
+ * Apply state overrides to an NPC based on current game state
+ * Returns a new NPC object with overrides applied (does not mutate original)
+ * Overrides are checked in order; later matching overrides take priority
+ *
+ * @param {object} npc - NPC object with potential stateOverrides
+ * @param {object} gameState - Current game state
+ * @returns {object} NPC with applicable overrides merged in
+ *
+ * @example
+ * // NPC definition:
+ * pardu: {
+ *   name: "Pardu",
+ *   location: "dawnmere",
+ *   dialogue: { greeting: "Ready to travel?" },
+ *   stateOverrides: [
+ *     {
+ *       when: { questActive: "journey_to_haari" },
+ *       location: "haari_fields",
+ *       dialogue: { greeting: "The fields are peaceful..." }
+ *     },
+ *     {
+ *       when: { quest: "journey_to_haari" },
+ *       location: "haari_fields",
+ *       dialogue: { greeting: "Good to be here at last." }
+ *     }
+ *   ]
+ * }
+ */
+function applyNPCStateOverrides(npc, gameState) {
+  if (!npc.stateOverrides || npc.stateOverrides.length === 0) {
+    return npc;
+  }
+
+  // Start with a shallow copy
+  let result = { ...npc };
+
+  // Check each override in order
+  for (const override of npc.stateOverrides) {
+    if (override.when && checkAppearCondition(override.when, gameState)) {
+      // Merge the override properties (excluding 'when')
+      const { when, ...properties } = override;
+
+      // Deep merge for dialogue object
+      if (properties.dialogue && result.dialogue) {
+        properties.dialogue = { ...result.dialogue, ...properties.dialogue };
+      }
+
+      result = { ...result, ...properties };
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Get NPC's current effective location (accounting for state overrides)
+ * @param {object} npc - NPC object
+ * @param {object} gameState - Current game state
+ * @returns {string} Current location ID
+ */
+function getNPCCurrentLocation(npc, gameState) {
+  const effectiveNPC = applyNPCStateOverrides(npc, gameState);
+  return effectiveNPC.location;
+}
+
 // =====================================================
 // NPC Query Functions
 // =====================================================
 
 /**
- * Get all NPCs in a location
+ * Get all NPCs in a location (accounts for state overrides)
  * @param {string} locationId - Location identifier
  * @param {object} gameState - Current game state
  * @param {boolean} visibleOnly - Filter by visibility
- * @returns {array} Array of NPC objects
+ * @returns {array} Array of NPC objects with overrides applied
  */
 function getNPCsInLocation(locationId, gameState, visibleOnly = true) {
   const registry = buildNPCRegistry();
-  
-  return Object.values(registry).filter(npc => {
-    if (npc.location !== locationId) return false;
-    if (visibleOnly && !isNPCVisible(npc, gameState)) return false;
-    return true;
-  });
+
+  return Object.values(registry)
+    .map(npc => applyNPCStateOverrides(npc, gameState))
+    .filter(npc => {
+      if (npc.location !== locationId) return false;
+      if (visibleOnly && !isNPCVisible(npc, gameState)) return false;
+      return true;
+    });
 }
 
 /**
@@ -534,6 +650,19 @@ function getNPC(id) {
   const data = NPC_DATA[id];
   if (!data) return null;
   return createNPC(id, data);
+}
+
+/**
+ * Get a single NPC by ID with state overrides applied
+ * Use this when you need the NPC's current state (location, dialogue, etc.)
+ * @param {string} id - NPC identifier
+ * @param {object} gameState - Current game state
+ * @returns {object|null} NPC object with overrides applied, or null
+ */
+function getNPCWithState(id, gameState) {
+  const npc = getNPC(id);
+  if (!npc) return null;
+  return applyNPCStateOverrides(npc, gameState);
 }
 
 /**

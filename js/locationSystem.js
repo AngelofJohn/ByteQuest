@@ -11,32 +11,31 @@ const LOCATION_DEFINITIONS = {
     name: 'Dawnmere',
     description: 'A small frontier settlement seeking prosperity along the trade routes.',
     levelRequired: 1,
-    connections: [], // To be filled when more locations exist
+    connections: ['haari_fields'],
     icon: '🏘️',
     color: '#a0785a',
     bgGradient: ['#1a3a5c', '#2a5a3c', '#3a6a4c'], // Sky to ground colors
     themes: ['community', 'beginnings'],
     npcs: ['urma', 'rega', 'merchant', 'baker', 'sage_aldric', 'old_pieron'],
     quests: ['welcome_to_dawnmere', 'meet_the_settlers', 'learning_basics']
-  }
-  
-  // Additional locations added via addLocation() or defined here
-  // Example structure:
-  /*
+  },
+
   haari_fields: {
     id: 'haari_fields',
     name: 'The Haari Fields',
-    description: 'Vast farmlands stretching across the plains. Boar-like animals roam freely.',
-    levelRequired: 3,
-    connections: ['dawnmere'],
+    description: 'Golden wheat-colored fields stretch north toward Lurenium. Boar-like creatures roam the wild edges.',
+    levelRequired: 2,
+    connections: ['dawnmere', 'lurenium'],
     icon: '🌾',
     color: '#c9a227',
     bgGradient: ['#87ceeb', '#f4d03f', '#8b7355'],
-    themes: ['agriculture', 'labor'],
-    npcs: [],
-    quests: []
-  },
-  
+    themes: ['agriculture', 'nature'],
+    npcs: ['dave', 'lyra', 'venn', 'rask', 'the_veiled_one'],
+    quests: ['harvest_time', 'lyras_garden', 'corruption_rises']
+  }
+
+  // Future locations:
+  /*
   lurenium: {
     id: 'lurenium',
     name: 'Lurenium',

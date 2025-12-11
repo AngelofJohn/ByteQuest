@@ -53,7 +53,7 @@ const GRAMMAR_QUESTS = {
     },
     
     rewards: {
-      xp: 100,
+      xp: 70,  // was 100
       gold: 20,
       spellbookUnlock: ["etre"],
       reputation: { dawnmere: 25 }
@@ -112,7 +112,7 @@ const GRAMMAR_QUESTS = {
     },
     
     rewards: {
-      xp: 100,
+      xp: 70,  // was 100
       gold: 20,
       spellbookUnlock: ["avoir"],
       reputation: { dawnmere: 25 }
@@ -170,7 +170,7 @@ const GRAMMAR_QUESTS = {
     },
     
     rewards: {
-      xp: 120,
+      xp: 85,  // was 120
       gold: 25,
       spellbookUnlock: ["articles", "gender"],
       reputation: { dawnmere: 30 }
@@ -228,7 +228,7 @@ const GRAMMAR_QUESTS = {
     },
     
     rewards: {
-      xp: 100,
+      xp: 70,  // was 100
       gold: 20,
       spellbookUnlock: ["aller"],
       reputation: { dawnmere: 25 }
@@ -286,7 +286,7 @@ const GRAMMAR_QUESTS = {
     },
     
     rewards: {
-      xp: 150,
+      xp: 105,  // was 150
       gold: 30,
       items: ["scholars_ring"],
       spellbookUnlock: ["regular_er_pattern"],
@@ -351,7 +351,7 @@ const GRAMMAR_QUESTS = {
     },
     
     rewards: {
-      xp: 200,
+      xp: 140,  // was 200
       gold: 50,
       items: ["sages_blessing"],
       title: "grammar_apprentice",

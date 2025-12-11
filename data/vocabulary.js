@@ -246,6 +246,82 @@ const VOCABULARY = {
     ]
   },
 
+  // Travel vocabulary for journey quests
+  travel: {
+    directions: [
+      { french: "le nord", english: "the north", audio: null, hint: "Up on maps" },
+      { french: "le sud", english: "the south", audio: null, hint: "Down on maps" },
+      { french: "l'est", english: "the east", audio: null, hint: "Where sun rises" },
+      { french: "l'ouest", english: "the west", audio: null, hint: "Where sun sets" },
+      { french: "à gauche", english: "to the left", audio: null, hint: "Opposite of right" },
+      { french: "à droite", english: "to the right", audio: null, hint: "Opposite of left" },
+      { french: "tout droit", english: "straight ahead", audio: null, hint: "Keep going forward" },
+      { french: "près de", english: "near", audio: null, hint: "Close to" },
+      { french: "loin de", english: "far from", audio: null, hint: "Not close" },
+      { french: "derrière", english: "behind", audio: null, hint: "At the back" }
+    ],
+    journey: [
+      { french: "le voyage", english: "the journey", audio: null, hint: "Trip, travel" },
+      { french: "la route", english: "the road", audio: null, hint: "Path for travel" },
+      { french: "le chemin", english: "the path", audio: null, hint: "Trail to follow" },
+      { french: "la carte", english: "the map", audio: null, hint: "Shows the way" },
+      { french: "le voyageur", english: "the traveler", audio: null, hint: "One who travels" },
+      { french: "le bagage", english: "the luggage", audio: null, hint: "Things you carry" },
+      { french: "la destination", english: "the destination", audio: null, hint: "Where you're going" },
+      { french: "l'arrivée", english: "the arrival", audio: null, hint: "Getting there" },
+      { french: "le départ", english: "the departure", audio: null, hint: "Leaving" },
+      { french: "la frontière", english: "the border", audio: null, hint: "Edge of territory" }
+    ],
+    actions: [
+      { french: "partir", english: "to leave", audio: null, hint: "Start journey" },
+      { french: "arriver", english: "to arrive", audio: null, hint: "Reach destination" },
+      { french: "marcher", english: "to walk", audio: null, hint: "On foot" },
+      { french: "courir", english: "to run", audio: null, hint: "Fast on foot" },
+      { french: "suivre", english: "to follow", audio: null, hint: "Go behind" },
+      { french: "traverser", english: "to cross", audio: null, hint: "Go through" },
+      { french: "continuer", english: "to continue", audio: null, hint: "Keep going" },
+      { french: "s'arrêter", english: "to stop", audio: null, hint: "Cease moving" }
+    ],
+    phrases: [
+      { french: "Où allons-nous?", english: "Where are we going?", audio: null },
+      { french: "Par où est-ce?", english: "Which way is it?", audio: null },
+      { french: "Nous sommes arrivés", english: "We have arrived", audio: null },
+      { french: "La route est longue", english: "The road is long", audio: null },
+      { french: "Suivez-moi", english: "Follow me", audio: null }
+    ]
+  },
+
+  // Commerce vocabulary for merchant quests
+  commerce: {
+    buying: [
+      { french: "acheter", english: "to buy", audio: null, hint: "Get with money" },
+      { french: "le prix", english: "the price", audio: null, hint: "How much it costs" },
+      { french: "l'argent", english: "the money", audio: null, hint: "Currency" },
+      { french: "la pièce", english: "the coin", audio: null, hint: "Metal money" },
+      { french: "cher", english: "expensive", audio: null, hint: "Costs a lot" },
+      { french: "bon marché", english: "cheap", audio: null, hint: "Low price" },
+      { french: "le client", english: "the customer", audio: null, hint: "One who buys" },
+      { french: "la monnaie", english: "the change", audio: null, hint: "Money returned" }
+    ],
+    selling: [
+      { french: "vendre", english: "to sell", audio: null, hint: "Give for money" },
+      { french: "le marchand", english: "the merchant", audio: null, hint: "One who sells" },
+      { french: "la boutique", english: "the shop", audio: null, hint: "Small store" },
+      { french: "le marché", english: "the market", audio: null, hint: "Place to trade" },
+      { french: "les marchandises", english: "the goods", audio: null, hint: "Things to sell" },
+      { french: "la vente", english: "the sale", audio: null, hint: "Selling event" },
+      { french: "l'offre", english: "the offer", audio: null, hint: "Proposed deal" },
+      { french: "la qualité", english: "the quality", audio: null, hint: "How good it is" }
+    ],
+    phrases: [
+      { french: "Combien ça coûte?", english: "How much does it cost?", audio: null },
+      { french: "C'est trop cher", english: "It's too expensive", audio: null },
+      { french: "Je voudrais acheter", english: "I would like to buy", audio: null },
+      { french: "Voici votre monnaie", english: "Here is your change", audio: null },
+      { french: "Bonne affaire!", english: "Good deal!", audio: null }
+    ]
+  },
+
   // Time vocabulary
   time: {
     basic: [
@@ -334,6 +410,26 @@ const REORDER_SENTENCES = {
     { french: "Je vois un lapin", english: "I see a rabbit", words: ["Je", "vois", "un", "lapin"] },
     { french: "Le vent souffle fort", english: "The wind blows hard", words: ["Le", "vent", "souffle", "fort"] },
     { french: "La rivière coule", english: "The river flows", words: ["La", "rivière", "coule"] }
+  ],
+  travel: [
+    { french: "Nous partons demain", english: "We leave tomorrow", words: ["Nous", "partons", "demain"] },
+    { french: "La route est longue", english: "The road is long", words: ["La", "route", "est", "longue"] },
+    { french: "Tournez à gauche", english: "Turn left", words: ["Tournez", "à", "gauche"] },
+    { french: "Allez tout droit", english: "Go straight ahead", words: ["Allez", "tout", "droit"] },
+    { french: "Nous sommes arrivés", english: "We have arrived", words: ["Nous", "sommes", "arrivés"] },
+    { french: "Suivez le chemin", english: "Follow the path", words: ["Suivez", "le", "chemin"] },
+    { french: "C'est vers le nord", english: "It's toward the north", words: ["C'est", "vers", "le", "nord"] },
+    { french: "Le voyage est fini", english: "The journey is finished", words: ["Le", "voyage", "est", "fini"] }
+  ],
+  commerce: [
+    { french: "Combien ça coûte", english: "How much does it cost", words: ["Combien", "ça", "coûte"] },
+    { french: "C'est trop cher", english: "It's too expensive", words: ["C'est", "trop", "cher"] },
+    { french: "Je voudrais acheter", english: "I would like to buy", words: ["Je", "voudrais", "acheter"] },
+    { french: "Le prix est bon", english: "The price is good", words: ["Le", "prix", "est", "bon"] },
+    { french: "Voici votre monnaie", english: "Here is your change", words: ["Voici", "votre", "monnaie"] },
+    { french: "Le marchand est gentil", english: "The merchant is nice", words: ["Le", "marchand", "est", "gentil"] },
+    { french: "J'achète du pain", english: "I buy some bread", words: ["J'achète", "du", "pain"] },
+    { french: "Bonne affaire aujourd'hui", english: "Good deal today", words: ["Bonne", "affaire", "aujourd'hui"] }
   ]
 };
 

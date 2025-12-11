@@ -303,14 +303,20 @@ function renderNPCs(location) {
   // Clear existing NPCs
   scene.querySelectorAll('.npc-sprite').forEach(el => el.remove());
   
-  // Add NPCs for this location
+  // Add NPCs for this location - expanded positions to avoid overlap
   const npcPositions = [
-    { x: 15, y: 60 },
-    { x: 30, y: 55 },
-    { x: 45, y: 65 },
-    { x: 60, y: 58 },
-    { x: 75, y: 62 },
-    { x: 85, y: 55 }
+    { x: 8, y: 60 },
+    { x: 20, y: 52 },
+    { x: 32, y: 64 },
+    { x: 44, y: 56 },
+    { x: 56, y: 62 },
+    { x: 68, y: 54 },
+    { x: 80, y: 60 },
+    { x: 92, y: 56 },
+    { x: 14, y: 48 },
+    { x: 38, y: 48 },
+    { x: 62, y: 48 },
+    { x: 86, y: 48 }
   ];
   
   // Filter to only visible NPCs
@@ -331,6 +337,8 @@ function renderNPCs(location) {
     sprite.setAttribute('data-emoji', getNPCEmoji(npc));
     sprite.style.left = `${pos.x}%`;
     sprite.style.bottom = `${pos.y}%`;
+    // Z-index based on vertical position (lower = closer = higher z-index)
+    sprite.style.zIndex = Math.floor(100 - pos.y);
     
     // Add name tag
     const nameTag = document.createElement('div');
@@ -4306,9 +4314,15 @@ function showCharacterCreation() {
   
   const classOptions = Object.values(GAME_DATA.classes).map(cls => `
     <div class="class-card" data-class="${cls.id}">
-      <div class="class-icon">${cls.id === 'scholar' ? '📚' : cls.id === 'warrior' ? '⚔️' : '🗡️'}</div>
+      <div class="class-icon">${cls.icon || '🗡️'}</div>
       <div class="class-name">${cls.name}</div>
       <div class="class-desc">${cls.description}</div>
+      <div class="class-flavor">${cls.flavor || ''}</div>
+      <div class="class-stats">
+        <span class="stat-hp">❤️ ${cls.startingStats.maxHp} HP</span>
+        <span class="stat-atk">⚔️ ${cls.startingStats.attack} ATK</span>
+      </div>
+      <div class="class-bonus">✨ ${cls.bonusDesc || cls.bonus}</div>
     </div>
   `).join('');
   
