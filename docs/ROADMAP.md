@@ -1,8 +1,8 @@
 # ByteQuest Development Roadmap
 
-**Last Updated:** December 5, 2025
+**Last Updated:** December 10, 2025
 **Current Phase:** Phase 2 - Testing & Polish
-**Current Version:** 0.4.0
+**Current Version:** 0.4.1
 
 ---
 
@@ -17,7 +17,7 @@ Phase 1 (Dawnmere Vertical Slice) is now **Feature Complete**. All core systems 
 
 ## Project Vision
 
-An RPG-based French language learning platform that makes learning engaging through story, characters, and game mechanics. Positioned as an alternative to platforms like Duolingo, with a focus on immersion and narrative-driven learning.
+An RPG-based language learning platform that makes learning engaging through story, characters, and game mechanics. Launching with French; additional languages planned as expansions. Positioned as an alternative to platforms like Duolingo, with a focus on immersion and narrative-driven learning.
 
 ---
 
@@ -98,9 +98,11 @@ An RPG-based French language learning platform that makes learning engaging thro
 | Item | Status | Notes |
 |------|--------|-------|
 | Two-panel UI | ✅ | TOC + content |
-| 8 pages defined | ✅ | Verbs, grammar, reference |
+| 36 pages defined | ✅ | 15 verbs, 11 grammar, 2 reference, 8 lore |
 | Unlock via quests | ✅ | spellbookUnlock rewards |
 | Conjugation tables | ✅ | Standard format |
+| Advanced tenses | ✅ | Passé composé, imparfait, futur, conditionnel, subjonctif |
+| Lore/Timeline pages | ✅ | 8 eras: Ancients → Present |
 | Nav button + S key | ✅ | Easy access |
 
 ### Spaced Repetition
@@ -155,9 +157,11 @@ All Phase 1 features have been implemented.
 |--------|--------|----------|
 | Systems complete | 15 | 17 ✅ |
 | Vocabulary words | 50+ | ~65 ✅ |
-| Grammar topics | 5+ | 6 ✅ |
+| Grammar topics | 5+ | 28 ✅ |
+| Spellbook pages | 8 | 36 ✅ |
+| Lore entries | N/A | 8 eras ✅ |
 | Quests | 10+ | 12+ ✅ |
-| NPCs | 5+ | 8 ✅ |
+| NPCs | 5+ | 17+ ✅ |
 | Playtime | 30+ min | Est. 45 min ✅ |
 | Tutorial | Basic | Arrival flow ✅ |
 | Resource Minigames | N/A | 8 types ✅ |
@@ -195,7 +199,7 @@ All Phase 1 features have been implemented.
 - [x] Audit innerHTML usage for XSS vulnerabilities (48 locations audited - LOW RISK, added escapeHtml utility)
 
 ### High Priority - Testing
-> Full test scenarios in CLEANUP_CHECKLIST.md (38 tests)
+> Full test scenarios in PATCH_NOTES.md → Testing Reference (38 tests)
 
 - [ ] **Core Flow Testing**
   - [ ] New game → Character creation → Start game
@@ -272,13 +276,13 @@ All Phase 1 features have been implemented.
 
 ## Locations
 
-| Location | Level Range | Vocabulary Focus | Grammar Focus |
-|----------|-------------|------------------|---------------|
-| Dawnmere | 1-5 | Greetings, family, numbers | être, avoir, gender |
-| Haari Fields | 5-10 | Agriculture, nature, food | aller, faire, -er verbs |
-| Lurenium | 10-15 | City, commerce, directions | -ir verbs, past tense intro |
-| Frue Desert | 15-20 | Survival, weather, time | Passé composé |
-| Ingregaard City | 20-25 | Politics, society, debate | Imparfait, subjunctive intro |
+| Location | Level Range | Vocabulary Focus | Grammar Focus (Spellbook Unlocks) |
+|----------|-------------|------------------|-----------------------------------|
+| Dawnmere | 1-5 | Greetings, family, numbers | être, avoir, articles, gender, pronouns, contractions |
+| Haari Fields | 5-10 | Agriculture, nature, food | aller, faire, -er verbs, prepositions, futur proche, negation |
+| Lurenium | 10-15 | City, commerce, directions | -ir/-re verbs, adjectives, possessives, questions, adverbs |
+| Frue Desert | 15-20 | Survival, weather, time | Passé composé, imparfait, comparatives, object pronouns |
+| Ingregaard City | 20-25 | Politics, society, debate | Futur simple, conditionnel, subjonctif, avoir expressions |
 
 ## Story Beats
 
@@ -491,6 +495,8 @@ DRAFT → REVIEW → FORMAT → TEST → RELEASE
 
 | Date | Changes |
 |------|---------|
+| Dec 10, 2025 | Spellbook expanded to 36 pages: 15 verbs, 11 grammar, 2 reference, 8 lore (timeline: Ancients → Exile). Added advanced grammar topics, zone grammar mapping. |
+| Dec 9, 2025 | XP balance v2 (+50% requirements, -30% rewards), class descriptions, legal docs (GDPR, Dialect) |
 | Dec 7, 2025 | Added Content Pipeline section (consolidated from CONTENT_PIPELINE.md) |
 | Dec 4, 2025 | Updated to version 0.3.3, added Resource Minigames system (8 types), fixed 23 bugs total |
 | Dec 4, 2025 | Added Settings System to completed, updated metrics (15/15 systems, 0 bugs), updated progress to 90%, removed README from remaining (completed) |

@@ -16,7 +16,7 @@ const LOCATION_DEFINITIONS = {
     color: '#a0785a',
     bgGradient: ['#1a3a5c', '#2a5a3c', '#3a6a4c'], // Sky to ground colors
     themes: ['community', 'beginnings'],
-    npcs: ['urma', 'rega', 'merchant', 'baker', 'sage_aldric', 'old_pieron'],
+    npcs: ['urma', 'rega', 'merchant', 'baker', 'sage_aldric', 'old_pieron', 'yris', 'brother_varek', 'tommen', 'widow_senna', 'old_jorel'],
     quests: ['welcome_to_dawnmere', 'meet_the_settlers', 'learning_basics']
   },
 
@@ -32,25 +32,22 @@ const LOCATION_DEFINITIONS = {
     themes: ['agriculture', 'nature'],
     npcs: ['dave', 'lyra', 'venn', 'rask', 'the_veiled_one'],
     quests: ['harvest_time', 'lyras_garden', 'corruption_rises']
-  }
+  },
 
-  // Future locations:
-  /*
   lurenium: {
     id: 'lurenium',
     name: 'Lurenium',
-    description: 'An ancient city covered in gold, with forgotten leaders lost to time.',
-    levelRequired: 5,
+    description: 'An ancient city of gold, built before the time of the current world. Its citizens preserve foundations they no longer understand.',
+    levelRequired: 10,
     connections: ['haari_fields'],
     icon: '🏛️',
     color: '#ffd700',
     bgGradient: ['#1a1a2e', '#2a2a4e', '#c9a227'],
-    themes: ['history', 'mystery'],
-    npcs: [],
+    themes: ['history', 'mystery', 'architecture'],
+    npcs: ['magistrate_corinne', 'archivist_thelon', 'captain_varro', 'merchant_liselle', 'brother_cassius', 'old_jorel'],
     quests: [],
     hasBossExam: true
   }
-  */
 };
 
 // =====================================================
@@ -391,15 +388,58 @@ class LocationManager {
    */
   checkLevelUnlocks() {
     const newlyUnlocked = [];
-    
+
     for (const locationId of this.state.player.locations.discovered) {
       if (!this.isUnlocked(locationId) && this.meetsLevelRequirement(locationId)) {
         this.unlockLocation(locationId);
         newlyUnlocked.push(this.getLocation(locationId));
       }
     }
-    
+
     return newlyUnlocked;
+  }
+
+  /**
+   * Check and discover connected locations based on completed quests
+   * This is a recovery method for saves where quests were completed
+   * before the location discovery code was added
+   */
+  checkQuestBasedDiscovery() {
+    const newlyDiscovered = [];
+    const completedQuests = this.state.player.completedQuests || [];
+
+    // Quest -> Location mappings for travel quests
+    const questLocationMap = {
+      'road_to_haari': 'haari_fields',
+      'haari_arrival': 'haari_fields'
+      // Add more as needed
+    };
+
+    for (const questId of completedQuests) {
+      const locationId = questLocationMap[questId];
+      if (locationId && !this.isDiscovered(locationId)) {
+        const result = this.discoverLocation(locationId);
+        if (result.success) {
+          newlyDiscovered.push(result.location);
+        }
+      }
+    }
+
+    // Also discover connected locations from current location
+    const currentLoc = this.getCurrentLocation();
+    if (currentLoc?.connections) {
+      for (const connectedId of currentLoc.connections) {
+        // If player meets level requirement, auto-discover connected locations
+        if (!this.isDiscovered(connectedId) && this.meetsLevelRequirement(connectedId)) {
+          const result = this.discoverLocation(connectedId);
+          if (result.success) {
+            newlyDiscovered.push(result.location);
+          }
+        }
+      }
+    }
+
+    return newlyDiscovered;
   }
 }
 

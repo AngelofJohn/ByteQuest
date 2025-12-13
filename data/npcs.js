@@ -226,7 +226,8 @@ const NPC_DATA = {
         "My mother used to say the river connects all the kingdoms.",
         "Sometimes I see lights beneath the water at night. Beautiful and terrible."
       ]
-    }
+    },
+    quests: ["river_whispers", "lights_below"]
   },
 
   brother_varek: {
@@ -243,7 +244,8 @@ const NPC_DATA = {
         "In the cities, they build grand temples. Here, we tend a simple flame.",
         "Hermeau claims to serve the Light, but true faith needs no crown."
       ]
-    }
+    },
+    quests: ["tending_the_flame", "doubt_and_faith"]
   },
 
   tommen: {
@@ -276,7 +278,8 @@ const NPC_DATA = {
         "The merchant? Charming, but I don't trust anyone who won't say where they're from.",
         "Marta's been baking extra bread lately. I wonder who it's really for..."
       ]
-    }
+    },
+    quests: ["village_threads", "secrets_and_stitches"]
   },
 
   old_jorel: {
@@ -292,7 +295,8 @@ const NPC_DATA = {
         "The corruption didn't start there. It started in the hearts of men.",
         "They say Hermeau saved us. Saved us! *laughs bitterly*"
       ]
-    }
+    },
+    quests: ["rounds_on_me", "memories_of_renque"]
   },
 
   // -------------------------------------------------
@@ -316,7 +320,7 @@ const NPC_DATA = {
         "Every herb has its purpose."
       ]
     },
-    quests: ["harvest_time", "corruption_rises"]
+    quests: ["harvest_time", "secrets_of_the_soil", "corruption_rises"]
   },
 
   lyra: {
@@ -356,7 +360,8 @@ const NPC_DATA = {
         "I've traveled from the desert to the mountains. The fields are my favorite.",
         "The best way to remember is to make it a rhyme. Trust me!"
       ]
-    }
+    },
+    quests: ["songs_of_the_road", "the_rhyming_trick"]
   },
 
   rask: {
@@ -372,7 +377,8 @@ const NPC_DATA = {
         "I've seen tracks I don't recognize. Too large. Wrong shape.",
         "The corruption spreads like rot through wood. Slow, but certain."
       ]
-    }
+    },
+    quests: ["signs_in_the_grass", "what_stalks_the_fields"]
   },
 
   the_veiled_one: {
@@ -390,7 +396,8 @@ const NPC_DATA = {
         "Hermeau knows. Why do you think he fears it so?",
         "The Light casts shadows. Remember that."
       ]
-    }
+    },
+    quests: ["shadows_of_light"]
   }
 };
 
@@ -450,21 +457,27 @@ function buildNPCRegistry() {
  * @returns {boolean}
  */
 function isNPCVisible(npc, gameState) {
+  // Guard against missing npc or gameState
+  if (!npc || !gameState || !gameState.player) {
+    console.warn('isNPCVisible: Missing npc or gameState', { npc: !!npc, gameState: !!gameState, player: !!gameState?.player });
+    return true; // Default to visible if we can't check
+  }
+
   // Check if explicitly hidden
   if (npc.hidden && !checkAppearCondition(npc.appearsWhen, gameState)) {
     return false;
   }
-  
+
   // Check disappear conditions
   if (npc.disappearsWhen && checkAppearCondition(npc.disappearsWhen, gameState)) {
     return false;
   }
-  
+
   // Check appear conditions (if not hidden but has conditions)
   if (npc.appearsWhen && !npc.hidden) {
     return checkAppearCondition(npc.appearsWhen, gameState);
   }
-  
+
   return true;
 }
 
@@ -476,7 +489,13 @@ function isNPCVisible(npc, gameState) {
  */
 function checkAppearCondition(condition, gameState) {
   if (!condition) return true;
-  
+
+  // Guard against missing gameState
+  if (!gameState || !gameState.player) {
+    console.warn('checkAppearCondition: Missing gameState or player');
+    return true; // Default to condition met if we can't check
+  }
+
   const player = gameState.player;
   
   // Quest completion check

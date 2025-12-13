@@ -150,6 +150,10 @@ class QuestManager {
       if (timePlayed >= trigger.timePlayedMinutes) return true;
     }
 
+    if (trigger.levelReached && this.state.player.level >= trigger.levelReached) {
+      return true;
+    }
+
     return false;
   }
 
@@ -401,15 +405,18 @@ class QuestManager {
     const questProgress = this.state.player.activeQuests.find(q => q.id === questId);
     if (!questProgress) return { success: false, message: "Quest not active" };
 
+    const questData = this.data.quests[questId];
+    if (!questData) return { success: false, message: "Quest data not found" };
+
     const objective = questProgress.objectives.find(o => o.id === objectiveId);
-    const objectiveData = this.data.quests[questId].objectives.find(o => o.id === objectiveId);
-    
+    const objectiveData = questData.objectives.find(o => o.id === objectiveId);
+
     if (!objective || objective.completed) {
       return { success: false, message: "Objective not found or already completed" };
     }
 
     // Update progress
-    if (objectiveData.target) {
+    if (objectiveData && objectiveData.target) {
       objective.count = (objective.count || 0) + increment;
       if (objective.count >= objectiveData.target) {
         objective.completed = true;
@@ -465,14 +472,75 @@ class QuestManager {
     this.state.player.questCompletions[questId].count++;
     this.state.player.questCompletions[questId].lastCompletedAt = Date.now();
 
+    // Discover locations from travel objectives
+    const discoveredLocations = this.discoverLocationsFromQuest(quest);
+
     // Calculate rewards (reduced for repeats)
     const rewards = this.calculateRewards(quest, questProgress.isRepeat);
 
-    return { 
-      success: true, 
+    // Add discovered locations to rewards info
+    if (discoveredLocations.length > 0) {
+      rewards.discoveredLocations = discoveredLocations;
+    }
+
+    return {
+      success: true,
       message: `Quest complete: ${quest.name}`,
-      rewards 
+      rewards
     };
+  }
+
+  /**
+   * Discover locations mentioned in quest objectives
+   * Called when completing a quest
+   */
+  discoverLocationsFromQuest(quest) {
+    const discoveredLocations = [];
+
+    if (!quest.objectives) return discoveredLocations;
+
+    // Check for travel objectives with location targets
+    for (const objective of quest.objectives) {
+      if (objective.type === 'travel' && objective.target) {
+        const locationId = objective.target;
+
+        // Use locationManager if available
+        if (typeof locationManager !== 'undefined' && locationManager) {
+          if (!locationManager.isDiscovered(locationId)) {
+            const result = locationManager.discoverLocation(locationId);
+            if (result.success) {
+              discoveredLocations.push(result.location);
+            }
+          }
+          // Also try to unlock if player meets level requirement
+          if (locationManager.isDiscovered(locationId) && !locationManager.isUnlocked(locationId)) {
+            if (locationManager.meetsLevelRequirement(locationId)) {
+              locationManager.unlockLocation(locationId);
+            }
+          }
+        }
+      }
+    }
+
+    // Also check if quest itself unlocks a location (special case for travel quests)
+    if (quest.type === 'travel' && quest.location !== this.state.currentLocation) {
+      // Check connected locations from current location
+      const currentLoc = GAME_DATA.locations[this.state.currentLocation];
+      if (currentLoc?.connectedTo) {
+        for (const connectedId of currentLoc.connectedTo) {
+          if (typeof locationManager !== 'undefined' && locationManager) {
+            if (!locationManager.isDiscovered(connectedId)) {
+              const result = locationManager.discoverLocation(connectedId);
+              if (result.success) {
+                discoveredLocations.push(result.location);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return discoveredLocations;
   }
 
   /**

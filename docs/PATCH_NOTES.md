@@ -1,7 +1,7 @@
 # ByteQuest Patch Notes
 
-**Last Updated:** December 7, 2025
-**Version:** 0.4.0 (Phase 1 Complete)
+**Last Updated:** December 10, 2025
+**Version:** 0.4.1 (XP Balance v2)
 
 This document tracks bugs, fixes, cleanup tasks, open questions, and ideas for ByteQuest development.
 
@@ -25,6 +25,7 @@ This document tracks bugs, fixes, cleanup tasks, open questions, and ideas for B
 
 | Version | Date | Major Additions |
 |---------|------|-----------------|
+| 0.4.1 | Dec 9 | **XP BALANCE v2** - Quest XP reduced 30%, level requirements up 50% |
 | 0.4.0 | Dec 5 | **PHASE 1 COMPLETE** - Tutorial system, tooltips enhanced |
 | 0.3.5 | Dec 5 | Arrival tutorial system, stat/reward tooltips |
 | 0.3.4 | Dec 4 | Gather screen, minigame modal fix |
@@ -37,20 +38,111 @@ This document tracks bugs, fixes, cleanup tasks, open questions, and ideas for B
 
 ---
 
+## Balance Changes
+
+### v0.4.1 - XP Balance v2 (Dec 9, 2025)
+
+**Problem:** Players were leveling too quickly, outpacing available content and lessons.
+
+**Solution:** Combined approach - increase XP requirements AND reduce quest rewards.
+
+#### Level XP Requirements (+50%)
+
+| Level | Old XP | New XP | Change |
+|-------|--------|--------|--------|
+| 1→2 | 100 | 150 | +50% |
+| 2→3 | 250 | 375 | +50% |
+| 3→4 | 450 | 675 | +50% |
+| 4→5 | 700 | 1,050 | +50% |
+| 5→6 | 1,000 | 1,500 | +50% |
+| 6→7 | 1,400 | 2,100 | +50% |
+| 7→8 | 1,900 | 2,850 | +50% |
+| 8→9 | 2,500 | 3,750 | +50% |
+| 9→10 | 3,200 | 4,800 | +50% |
+
+#### Quest XP Rewards (-30%)
+
+| Quest Type | Old Range | New Range |
+|------------|-----------|-----------|
+| Main/Tutorial | 100-200 | 70-140 |
+| Grammar | 100-200 | 70-140 |
+| Side | 40-100 | 30-70 |
+| Story-only | 75 | 50 |
+| Filler | 25-50 | 20-35 |
+
+**Result:** ~2x more quests/lessons needed per level. Players will experience more content before advancing.
+
+**Files modified:**
+- `data/gamedata.js` - levelTable, all quest rewards
+- `data/grammarQuests.js` - grammar quest rewards
+
+---
+
 ## Bug Tracker
 
 ### Open (Medium/Low Priority)
 
-| Bug # | Severity | Description | Location |
-|-------|----------|-------------|----------|
-| 30 | Medium | `levelReached` hidden trigger not implemented in checkAppearCondition | npcs.js checkAppearCondition() |
-| 31 | Medium | `corruption_spreads` quest referenced but not defined | gamedata.js:1516 chainNext |
-| 32 | Medium | `harvest_time` quest referenced but not defined | gamedata.js:74 haari_fields quests |
-| 33 | Medium | locationSystem.js has placeholder quest IDs | locationSystem.js:20 |
-| 34 | Low | `traveler` class achievement but class doesn't exist | statsSystem.js:377 |
-| 35 | Low | Missing null check in updateObjective | questSystem.js:405 |
+*No open bugs currently tracked.*
 
-### Fixed (28 total)
+### Fixed (34 total)
+
+<details>
+<summary><strong>Bug #34: Traveler Class Achievement Invalid</strong></summary>
+
+**Location:** `js/statsSystem.js:370-378`
+**Problem:** Achievement `travelers_path` checked for class `traveler` which doesn't exist. Game only has scholar, warrior, rogue classes.
+
+**Fix:**
+- Replaced `travelers_path` achievement with `rogues_path` achievement
+- Now correctly matches the rogue class
+</details>
+
+<details>
+<summary><strong>Bug #35: Missing Null Check in updateObjective</strong></summary>
+
+**Location:** `js/questSystem.js:404-419` - updateObjective()
+**Problem:** Accessing `this.data.quests[questId].objectives` without checking if the quest exists in data first. Could crash if quest was removed or save corrupted.
+
+**Fix:**
+- Added null check for `questData` before accessing objectives
+- Added null check for `objectiveData` before accessing target
+</details>
+
+<details>
+<summary><strong>Bug #30: levelReached Hidden Trigger Not Implemented</strong></summary>
+
+**Location:** `js/questSystem.js:120` - checkHiddenTrigger()
+**Problem:** The `levelReached` trigger condition was defined in quest data (e.g., The Veiled One appears at level 5) but never checked in the code.
+
+**Fix:**
+- Added `levelReached` check to `checkHiddenTrigger()` function
+- Now checks `this.state.player.level >= trigger.levelReached`
+</details>
+
+<details>
+<summary><strong>Bug #31: corruption_spreads Quest Not Defined</strong></summary>
+
+**Location:** `data/gamedata.js:1974` - corruption_rises quest
+**Problem:** Quest chain referenced `chainNext: "corruption_spreads"` but that quest didn't exist.
+
+**Fix:**
+- Set `chainNext: null` with TODO comment for future expansion
+- Quest now works as standalone until chain is expanded
+</details>
+
+<details>
+<summary><strong>Bug #32: harvest_time Quest Not Defined (FALSE POSITIVE)</strong></summary>
+
+**Status:** Closed - Not a bug
+**Reason:** The `harvest_time` quest exists at gamedata.js:1266-1267. Bug report was incorrect.
+</details>
+
+<details>
+<summary><strong>Bug #33: Placeholder Quest IDs (FALSE POSITIVE)</strong></summary>
+
+**Status:** Closed - Not a bug
+**Reason:** The quest IDs in locationSystem.js (`welcome_to_dawnmere`, `meet_the_settlers`, etc.) all exist in gamedata.js. Bug report was incorrect.
+</details>
 
 <details>
 <summary><strong>Bug #1: System Initialization Errors</strong></summary>
@@ -609,6 +701,7 @@ This document tracks bugs, fixes, cleanup tasks, open questions, and ideas for B
 | Gold economy | Prices balanced? Gold sinks sufficient? | Pending |
 | Lesson length | 8 questions per lesson appropriate? Variable by difficulty? | Pending |
 | Luck stat shop discount display | Show strikethrough original + discounted price? Just discounted? Tooltip explaining discount? | Pending |
+| Account progression gold source | Gold from current save (exploitable via save cycling) vs separate account currency vs achievement-gated only? | Pending |
 
 ### Player Classes
 
@@ -731,6 +824,21 @@ This document tracks bugs, fixes, cleanup tasks, open questions, and ideas for B
 | Tutorial length | How many steps before "free play"? | Pending |
 | Mechanics introduction | All at once? Gradually unlock systems? | Pending |
 | Return player experience | Skip tutorial on subsequent saves? Remember preferences? | Pending |
+
+### Cutscenes & Narrative Delivery
+
+| Question | Options | Status |
+|----------|---------|--------|
+| Cutscene system | Build dedicated system? Or enhance current NPC dialogue? | Pending |
+| Multi-step dialogue | Add click-through dialogue sequences? | Pending |
+| Character portraits | Add visual portraits during dialogue? What style? | Pending |
+| Narrator usage | Use for key story moments? Zone transitions? Lore reveals? | Pending |
+| Story pacing triggers | Quest completion? Level thresholds? Location arrival? Mix? | Pending |
+| Scene transitions | Fade effects? Background changes? Or text-only? | Pending |
+| Skip functionality | Allow skipping cutscenes? First playthrough vs replays? | Pending |
+| Voice/tone consistency | How to ensure NPC voices stay consistent across all dialogue? | Pending |
+| Key revelation moments | When does player learn truth? Single reveal or gradual? | Pending |
+| Cutscene frequency | Rare (major story beats only)? Regular (each zone transition)? | Pending |
 | Help system | In-game help menu? Tooltips only? External wiki? | Pending |
 | First quest design | Current "Meeting the Family" appropriate? Too simple? Too complex? | Pending |
 
@@ -903,6 +1011,264 @@ Raw ideas that haven't been fully considered. Capture first, evaluate later.
 | Idea | Notes | Added |
 |------|-------|-------|
 | Fractal patterns in story | Self-similar patterns at different scales. Thematic: division (kingdom→city→church→families), truth vs propaganda at every level. Structural: nested betrayals (Hermeau→Dave→Pardu's friend). Character: Pardu mirrors Hermeau in reverse, player mirrors Layne. Visual: Lurenium patterns repeated elsewhere, Corruption as fractal growth. Narrative: NPCs tell smaller versions of kingdom's story through family histories. | Dec 7 |
+| Dialogue Sequence System | Multi-step click-through dialogues for key story moments. **Current state:** Single dialog box with speaker/text/options. No sequences, no portraits. **Option A (Medium):** `showDialogSequence([{speaker, text}, ...])` - adds click-through, could add portraits via CSS. **Option B (High):** Full cutscene engine with backgrounds, music triggers, scene definitions, skip button. **Option C (Low):** Keep current system, use stateOverrides for NPC dialogue changes, story through conversations only. **Key moments needing sequences:** Arrival intro, first war mention, Layne's truth reveal, Pardu's crisis, final confrontation. | Dec 10 |
+
+### Fractal Stories: NPC Mini-Narratives (Expanded Dec 10)
+
+The main story (Hermeau's betrayal, propaganda, Layne's exile) echoes through smaller NPC stories. Each backstory mirrors the kingdom's tragedy at a personal scale—reinforcing themes without heavy-handed exposition.
+
+#### The Core Pattern
+
+```
+KINGDOM LEVEL:     Hermeau betrays father → seizes power → rewrites history → Layne exiled
+                              ↓ mirrors ↓
+PERSONAL LEVEL:    [Betrayer] harms [victim] → takes [something] → [cover story] → [aftermath]
+```
+
+#### NPC Fractal Stories
+
+**Rega (Dawnmere Farmer)**
+| Element | Story |
+|---------|-------|
+| Mirror | Loss through false accusation |
+| Backstory | Had prosperous farm near Renque. Brother accused him of hoarding during the famine (false—brother wanted the land). Village believed the lie. Fled to Dawnmere. |
+| Pattern | Brother = Hermeau (false accusation), Rega = Layne (exiled for "crimes"), Village = Kingdom (believed propaganda) |
+| Reveals | Through idle dialogue, quest about "the old farm." Never explicitly connects to main plot. |
+| Vocab tie-in | Family words, farming terms, "before the war" phrases |
+
+**Marta the Baker (Dawnmere)**
+| Element | Story |
+|---------|-------|
+| Mirror | Lost heritage, sanitized history |
+| Backstory | Grandmother was a Lurenium scholar who documented the war's true history. After Hermeau's rise, archives were "reorganized." Grandmother's work vanished. Marta has one surviving recipe book with strange margin notes. |
+| Pattern | Archives = truth erased, Grandmother = keeper of real history, Recipe book = hidden evidence |
+| Reveals | Quest chain: grandmother's recipes → finds encoded messages → hints at what really happened |
+| Vocab tie-in | Food, cooking, family, reading comprehension of "recipes" |
+
+**Widow Senna (Dawnmere)**
+| Element | Story |
+|---------|-------|
+| Mirror | Death blamed on wrong party |
+| Backstory | Husband was a soldier who died in the war. Official story: killed defending the kingdom from enemies. Truth she suspects: killed by his own commander for questioning orders. She has his final letter—but can't bring herself to read it. |
+| Pattern | Husband = honest man silenced, Commander = Hermeau's agents, Official story = propaganda |
+| Reveals | Quest to repair husband's belongings → player finds letter → letter raises questions without proving anything |
+| Vocab tie-in | Past tense, memory words, military/family terms |
+
+**Old Jorel (Dawnmere)**
+| Element | Story |
+|---------|-------|
+| Mirror | Witnessed truth, forced into silence |
+| Backstory | Former palace guard who served during King Dran's reign. Was "retired early" after the war. He knows things but drinks to forget. Sometimes slips when drunk. |
+| Pattern | Jorel = witness silenced, "Retirement" = forced exile, Drinking = coping with guilt of survival |
+| Reveals | Build trust over time → drunk dialogue reveals fragments → eventually tells player directly (late game, high reputation) |
+| Vocab tie-in | Palace terms, royal family, "in the old days," drinking/tavern words |
+
+**Brother Varek (Dawnmere Shrine)**
+| Element | Story |
+|---------|-------|
+| Mirror | Church divided, true faith persecuted |
+| Backstory | Was Order of Dawn before they were "reorganized" under Hermeau. Sent to this remote shrine as punishment for asking questions. Still practices the old ways in secret. |
+| Pattern | Varek = Dawn member exiled, "Reorganization" = purge, Remote shrine = internal exile |
+| Reveals | Trust-building → sees player's good deeds → eventually reveals Order of Dawn connection |
+| Vocab tie-in | Religious terms, light/dark duality, faith words |
+
+**Dave (Haari Fields) - INVERSE FRACTAL**
+| Element | Story |
+|---------|-------|
+| Mirror | Hermeau himself at smaller scale |
+| Backstory | "Saved" the Horticulturists during the post-war famine. United the farmers. Now runs everything. Anyone who questions him... isn't around anymore. |
+| Pattern | Dave = Hermeau (savior narrative concealing control), Horticulturists = Kingdom (grateful but deceived), Missing farmers = silenced opposition |
+| Reveals | Player helps Dave → notices inconsistencies → finds evidence → Dave was causing the problems he "solved" |
+| Vocab tie-in | Agriculture, leadership, community—all words that sound good but are twisted |
+
+**Pardu (Companion) - REVERSE FRACTAL**
+| Element | Story |
+|---------|-------|
+| Mirror | Hermeau's arc in reverse |
+| Backstory | Orphan from Renque who believed the propaganda. Serves the "hero king." Gradually learns the truth alongside player. |
+| Pattern | Starts where Hermeau ended (loyal to lies) → ends where Layne is (fighting for truth) |
+| Key difference | Unlike Hermeau who chose power over truth, Pardu chooses truth over comfort |
+| Crisis moment | Must choose between loyalty to old life (friend on wrong side) and truth he's learned |
+
+#### Fractal Themes Summary
+
+| Theme | Kingdom Level | Personal Examples |
+|-------|---------------|-------------------|
+| **Betrayal by family** | Hermeau kills father | Rega's brother, Pardu's crisis |
+| **Truth erased** | History rewritten | Marta's grandmother, archives |
+| **Witnesses silenced** | Old Guard scattered | Jorel "retired," Varek exiled |
+| **False savior** | Hermeau the "hero" | Dave the "protector" |
+| **Exile for knowing** | Layne banished | Rega fled, Varek reassigned |
+| **Propaganda believed** | Kingdom trusts lies | Villages turned on innocents |
+| **Evidence survives** | Layne lives, Old Guard hides | Letters, recipe books, drunk confessions |
+
+#### Implementation Principles
+
+- **Never explicit:** NPCs don't say "just like the king did." Player connects the dots.
+- **Gradual reveals:** Backstories unlock through trust/reputation, not info dumps.
+- **Optional depth:** Main quest doesn't require these stories. Reward for exploration.
+- **Vocabulary integration:** Each story teaches thematically relevant French.
+- **Tone balance:** Sad but not grimdark. Hope exists—Dawnmere means "fresh start."
+- **Player agency:** Some NPCs only open up based on player choices/reputation.
+
+---
+
+### Additional Fractal Patterns (Dec 10)
+
+Beyond the betrayal/propaganda fractal, other self-similar patterns run through the world at different scales.
+
+#### Fractal #2: Division & Unity
+
+```
+KINGDOM:    Loyalists vs Old Guard — nation torn in two
+ZONE:       Split communities — one side thrives, other struggles
+PERSONAL:   Families/friendships broken by differing loyalties
+```
+
+**Zone Examples:**
+
+| Zone | Division Pattern |
+|------|------------------|
+| **Ingregaard City** | River literally splits city. Highbridge (Loyalist, prosperous) vs Lowbridge (Old Guard sympathizers, struggling). Bridges exist but rarely used. |
+| **Haari Fields** | Farmers who joined Horticulturists vs those who refused. Dave's faction gets resources; independents slowly squeezed out. |
+| **Lurenium** | See of Lurenium (official church, comfortable) vs hidden Order of Dawn sympathizers (persecuted, underground). Same faith, bitter divide. |
+
+**Personal Examples:**
+
+| NPC | Division Story |
+|-----|----------------|
+| **Tommen (Dawnmere)** | Came to Dawnmere because his family split over politics. Father supports Hermeau, mother didn't. Parents stopped speaking. Tommen left rather than choose. |
+| **Lyra (Haari Fields)** | Sister joined Horticulturists, Lyra refused. Sister now pretends Lyra doesn't exist. "She chose Dave's family over her real one." |
+| **Ingregaard Merchant** | Has shops on both sides of the river. Only person who crosses regularly. Both sides distrust him. "Everyone thinks I'm a spy for the other side." |
+
+**Vocab tie-in:** Division words (côté, séparé, ensemble, divisé), family relationships, directional terms (nord/sud, gauche/droite)
+
+---
+
+#### Fractal #3: The Outsider Finding Home
+
+```
+KINGDOM:    Player arrives as foreigner — must find place in Verandum
+ZONE:       Each zone has refugees/newcomers seeking belonging
+PERSONAL:   Individual NPCs who fled somewhere and rebuilt
+```
+
+**Zone Examples:**
+
+| Zone | Outsider Pattern |
+|------|------------------|
+| **Dawnmere** | Entire settlement is outsiders. Everyone came from somewhere else seeking fresh start. United by shared newcomer status. |
+| **Fredrois** | Fishing village took in refugees after Renque's destruction. Old fishermen vs new arrivals tension. "We were here first." |
+| **Northern Forest** | Old Guard camps full of exiles from across the kingdom. Former soldiers, scholars, priests—all hiding together. Makeshift community. |
+
+**Personal Examples:**
+
+| NPC | Outsider Story |
+|-----|----------------|
+| **Rega (Dawnmere)** | Fled his village after brother's accusation. Arrived in Dawnmere with nothing. "They gave me land. Asked no questions. First kindness in years." |
+| **Traveling Merchant** | Has no home. Everywhere and nowhere. "I belong to the road. Safer that way—no one can take what you don't have." |
+| **Yris (Dawnmere)** | Young woman who left the city because she "didn't fit." Never explains further. Found peace by the river. "Dawnmere doesn't ask who you were." |
+
+**Vocab tie-in:** Travel words (arriver, partir, chercher), home/belonging (maison, chez, appartenir), directions, past tense for "where I came from"
+
+---
+
+#### Fractal #4: Knowledge Lost & Hidden
+
+```
+KINGDOM:    True history erased — archives "reorganized," scholars silenced
+ZONE:       Each zone has lost knowledge — ruins, forgotten skills, missing records
+PERSONAL:   NPCs who know fragments — forbidden to share, afraid to remember
+```
+
+**Zone Examples:**
+
+| Zone | Lost Knowledge Pattern |
+|------|------------------------|
+| **Lurenium** | Ancient city built by people no one remembers. Current residents maintain buildings they don't understand. "We preserve traditions we can't explain." |
+| **Frue Desert** | Ruins half-buried in sand. Inscriptions in old script. Nomads have oral traditions but meaning is fading with each generation. |
+| **Miner's Deep** | Old mining techniques lost when masters "retired." New workers reinvent poorly. "My grandfather knew methods we've forgotten." |
+
+**Personal Examples:**
+
+| NPC | Hidden Knowledge Story |
+|-----|------------------------|
+| **Marta (Dawnmere)** | Grandmother's recipe book has encoded margin notes. Marta can't read them but won't throw it away. "Grandmother said someday someone would need this." |
+| **Sage Aldric** | Knows more than he teaches. Waits to see if player is trustworthy. "Some knowledge is dangerous in the wrong hands—or the wrong era." |
+| **Old Pierre (Dawnmere)** | Hermit who collects "useless things"—old books, broken artifacts. "Everyone throws away what they don't understand. I keep it. Just in case." |
+
+**Vocab tie-in:** Knowledge words (savoir, connaître, apprendre, oublier), reading/writing, past tense, scholarly terms
+
+---
+
+#### Fractal #5: Nature vs Corruption
+
+```
+KINGDOM:    The Corruption spreading — land itself sickening
+ZONE:       Each zone has blight, poison, or decay encroaching
+PERSONAL:   Individual gardens dying, wells poisoned, animals sick
+```
+
+**Zone Examples:**
+
+| Zone | Corruption Pattern |
+|------|-------------------|
+| **Haari Fields** | Blighted patches spreading through farmland. Crops wither in expanding circles. "Started small. Gets bigger every season." |
+| **Northern Forest** | Ancient trees dying at edges. Heart of forest still healthy but perimeter is gray and silent. Animals flee inward. |
+| **Frue Desert** | Wasn't always desert. Old maps show forests here. Sand is spreading. "My grandfather swam in a lake that's now dunes." |
+
+**Personal Examples:**
+
+| NPC | Corruption Story |
+|-----|------------------|
+| **Rega (Dawnmere)** | His new field in Dawnmere healthy—but has nightmares about his old farm. "Watched good soil turn gray. Nothing would grow. Spreads like disease." |
+| **Rask (Haari Fields)** | Studies the blight. Knows it's not natural. "Plants don't die like this from drought or pests. Something is wrong with the land itself." |
+| **Herbalist NPC** | Herbs she gathers are weaker than they used to be. "Same plants, same places, less potency. The land is tired—or sick." |
+
+**Vocab tie-in:** Nature words (arbre, plante, terre, eau), health/sickness (malade, sain, guérir), colors (describing healthy vs blighted), environmental terms
+
+---
+
+#### Fractal #6: Sacrifice vs Self-Interest
+
+```
+KINGDOM:    King Dran sacrificed for kingdom — Hermeau sacrificed kingdom for self
+ZONE:       Each zone has leaders who chose community or self
+PERSONAL:   Individual choices between helping others or protecting self
+```
+
+**Zone Examples:**
+
+| Zone | Sacrifice Pattern |
+|------|-------------------|
+| **Dawnmere** | Elder Urma gave up comfortable city life to lead frontier settlement. "Someone had to. These people needed guidance more than I needed comfort." |
+| **Haari Fields** | Dave *appears* to sacrifice for farmers but secretly exploits them. Contrast with farmers who genuinely share harvests with struggling neighbors. |
+| **Miner's Deep** | Kolpa trapped himself in the mines to organize workers. Could have escaped. "They needed leadership more than I needed freedom." |
+
+**Personal Examples:**
+
+| NPC | Sacrifice Story |
+|-----|-----------------|
+| **Widow Senna** | Husband died because he spoke up. "He could have stayed quiet. We'd have our farm, our life. He chose truth. I choose to honor that." |
+| **Brother Varek** | Sent to remote shrine as punishment. Could recant, return to comfort. "I'd rather serve truly in exile than falsely in a cathedral." |
+| **The Veiled One** | Mysterious figure who helps refugees at great personal risk. "I had safety once. Now I have purpose. Better trade." |
+
+**Vocab tie-in:** Giving/receiving (donner, recevoir, partager), choice words (choisir, décider), moral vocabulary, helping verbs
+
+---
+
+#### Fractal Patterns Summary Table
+
+| Pattern | Kingdom | Zone | Personal | Primary Vocab |
+|---------|---------|------|----------|---------------|
+| **Betrayal/Propaganda** | Hermeau's lies | Dave's cult | Family betrayals | Family, truth/lies |
+| **Division/Unity** | Loyalists vs Old Guard | Split cities/communities | Broken relationships | Sides, directions |
+| **Outsider Finding Home** | Player arrives | Refugee camps | Individual journeys | Travel, belonging |
+| **Knowledge Lost** | History erased | Ruins, forgotten skills | Forbidden memories | Learning, reading |
+| **Nature vs Corruption** | Land sickening | Spreading blight | Dying gardens | Nature, health |
+| **Sacrifice vs Self** | Dran vs Hermeau | Leaders' choices | Personal decisions | Giving, choosing |
+
+---
 
 ### Expansion Ideas
 | Idea | Notes | Added |

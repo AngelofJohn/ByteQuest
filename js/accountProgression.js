@@ -74,12 +74,21 @@ class AccountProgressionManager {
     }
 
     // Check gold cost
-    const cost = upgrade.cost.gold || 0;
+    const goldCost = upgrade.cost.gold || 0;
     const currentGold = this.getGold();
-    if (currentGold < cost) {
+    if (currentGold < goldCost) {
       throw new Error(
-        `Insufficient gold: need ${cost}, have ${currentGold}`
+        `Insufficient gold: need ${goldCost}, have ${currentGold}`
       );
+    }
+
+    // Check item costs (if any)
+    if (upgrade.cost.items) {
+      const missingItems = this.checkItemCosts(upgrade.cost.items);
+      if (missingItems.length > 0) {
+        const missingStr = missingItems.map(m => `${m.need} ${m.name} (have ${m.have})`).join(', ');
+        throw new Error(`Missing items: ${missingStr}`);
+      }
     }
 
     // Check if already purchased (for one-time upgrades)
@@ -98,7 +107,14 @@ class AccountProgressionManager {
     }
 
     // Deduct gold from current save
-    this.spendGold(cost);
+    if (goldCost > 0) {
+      this.spendGold(goldCost);
+    }
+
+    // Deduct items from inventory
+    if (upgrade.cost.items) {
+      this.spendItems(upgrade.cost.items);
+    }
 
     // Record purchase (persists across saves)
     this.recordUpgradePurchase(upgradeId);
@@ -108,6 +124,76 @@ class AccountProgressionManager {
       upgrade: upgrade,
       message: `✓ ${upgrade.name} purchased!`
     };
+  }
+
+  /**
+   * Check if player has required items for an upgrade
+   * Returns array of missing items (empty if all requirements met)
+   */
+  checkItemCosts(itemCosts) {
+    const missing = [];
+
+    if (typeof itemManager === 'undefined' || !itemManager) {
+      // Fallback check using GameState directly
+      for (const [itemId, needed] of Object.entries(itemCosts)) {
+        const invItem = GameState.player.inventory?.find(i => i.id === itemId);
+        const have = invItem ? invItem.count : 0;
+        if (have < needed) {
+          const itemDef = GAME_DATA.items?.[itemId];
+          missing.push({
+            itemId,
+            name: itemDef?.name || itemId,
+            need: needed,
+            have: have
+          });
+        }
+      }
+    } else {
+      for (const [itemId, needed] of Object.entries(itemCosts)) {
+        const have = itemManager.getItemCount(itemId);
+        if (have < needed) {
+          const itemDef = itemManager.getDefinition(itemId);
+          missing.push({
+            itemId,
+            name: itemDef?.name || itemId,
+            need: needed,
+            have: have
+          });
+        }
+      }
+    }
+
+    return missing;
+  }
+
+  /**
+   * Spend items from inventory
+   */
+  spendItems(itemCosts) {
+    if (typeof itemManager !== 'undefined' && itemManager) {
+      for (const [itemId, amount] of Object.entries(itemCosts)) {
+        itemManager.removeItem(itemId, amount);
+      }
+    } else {
+      // Fallback using GameState directly
+      for (const [itemId, amount] of Object.entries(itemCosts)) {
+        const invItem = GameState.player.inventory?.find(i => i.id === itemId);
+        if (invItem) {
+          invItem.count -= amount;
+          if (invItem.count <= 0) {
+            const idx = GameState.player.inventory.indexOf(invItem);
+            if (idx !== -1) {
+              GameState.player.inventory.splice(idx, 1);
+            }
+          }
+        }
+      }
+    }
+
+    // Trigger save
+    if (typeof saveGame === 'function') {
+      saveGame();
+    }
   }
 
   hasUpgrade(upgradeId) {

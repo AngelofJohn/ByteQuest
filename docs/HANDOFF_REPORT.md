@@ -1,13 +1,13 @@
 # ByteQuest Handoff Report
 
-**Generated:** December 8, 2025
+**Generated:** December 10, 2025
 **For:** Future session continuation
 
 ---
 
 ## What Is ByteQuest?
 
-An RPG-based French language learning game. Player learns vocabulary/grammar through quests in a pixel-art fantasy world. Positioned as "Duolingo alternative - no subscriptions, real story."
+An RPG-based language learning game. Player learns vocabulary/grammar through quests in a pixel-art fantasy world. Launching with French; additional languages planned. Positioned as "Duolingo alternative - no subscriptions, real story."
 
 ---
 
@@ -29,6 +29,9 @@ Working features:
 - Titles system
 - Resource minigames (8 types)
 - Settings system
+- Language selection (French, with Spanish/German/Italian locked)
+- Account progression system (upgrades via NPCs)
+- Map/travel system
 
 ---
 
@@ -40,7 +43,8 @@ Working features:
 | `/data/` | Vocabulary, grammar, NPCs, game data |
 | `/css/` | Single stylesheet |
 | `/docs/` | 8 design documents |
-| `/legal/` | TOS, Privacy, EULA drafts |
+| `/legal/` | TOS, Privacy, EULA, GDPR, Dialect Disclaimer |
+| `/devlog/` | Session dev logs |
 
 ---
 
@@ -56,61 +60,41 @@ Working features:
 
 ---
 
-## Recent Session Work (Dec 8 - Latest)
+## Recent Session Work (Dec 10 - Latest)
 
-### Latest Changes (Current Session)
-1. **Added 14 Filler Quests** (data/gamedata.js)
-   - Character-first design approach
-   - Dawnmere: 9 quests across 5 NPCs (4 chains + 1 standalone)
-   - Haari Fields: 5 quests across 3 NPCs (2 chains + 1 hidden)
-   - Weaves in corruption foreshadowing, Hermeau doubt, village mysteries
+### Latest Changes (Current Session - Dec 10)
 
-2. **Quest Chains Created:**
-   - yris_river (River Whispers → Lights Below)
-   - varek_shrine (Tending the Flame → Doubt and Faith)
-   - senna_gossip (Village Threads → Secrets and Stitches)
-   - jorel_past (Round's On Me → Memories of Renque)
-   - venn_songs (Songs of the Road → The Rhyming Trick)
-   - rask_tracking (Signs in the Grass → What Stalks the Fields)
-   - shadows_of_light (hidden, level 5 trigger for The Veiled One)
+1. **SYSTEMS_DESIGN.md Cleanup** (~600 lines reduced)
+   - Removed ASCII art/box mockups from Tutorial section
+   - Condensed Tier 1-4 minigame mockups to tables
+   - Converted event flow diagrams to tables
+   - Removed placeholder code snippets (Minigame Technical Architecture)
+   - Moved Endgame Lore Bosses narrative to WORLD_BIBLE.md
 
-3. **Fixed Bugs #25-29:**
-   - #25: friendly_face achievement NPC list (all 10 Dawnmere NPCs)
-   - #26: old_pierre typo → old_pieron in locationSystem.js
-   - #27: secret_student quest giver tutor → old_pieron
-   - #28: Added order_of_dawn faction (5 ranks, shrine blessings)
-   - #29: Added horticulturists faction (5 ranks, hidden, corruption studies)
+2. **Endgame Lore Bosses Reorganization**
+   - Lore/dialogue moved to WORLD_BIBLE.md Appendix E (8 bosses)
+   - SYSTEMS_DESIGN.md now has mechanics-only:
+     - Encounter triggers table
+     - Combat phases for all 8 bosses
+     - Resolution types and language integration
 
-4. **Documented Bugs #30-35:** (medium/low priority, for later)
-   - Recipe unlock sources undefined
-   - Crafting skill XP formula placeholder
-   - Dialect grammar examples empty
-   - Enchantment system incomplete
-   - Minigame tutorials not implemented
-   - Resource quality modifiers undefined
+3. **WORLD_BIBLE.md Updates**
+   - Added Appendix E: Endgame Lore Bosses
+   - Updated to version 1.5
 
-5. **Expanded Smithing Profession** (SYSTEMS_DESIGN.md v3.14)
-   - 4 skill tiers: Initiate (1-75), Journeyman (75-150), Expert (150-225), Master (225-300)
-   - 30+ recipes with materials and output stats
-   - Equipment slots: Weapon, Off-hand, Head, Body
-   - 5 material tiers: Copper → Iron → Steel → Mythril → Lurenium
-   - Cross-craft requirements (Leather, Wood, Coal, Essence)
-   - French vocabulary integration for smithing steps
+### December 9 Work
+1. Language Selection System (French available, others locked)
+2. Account Progression Integration (XP/Gold multipliers)
+3. NPC State Override System
+4. Merchant Journey Quest Chain
+5. Bug fixes (#36, NPC overlap, Map button, Haari Fields)
+6. Legal docs (GDPR, Dialect Disclaimer)
 
-6. **PATCH_NOTES Updates:**
-   - Added Filler Quest Design decisions to Content Ideas
-   - Added Quest Reward Items to Open Questions
-   - Added Playtesting Ideas section with questionnaire expansion notes
-
-7. **Haari Fields Zone Build-Out:**
-   - Added `harvest_time` quest (Dave's intro, level 2)
-   - Added `lyras_garden` quest (Lyra's herb teaching, level 2)
-   - Added `haari_fields` faction (5 ranks: Stranger → Friend of the Fields)
-   - Agriculture vocabulary: 50+ words (crops, herbs, tools, actions)
-   - Nature vocabulary: 40+ words (weather, landscape, wildlife, plants)
-   - Reorder sentences for agriculture and nature categories
-   - 5 new agricultural -er verbs: planter, cultiver, arroser, récolter, travailler
-   - Updated Dave and Lyra NPC quest lists
+### December 8 Work
+1. Added 14 Filler Quests (7 quest chains)
+2. Fixed Bugs #25-29
+3. Expanded Smithing Profession (30+ recipes)
+4. Haari Fields zone build-out (vocabulary, quests, faction)
 
 ### December 7 Work
 1. Merged STORY_SKELETON.md into WORLD_BIBLE.md (v1.3)
@@ -136,13 +120,14 @@ Working features:
 
 ## Pending Work
 
-### Open Bugs (#30-35, medium/low priority)
+### Open Bugs (#30-36, medium/low priority)
 - #30: Recipe unlock sources undefined (recipeUnlockSources)
 - #31: Crafting skill XP formula placeholder
 - #32: Dialect grammar examples empty
 - #33: Enchantment system incomplete
 - #34: Minigame tutorials not implemented
 - #35: Resource quality modifiers undefined
+- #36: Tommen missing quests array - FIXED Dec 9
 
 ### Phase 2 Checklist (in ROADMAP.md)
 - Testing categories (38 items)

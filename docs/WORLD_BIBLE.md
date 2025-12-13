@@ -1,7 +1,7 @@
 # ByteQuest World Bible
 
-**Document Version:** 1.0  
-**Last Updated:** December 3, 2025  
+**Document Version:** 1.6
+**Last Updated:** December 11, 2025
 **Status:** Living Document - [TBD] marks areas for expansion
 
 ---
@@ -11,14 +11,15 @@
 1. [World Overview](#world-overview)
 2. [History](#history)
 3. [The Two Lores](#the-two-lores)
-4. [Magic System](#magic-system)
-5. [Religion & The Churches](#religion--the-churches)
-6. [Major Factions](#major-factions)
-7. [Locations](#locations) (includes world map, terrain, color palettes)
-8. [Characters](#characters)
-9. [Themes & Narrative Arcs](#themes--narrative-arcs)
-10. [The Player's Journey](#the-players-journey)
-11. [Glossary](#glossary)
+4. [The Artifact System](#the-artifact-system)
+5. [Magic System](#magic-system)
+6. [Religion & The Churches](#religion--the-churches)
+7. [Major Factions](#major-factions)
+8. [Locations](#locations) (includes world map, terrain, color palettes)
+9. [Characters](#characters)
+10. [Themes & Narrative Arcs](#themes--narrative-arcs)
+11. [The Player's Journey](#the-players-journey)
+12. [Glossary](#glossary)
 
 ---
 
@@ -44,15 +45,18 @@ Turuem is a world of two continents, where the echoes of a fractured kingdom sti
 
 ### Timeline
 
-| Era | Event | Notes |
-|-----|-------|-------|
-| Ancient Times | Founding of Lurenium | Ancient city predating current civilization |
-| [TBD] | Establishment of Verandum | Kingdom unites the land |
-| [TBD] | Reign of King Dran | Period of stability and prosperity |
-| [TBD] | Birth of Hermeau and Layne | The two princes grow apart |
-| The War | The Corruption attacks | Farmlands devastated, king assassinated |
-| Post-War | Hermeau takes the throne | Layne exiled, propaganda spreads |
-| Present Day | Player arrives in Dawnmere | Story begins |
+| Era | Years Ago | Event | Notes |
+|-----|-----------|-------|-------|
+| **The Ancients** | 1000+ | Lurenium constructed | Built as a seal/containment, not a city. Civilization predates Verandum. |
+| **The Silence** | 1000-500 | Ancient civilization falls | Knowledge lost, tribes scatter, Lurenium abandoned. |
+| **The Founding** | ~500 | Kingdom of Verandum established | Tribes unite, French adopted as official language, Lurenium rediscovered. |
+| **The Faith** | ~400 | Order of Dawn founded | Temples built across the land. Original teachings emphasize truth and humility. |
+| **Golden Age** | 400-100 | Three centuries of prosperity | Trade flourishes, scholarly institutions thrive, royal archives maintained. |
+| **King Dran's Reign** | 100-30 | Period of stability | Two princes born and raised. Hermeau and Layne grow apart as adults. |
+| **The Divide** | 30-20 | Tensions rise | Hermeau's ambitions become apparent. Political factions form. |
+| **The War** | ~20 | The Corruption attacks | Farmlands devastated, King Dran assassinated. Dark magic used on large scale. |
+| **The Exile** | 20-Present | Hermeau takes the throne | Layne exiled, Order of Dawn restructured, history rewritten. |
+| **Present Day** | Now | Player arrives in Dawnmere | Story begins. |
 
 ### The Kingdom of Verandum
 
@@ -69,7 +73,22 @@ King Dran maintained the ancient family code, ensuring stability through legitim
 
 ### The War and The Corruption
 
-[TBD: Specific details about what "The Corruption" is]
+**What The Corruption Is:**
+The Corruption is dark magic given physical form—an ancient evil that was sealed beneath Lurenium by a civilization predating Verandum. The seal was maintained for centuries by the royal bloodline, who were secretly the Keepers of the Seal.
+
+When Hermeau discovered forbidden knowledge about the seal, he realized breaking it would unleash a force he could weaponize. The Corruption manifests as:
+- A spreading blight that withers crops and poisons land
+- Dark energy that can be channeled by those who embrace it
+- A corrupting influence that hollows out living beings, leaving puppets
+- A creeping darkness that feeds on fear and despair
+
+**The True History (as revealed by artifacts):**
+- Hermeau found ancient texts describing the seal and what lay beneath
+- He spent years learning forbidden rituals to break and control the Corruption
+- The "war" was not an external invasion—Hermeau unleashed the Corruption deliberately
+- King Dran discovered his son's betrayal and was assassinated before he could act
+- The farmlands were targeted specifically because rural areas would be harder to defend
+- Hermeau presented himself as the hero who "stopped" the threat he created
 
 An evil threat—known as The Corruption—plagued the lands. The farmlands bore the brunt of destruction, crops withering and communities scattering. In the chaos, King Dran was assassinated.
 
@@ -81,7 +100,14 @@ Neighboring kingdoms provided aid, sending food reserves to the failing regions.
 
 ## The Two Lores
 
-One of ByteQuest's central mysteries is the gap between what people believe happened and what actually occurred.
+One of ByteQuest's central mysteries is the gap between what people believe happened and what actually occurred. This dual-narrative is delivered through two distinct in-game systems:
+
+| System | Content Type | Player Experience |
+|--------|--------------|-------------------|
+| **Lore Pages** | Official propaganda | Unlocked via quests, presents "history" as the regime wants it told |
+| **Artifacts** | Primary sources | Found through exploration, reveal what actually happened |
+
+Players who only read lore pages receive propaganda. Players who find artifacts learn the truth. The tension between these two sources creates the game's central mystery.
 
 ### Established Lore (What People Believe)
 
@@ -110,9 +136,97 @@ The reality is far more sinister:
 
 The player, as an outsider, will gradually uncover these truths through:
 - Conversations with NPCs who remember the old days
-- Ancient documents and relics
+- **Artifacts** - physical primary sources (letters, journals, documents)
 - Contradictions in official stories
 - The testimony of those in hiding
+
+---
+
+## The Artifact System
+
+### Design Philosophy
+
+Artifacts are **primary sources**—letters, journals, carved bones, official documents—that reveal what actually happened in Verandum's history. Unlike lore pages (which are reference material presenting propaganda), artifacts are physical items the player discovers through exploration, quests, and reputation.
+
+This creates:
+- **Cognitive tension** for the player as they compare propaganda with evidence
+- **A reason to explore** and complete quests beyond XP rewards
+- **A meta-narrative** about truth vs official records
+- **Meaningful collectibles** tied directly to story
+
+### Historical Eras
+
+Artifacts are organized into 8 historical eras, with variable numbers per era based on available evidence:
+
+| Era | Artifacts | Theme | Key Revelations |
+|-----|-----------|-------|-----------------|
+| **The Ancients** | 2 | The seal, warnings | Lurenium was built as containment, not a city; ancient warnings ignored |
+| **The Silence** | 2 | Lost civilization | Knowledge deliberately destroyed; some survived in hiding |
+| **The Founding** | 3 | Kingdom's true purpose | Verandum founded to guard the seal; royal bloodline were keepers |
+| **The Faith** | 3 | Church schism, hidden teachings | Original Order of Dawn teachings suppressed; forbidden texts hidden |
+| **The Golden Age** | 3 | Royal secrets | Prosperity built on secret pacts; trade manifests show hidden dealings |
+| **King Dran's Reign** | 4 | Hermeau's ambition, family conflict | Hermeau's early corruption; Dran's growing suspicions; Queen Eorna's warnings |
+| **The War** | 5 | The truth about the corruption | Hermeau broke the seal deliberately; the Corruption is his weapon; assassination evidence |
+| **The Exile** | 4 | Resistance, Layne's survival | Layne is alive; resistance network exists; history being rewritten in real-time |
+
+**Total: 26 artifacts**
+
+### Discovery Methods
+
+Artifacts can be found through three methods:
+
+**Quest Rewards (6 artifacts)**
+Certain quests unlock artifacts as rewards, typically tied to NPCs who have access to hidden knowledge or areas.
+
+**Reputation Thresholds (5 artifacts)**
+Building trust with factions reveals their secret documents and relics. Each faction guards pieces of the truth.
+
+**Location Hotspots (15 artifacts)**
+Interactive sparkle points appear in game locations. Players can investigate and search these spots to discover hidden artifacts. Some require faction reputation to access.
+
+### Artifact Examples
+
+**The Ancients Era:**
+- *Broken Seal Fragment* - Piece of the original seal, symbols predate all known languages
+- *Keeper's Warning Stone* - Ancient carved warning: "What sleeps beneath must never wake"
+
+**King Dran's Reign Era:**
+- *Hermeau's Private Journal* - Documents his discovery of forbidden knowledge
+- *Queen Eorna's Hidden Letter* - Warning to Layne about his brother's corruption
+- *Dran's Final Orders* - The king's last attempt to stop Hermeau
+
+**The War Era:**
+- *Soldier's Last Letter* - Eyewitness account: "The darkness came from our own lines"
+- *Broken Seal Inscription* - Proves the seal was broken from inside, not attacked
+- *Healer's Account* - Documents treating soldiers hit by their own side's dark magic
+
+**The Exile Era:**
+- *Layne's Manifesto* - Declaration of resistance, proof he lives
+- *Rewritten History Pages* - Shows exactly what was changed in official records
+- *Resistance Network Map* - Locations of safe houses and allies
+
+### Spellbook Integration
+
+Artifacts appear in a dedicated tab within the player's Spellbook:
+- Eras displayed as entries with progress counters (e.g., "2/5")
+- Locked eras show "???" until first artifact found
+- Era completion triggers achievement and banner
+- Individual artifacts show description and quoted lore text
+
+### Achievements
+
+| Achievement | Trigger | Reward |
+|-------------|---------|--------|
+| Truth Seeker | First artifact | +1 Insight |
+| Ancient Historian | Complete Ancients | +2 Knowledge, "Historian" title |
+| Silence Breaker | Complete Silence | +2 Insight |
+| Founding Scholar | Complete Founding | +2 Knowledge |
+| Keeper of Faith | Complete Faith | +2 Devotion |
+| Golden Archivist | Complete Golden Age | +2 Luck |
+| Dran's Legacy | Complete King Dran | +2 Insight, "Rememberer" title |
+| War Chronicler | Complete War | +2 Stamina, "Chronicler" title |
+| Exile's Ally | Complete Exile | +2 Agility, "Layne's Friend" title |
+| Master Historian | All 26 artifacts | +5 Knowledge, +5 Insight, "Master Historian" title |
 
 ---
 
@@ -428,15 +542,33 @@ Forgotten workers abandoned after the transition to Hermeau's rule. Once vital t
 
 ---
 
-### Fredrois
+### Fredrois Seafolk
 
-**Status:** Fishing village community  
-**Leader:** [TBD]  
-**Location:** Along the coast
+**Status:** Isolated coastal community
+**Leader:** [TBD]
+**Location:** Fredrois (stilt village)
 
-A fishing village encountered during the player's journey.
+A self-sufficient community built on stilts over the coastal waters. The Seafolk have always looked outward—toward the horizon and the second continent beyond. Before the war, they facilitated trade between the two landmasses. Now they wait, watching for ships that no longer come.
 
-[TBD: Full details about this faction]
+**Character:**
+- Independent and resourceful
+- Wary of mainland politics
+- Harbor refugees and travelers without asking questions
+- Keep old maritime traditions alive
+
+**Story Role:**
+- Gateway to second continent (expansion hook)
+- Potential Old Guard sympathizers (harbor those fleeing Hermeau)
+- Outside perspective on Verandum's troubles
+
+**Reputation Ranks:**
+
+| Rank | Threshold | Benefits |
+|------|-----------|----------|
+| Outsider | 0 | Basic trading |
+| Dockhand | 100 | Boat repairs, fishing supplies |
+| Sailor | 500 | Maritime vocabulary lessons, sea charts |
+| Captain | 1000 | "Seafarer" title, passage to second continent (future) |
 
 ---
 
@@ -591,6 +723,24 @@ The name symbolizes new beginnings—a dawn for those who settle here.
 - The Haari Fields (north)
 - Fredrois (coastal path)
 
+**Screen Elements:**
+
+| Layer | Element | Description | Interactive |
+|-------|---------|-------------|-------------|
+| Background | River & Bridge | Gentle river with wooden bridge as focal point | No |
+| Background | Wooden Buildings | Rustic wooden huts lining dirt paths | No |
+| Ambient | Morning Mist | Light mist effect near the river | No |
+| Ambient | Wood Smoke | Wisps rising from chimneys | No |
+| Ambient | Birds | Occasional birds flying across | No |
+| Landmark | Town Well | Central stone well in market square | No |
+| Landmark | Shrine | Small shrine with candles (Brother Varek's post) | No |
+| Landmark | Apple Tree | Fruit tree near Rega's farm area | No |
+| Landmark | Fishing Dock | Small wooden dock on the river | No |
+| Interactive | NPCs | 11 characters with sprites | Yes |
+| Interactive | Hotspots | 3 sparkle locations for artifacts | Yes |
+| Navigation | North Path | Arrow/path to Haari Fields | Yes |
+| Navigation | West Path | Arrow/path to Fredrois | Yes |
+
 ---
 
 ### The Haari Fields
@@ -620,7 +770,10 @@ The fields north of Dawnmere, lying between the settlement and the great city of
 
 **NPCs:**
 - Dave (Horticulturist leader)
-- Mary (Horticulturist member)
+- Lyra (Horticulturist member)
+- Venn (Wandering bard)
+- Rask (Field worker)
+- The Veiled One (mysterious figure)
 
 **Vocabulary Focus:** Agriculture, animals, food, nature
 
@@ -629,33 +782,68 @@ The fields north of Dawnmere, lying between the settlement and the great city of
 - Lurenium (north)
 - Renque (northeast)
 
+**Screen Elements:**
+
+| Layer | Element | Description | Interactive |
+|-------|---------|-------------|-------------|
+| Background | Wheat Fields | Golden wheat stretching to horizon | No |
+| Background | Distant Windmills | Windmills silhouetted against sky | No |
+| Background | Distant Lurenium | Faint golden spires on horizon (north) | No |
+| Ambient | Swaying Wheat | Wheat animation from warm breeze | No |
+| Ambient | Crows | Occasional crows flying over fields | No |
+| Ambient | Dust Motes | Floating particles in sunlight | No |
+| Landmark | Dave's Farmstead | Central farmhouse with barn | No |
+| Landmark | Standing Stones | Ancient mysterious stone markers | No |
+| Landmark | Hay Bales | Scattered in foreground | No |
+| Landmark | Sunflower Patch | Bright sunflowers at field edge | No |
+| Landmark | Irrigation Ditch | Water channel through fields | No |
+| Interactive | NPCs | 5 characters with sprites | Yes |
+| Interactive | Hotspots | 3 sparkle locations for artifacts | Yes |
+| Navigation | South Path | Arrow/path to Dawnmere | Yes |
+| Navigation | North Path | Arrow/path to Lurenium | Yes |
+| Navigation | Northeast Path | Arrow/path to Renque (locked?) | Yes |
+
 ---
 
 ### Fredrois
 
-**Type:** Fishing Village
+**Type:** Stilt Village / Port
 **Level:** 8-12
 **Color Theme:** Sky Blue #87CEEB
-**Atmosphere:** Peaceful, coastal
+**Faction:** Fredrois Seafolk
+**Atmosphere:** Isolated, watchful, salt-worn
 
-*"A quiet fishing village where the rhythm of the tides sets the pace of life."*
+*"A village built on stilts over the water, connected by plank walkways. The Seafolk watch the horizon for ships that no longer come."*
+
+**Description:**
+Fredrois is unlike any other settlement in Verandum—a network of wooden huts raised on stilts above the coastal waters, connected by weathered plank walkways. Before the war, this was the gateway between continents, a bustling port where traders from distant lands exchanged goods and stories. Now the docks are quiet, the trade ships gone, and the Seafolk wait.
+
+The village's isolation kept it largely untouched by the war and Hermeau's reach. Some say that's why refugees find their way here—and why the Seafolk don't ask too many questions.
 
 **Terrain:**
-- Ground: Sandy beaches, weathered boardwalks
-- Water: Open ocean, rocky tide pools
-- Vegetation: Sea grass, driftwood
-- Atmosphere: Salty air, seagull calls, waves
+- Ground: Plank walkways, wooden platforms, no solid earth
+- Water: Ocean beneath everything, tidal currents, moored boats
+- Vegetation: Hanging fishing nets, dried seaweed, rope bridges
+- Wildlife: Seabirds, crabs, fish visible through gaps in planks
+- Atmosphere: Creaking wood, salt spray, distant horizon
 
 **Key Features:**
-- Working harbor with fishing boats
-- Lighthouse on rocky outcrop
-- Fish market near docks
-- Tidal pools for exploration
+- Central platform with market stalls
+- Lighthouse on rocky outcrop (guides ships from second continent)
+- Empty trade docks (once bustling, now silent)
+- Elders' hut (largest structure, built on oldest stilts)
+- Boat repair platforms below the walkways
 
-**Vocabulary Focus:** Sea, fishing, weather, boats
+**NPCs:**
+- [TBD: Harbor master, old sailor, refugee]
+
+**Vocabulary Focus:** Sea, fishing, weather, boats, directions, travel
+
+**Story Hook:**
+An old sailor speaks of the days when ships crossed to the second continent regularly. "The route's still there," he says, "if anyone had reason to make the journey." This plants the seed for future expansion content.
 
 **Connected To:**
-- Dawnmere (south)
+- Dawnmere (coastal path)
 
 ---
 
@@ -689,6 +877,14 @@ The first major city the player encounters. Lurenium predates the current civili
 - First "Boss Exam" location
 - Monster attack on city center (first major challenge)
 - Introduction to overarching themes
+
+**NPCs:**
+- Magistrate Corinne (city administrator)
+- Archivist Thelon (keeper of records)
+- Captain Varro (city guard commander)
+- Merchant Liselle (luxury trader)
+- Brother Cassius (See of Lurenium priest)
+- Old Jorel (elderly stonemason)
 
 **Vocabulary Focus:** Architecture, history, commerce
 
@@ -1013,7 +1209,7 @@ Originally named [TBD], this city was renamed Dranmere by King Hermeau as suppos
 | Location | Primary Weather | Special Events |
 |----------|-----------------|----------------|
 | Dawnmere | Mild, light rain | Morning mist |
-| Fredrois | Coastal fog | Storms at sea |
+| Fredrois | Salt spray, tidal | Storms at sea, creaking wood |
 | Haari Fields | Sunny, warm | Harvest moon |
 | Lurenium | Magically stable | Barrier shimmer |
 | Cathedral | Always serene | Divine light |
@@ -1033,7 +1229,7 @@ Originally named [TBD], this city was renamed Dranmere by King Hermeau as suppos
 | Location | Primary | Secondary | Ground | Sky/Light |
 |----------|---------|-----------|--------|-----------|
 | Dawnmere | #4ECDC4 teal | #8B7355 wood | #8B7355 dirt | #87CEEB blue |
-| Fredrois | #87CEEB ocean | #D2B48C sand | #D2B48C sandy | #B0C4DE hazy |
+| Fredrois | #87CEEB ocean | #8B7355 weathered wood | #4682B4 water below | #B0C4DE hazy |
 | Haari Fields | #DAA520 gold | #228B22 green | #8B4513 soil | #87CEEB bright |
 | Lurenium | #FFD700 gold | #FFFFFF marble | #FFD700 stone | #87CEEB perfect |
 | Cathedral | #B8860B deep gold | #800080 purple | #D3D3D3 stone | #FFFACD divine |
@@ -1276,6 +1472,177 @@ Presents himself as a noble leader working to make the land sustainable for his 
 A woman in the Haari Fields who teaches about fruits and vegetables—both the vocabulary and cultivation.
 
 **Vocabulary Focus:** Fruits, vegetables, agricultural terms
+
+---
+
+### Lurenium NPCs
+
+#### Magistrate Corinne
+
+**Role:** City Administrator
+**Location:** Lurenium (City Hall)
+**Tags:** Quest Giver, Authority Figure, Official
+
+*"Lurenium has stood for a thousand years. We maintain order here—order and tradition."*
+
+The appointed administrator of Lurenium, responsible for city governance and public order. She represents the official perspective and is loyal to the current regime, though she genuinely believes she serves the people.
+
+**Personality:**
+- Efficient and formal
+- Proud of Lurenium's heritage
+- Dismissive of "troublemakers" and rumors
+- Genuinely believes in order and stability
+
+**Quests Given:**
+- City orientation/welcome quest
+- Help with city census (teaches formal vocabulary)
+- Monster attack response (triggers main event)
+
+**Story Role:** Represents the "official" voice. Her quests provide propaganda perspective; later events may shake her certainty.
+
+---
+
+#### Archivist Thelon
+
+**Role:** Keeper of Records
+**Location:** Lurenium (Grand Archive)
+**Tags:** Teacher, Lore, Quest Giver
+
+*"History is preserved in these halls. Though I confess... some pages seem to be missing."*
+
+An elderly scholar who maintains Lurenium's vast archive of historical records. He teaches history vocabulary and provides access to lore pages—but observant players may notice his subtle hints about gaps in the official record.
+
+**Personality:**
+- Scholarly and meticulous
+- Speaks carefully, chooses words precisely
+- Hints at doubts without stating them openly
+- Protective of knowledge
+
+**Quests Given:**
+- Archive tour (unlocks lore pages)
+- Research assistance (history vocabulary)
+- Find missing documents (hints at censorship)
+
+**Story Role:** Gateway to lore pages. His quests plant seeds of doubt—references to "missing volumes" and "revised editions."
+
+**Vocabulary Focus:** History, documents, time periods, formal language
+
+---
+
+#### Captain Varro
+
+**Role:** City Guard Commander
+**Location:** Lurenium (Guard Barracks)
+**Tags:** Quest Giver, Combat, Authority
+
+*"The barrier protects us, but lately... I've seen things at the edge. Things that shouldn't be there."*
+
+Commander of Lurenium's city guard. A practical soldier who focuses on defense rather than politics. He's the first to notice the barrier weakening and monster sightings increasing.
+
+**Personality:**
+- Direct and no-nonsense
+- Worried but hiding it
+- Respects competence over status
+- Protective of civilians
+
+**Quests Given:**
+- Guard patrol assistance
+- Monster investigation (barrier edge)
+- Defense preparation (leads to Boss Exam)
+
+**Story Role:** Sets up the monster attack storyline. His concern about the barrier foreshadows larger problems.
+
+---
+
+#### Merchant Liselle
+
+**Role:** Luxury Trader
+**Location:** Lurenium (Golden Market)
+**Tags:** Shop, Quest Giver
+
+*"Before the war, caravans came from everywhere. Now? We make do with what we have."*
+
+A shrewd merchant who sells quality goods in Lurenium's central market. She's well-connected and full of gossip about trade decline, missing shipments, and whispered rumors.
+
+**Personality:**
+- Business-minded but personable
+- Nostalgic for "better days"
+- Knows everyone's business
+- Pragmatic about politics
+
+**Shop Inventory:**
+- Quality equipment (level 10-15)
+- Rare consumables
+- Crafting materials
+- [TBD: Specific items]
+
+**Quests Given:**
+- Delivery quests (commerce vocabulary)
+- Track missing shipment
+- Gather trade information
+
+**Story Role:** Provides gossip and world-building. Her complaints about trade decline hint at the kingdom's problems.
+
+**Vocabulary Focus:** Commerce, money, goods, negotiation
+
+---
+
+#### Brother Cassius
+
+**Role:** See of Lurenium Priest
+**Location:** Lurenium (Temple District)
+**Tags:** Faction Rep, Teacher, Quest Giver
+**Faction:** See of Lurenium
+
+*"The Light blesses this city. Come, learn the proper forms of devotion."*
+
+A priest of the See of Lurenium who represents the official church within the city. He teaches ceremonial vocabulary and proper religious forms. Friendly but firmly institutional.
+
+**Personality:**
+- Warm but formal
+- Deeply believes in tradition
+- Sees hierarchy as sacred
+- Uncomfortable with difficult questions
+
+**Quests Given:**
+- Temple tour (religious vocabulary)
+- Assist with ceremony preparation
+- Deliver message to Cathedral
+
+**Story Role:** Introduces See of Lurenium faction before player reaches Cathedral. Represents institutional faith.
+
+**Vocabulary Focus:** Religion, ceremony, formal address, blessings
+
+**Faction:** Completing his quests grants See of Lurenium reputation.
+
+---
+
+#### Old Jorel
+
+**Role:** Elderly Stonemason
+**Location:** Lurenium (Ancient Quarter)
+**Tags:** Elder, Lore, Secret Ally
+
+*"These stones... I've worked them sixty years. They remember things the records forgot."*
+
+An ancient stonemason who has spent his entire life maintaining Lurenium's oldest structures. He knows the city's stones intimately—including inscriptions that have been plastered over and passages that have been sealed.
+
+**Personality:**
+- Gruff but kind
+- Speaks in riddles and implications
+- Deeply connected to the ancient city
+- Wary of authority
+
+**Quests Given:**
+- Restoration assistance (architecture vocabulary)
+- Find old inscriptions (artifact hints)
+- Secret passage discovery
+
+**Story Role:** Truth-teller archetype (like Old Pierre in Dawnmere). His knowledge of the ancient city provides artifact hints and contradicts official history. May reveal hotspot locations.
+
+**Vocabulary Focus:** Architecture, stone, ancient terms, directions
+
+**Special:** High reputation unlocks hints about artifact locations and hidden areas.
 
 ---
 
@@ -1720,13 +2087,18 @@ The player is a traveler from outside the known kingdoms of Turuem. This outside
 |------|------------|
 | **Turuem** | The world name |
 | **Verandum** | The kingdom that once united the land |
-| **The Corruption** | The dark force/plague that devastated the land during the war |
+| **The Corruption** | Ancient dark magic sealed beneath Lurenium, unleashed by Hermeau as a weapon |
+| **The Seal** | An ancient containment built by pre-Verandum civilization to imprison the Corruption |
 | **The Light** | The benevolent magical force worshipped through churches |
-| **The Dark** | Forbidden magic practiced by Hermeau |
+| **The Dark** | Forbidden magic practiced by Hermeau, derived from the Corruption |
 | **Old Guard** | The resistance movement loyal to Prince Layne |
 | **Loyalists** | Those who support King Hermeau's rule |
-| **Established Lore** | The official, propaganda version of history |
-| **Actual Lore** | The true history hidden from the public |
+| **Established Lore** | The official, propaganda version of history (presented in Lore Pages) |
+| **Actual Lore** | The true history hidden from the public (revealed through Artifacts) |
+| **Lore Pages** | In-game reference material presenting official propaganda |
+| **Artifacts** | Physical primary sources (letters, journals, relics) that reveal the hidden truth |
+| **Keepers of the Seal** | The secret role of the royal bloodline—maintaining the ancient seal |
+| **Hotspots** | Interactive locations where hidden artifacts can be discovered |
 
 ---
 
@@ -1810,10 +2182,81 @@ Story threads for future content:
 
 ---
 
+### Appendix E: Endgame Lore Bosses
+
+These encounters represent the true scope of The Corruption and Hermeau's legacy. Each boss has narrative weight and moral complexity.
+
+#### Corruption Incursions (Manifestations)
+
+**Boss 1: The Hollow Shepherd**
+Once a beloved shepherd during King Dran's reign, caught in the initial wave of Corruption. The Corruption didn't kill him—it hollowed him out, leaving a puppet that still wears his face.
+
+> "The... the flocks were so full. The grass was so green. Now I tend to rot. I tend to the [unintelligible] that grows where the green was. Why do you hurt me? I was... I was happy once."
+
+**Represents:** The Corruption's power to pervert the natural and familiar.
+
+**Boss 2: The Magistrate's Echo**
+A magistrate who enforced Hermeau's policies—corrupted not by accident but by choice, seduced by promises of power. Unlike others, the Echo *knows* what it is.
+
+> "You speak of Hermeau as usurper? Nonsense. I have the seals, the stamps, the words of a hundred officials. What have you? Sentiment? The law serves order, and order serves... us."
+
+**Represents:** Willing collaboration with darkness. The horror that some people *chose* this.
+
+**Boss 3: The Rotting Prophet**
+A priest who believed the Light would protect him—until Hermeau's dark magic proved stronger. The Corruption lives inside him, and he's aware of every moment.
+
+> "I felt the Light leave me. Not gradually—like a door slamming. I called and called, and it did not answer. Something *else* answered. Something that wore the Light's voice."
+
+**Represents:** The failure of faith when confronted with systemic evil.
+
+#### Ruins of the Ancients (Dungeon Bosses)
+
+**Boss 4: The Archivist Prime**
+A construct built to protect ancient archives. After centuries, it no longer understands what it's protecting—only that it *must* protect it.
+
+> "What is truth? Once I knew. I was built to defend it. But centuries have passed, and I have watched truths become lies and lies become accepted."
+
+**Represents:** The erosion of purpose over time. Systems intended to preserve truth becoming obstacles to it.
+
+**Boss 5: The Last Regent**
+A pre-Verandum ruler who bound their spirit to the archive. Powerful, lonely, questioning whether their sacrifice meant anything.
+
+> "A visitor. How strange. I have not spoken to a living voice in... I have forgotten how long. Are you here to reclaim the archives? Or here to add more rubble to this tomb?"
+
+**Represents:** The cost of loyalty. Sacrifice that may have been meaningless.
+
+#### Spire of Trials (Philosophical Bosses)
+
+**Boss 6: The Truthseeker's Doubt**
+A shadow manifestation of the player's own doubts—fighting like the player but arguing the opposite position for every choice made.
+
+> "Every path you've chosen means abandoning another. How many people have you left behind? How many causes did you ignore?"
+
+**Represents:** The cost of commitment. The validity of doubt.
+
+**Boss 7: The Corrupted Idealist**
+Once a prominent Old Guard member who discovered something horrifying about the resistance. Broken by too much truth.
+
+> "I fought for light. For the return of the rightful heir. But what if the heir is no better? What if the resistance is just another Hermeau waiting to seize power?"
+
+**Represents:** How even just causes can corrupt those who pursue them.
+
+**Boss 8: The Apotheosis of Corruption**
+At the Spire's peak—The Corruption itself. Not Hermeau (he's the *user*), but what he unleashed: a force predating recorded civilization.
+
+> "I am old. Older than your kingdoms. I am hunger. I am the crack in your certainty. I have worn many faces—your leader, your prophet, your doubt. Why do you resist? You carry me already."
+
+**Represents:** Evil as a force amplified by human ambition, not just a person.
+
+---
+
 ## Changelog
 
 | Date | Version | Changes |
 |------|---------|---------|
+| Dec 11, 2025 | 1.6 | Added The Artifact System section (26 artifacts across 8 eras), updated The Two Lores with dual-narrative design, defined The Corruption and The Seal in detail, expanded Glossary with artifact-related terms. Redesigned Fredrois as Venice-style stilt village and gateway to second continent. |
+| Dec 10, 2025 | 1.5 | Added Appendix E: Endgame Lore Bosses (moved from SYSTEMS_DESIGN) |
+| Dec 10, 2025 | 1.4 | Expanded Timeline with specific years (Ancients → Present), removed [TBD] placeholders |
 | Dec 7, 2025 | 1.3 | Merged STORY_SKELETON.md into Themes & Narrative Arcs section |
 | Dec 7, 2025 | 1.2 | Added Appendix C: Legendary Items (For Later) |
 | Dec 7, 2025 | 1.1 | Merged WORLD_DESIGN.md - added map, terrain details, color palettes, weather |

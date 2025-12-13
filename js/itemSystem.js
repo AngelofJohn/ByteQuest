@@ -336,6 +336,11 @@ class ItemManager {
       }
     }
 
+    // Check gather objectives after adding item
+    if (typeof checkGatherObjectives === 'function') {
+      checkGatherObjectives(itemId);
+    }
+
     return {
       success: true,
       message: `Received: ${definition.name}${count > 1 ? ` x${count}` : ''}`,

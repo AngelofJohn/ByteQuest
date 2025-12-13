@@ -367,14 +367,14 @@ const ACHIEVEMENT_DEFINITIONS = {
     reward: { title: 'Warrior' },
     check: (state) => state.player.class === 'warrior'
   },
-  travelers_path: {
-    id: 'travelers_path',
-    name: "Traveler's Path",
-    description: 'Begin your journey as a Traveler',
-    icon: '🗺️',
+  rogues_path: {
+    id: 'rogues_path',
+    name: "Rogue's Path",
+    description: 'Begin your journey as a Rogue',
+    icon: '🗡️',
     hidden: false,
-    reward: { title: 'Traveler' },
-    check: (state) => state.player.class === 'traveler'
+    reward: { title: 'Rogue' },
+    check: (state) => state.player.class === 'rogue'
   },
   // Hidden Achievements
   night_owl: {
@@ -403,6 +403,130 @@ const ACHIEVEMENT_DEFINITIONS = {
     hidden: true,
     reward: { stat: StatType.STAMINA, amount: 1 },
     check: (state) => (state.player.totalWrongAnswers || 0) >= 15
+  },
+
+  // Artifact Achievements
+  truth_seeker: {
+    id: 'truth_seeker',
+    name: 'Truth Seeker',
+    description: 'Find your first artifact',
+    icon: '🏺',
+    hidden: false,
+    reward: { stat: StatType.INSIGHT, amount: 1 },
+    check: (state) => (state.player.spellbook?.unlockedArtifacts?.length || 0) >= 1
+  },
+  ancient_historian: {
+    id: 'ancient_historian',
+    name: 'Ancient Historian',
+    description: 'Complete "The Ancients" artifact collection',
+    icon: '🏛️',
+    hidden: false,
+    reward: { stat: StatType.KNOWLEDGE, amount: 2, title: 'Historian' },
+    check: (state) => {
+      const artifacts = state.player.spellbook?.unlockedArtifacts || [];
+      const ancientArtifacts = ['ancient_seal_fragment', 'ancient_warning_stone'];
+      return ancientArtifacts.every(id => artifacts.includes(id));
+    }
+  },
+  silence_breaker: {
+    id: 'silence_breaker',
+    name: 'Silence Breaker',
+    description: 'Complete "The Silence" artifact collection',
+    icon: '🌑',
+    hidden: false,
+    reward: { stat: StatType.INSIGHT, amount: 2 },
+    check: (state) => {
+      const artifacts = state.player.spellbook?.unlockedArtifacts || [];
+      const silenceArtifacts = ['silence_bone_carving', 'silence_empty_shrine'];
+      return silenceArtifacts.every(id => artifacts.includes(id));
+    }
+  },
+  founding_scholar: {
+    id: 'founding_scholar',
+    name: 'Founding Scholar',
+    description: 'Complete "The Founding" artifact collection',
+    icon: '👑',
+    hidden: false,
+    reward: { stat: StatType.KNOWLEDGE, amount: 2 },
+    check: (state) => {
+      const artifacts = state.player.spellbook?.unlockedArtifacts || [];
+      const foundingArtifacts = ['founding_charter_fragment', 'founding_builders_journal', 'founding_first_kings_decree'];
+      return foundingArtifacts.every(id => artifacts.includes(id));
+    }
+  },
+  keeper_of_faith: {
+    id: 'keeper_of_faith',
+    name: 'Keeper of Faith',
+    description: 'Complete "The Faith" artifact collection',
+    icon: '✝️',
+    hidden: false,
+    reward: { stat: StatType.DEVOTION, amount: 2 },
+    check: (state) => {
+      const artifacts = state.player.spellbook?.unlockedArtifacts || [];
+      const faithArtifacts = ['faith_original_prayer', 'faith_schism_letter', 'faith_forbidden_text'];
+      return faithArtifacts.every(id => artifacts.includes(id));
+    }
+  },
+  golden_archivist: {
+    id: 'golden_archivist',
+    name: 'Golden Archivist',
+    description: 'Complete "The Golden Age" artifact collection',
+    icon: '⭐',
+    hidden: false,
+    reward: { stat: StatType.LUCK, amount: 2 },
+    check: (state) => {
+      const artifacts = state.player.spellbook?.unlockedArtifacts || [];
+      const goldenArtifacts = ['golden_trade_manifest', 'golden_royal_diary', 'golden_architects_note'];
+      return goldenArtifacts.every(id => artifacts.includes(id));
+    }
+  },
+  drans_legacy: {
+    id: 'drans_legacy',
+    name: "Dran's Legacy",
+    description: 'Complete "King Dran\'s Reign" artifact collection',
+    icon: '🏰',
+    hidden: false,
+    reward: { stat: StatType.INSIGHT, amount: 2, title: 'Rememberer' },
+    check: (state) => {
+      const artifacts = state.player.spellbook?.unlockedArtifacts || [];
+      const dranArtifacts = ['dran_private_letter', 'dran_inspection_report', 'dran_hermeau_journal', 'dran_layne_confession'];
+      return dranArtifacts.every(id => artifacts.includes(id));
+    }
+  },
+  war_chronicler: {
+    id: 'war_chronicler',
+    name: 'War Chronicler',
+    description: 'Complete "The War" artifact collection',
+    icon: '⚔️',
+    hidden: false,
+    reward: { stat: StatType.STAMINA, amount: 2, title: 'Chronicler' },
+    check: (state) => {
+      const artifacts = state.player.spellbook?.unlockedArtifacts || [];
+      const warArtifacts = ['war_soldiers_letter', 'war_commanders_confession', 'war_healers_record', 'war_assassination_truth', 'war_laynes_evidence'];
+      return warArtifacts.every(id => artifacts.includes(id));
+    }
+  },
+  exiles_ally: {
+    id: 'exiles_ally',
+    name: "Exile's Ally",
+    description: 'Complete "The Exile" artifact collection',
+    icon: '🚪',
+    hidden: false,
+    reward: { stat: StatType.AGILITY, amount: 2, title: "Layne's Friend" },
+    check: (state) => {
+      const artifacts = state.player.spellbook?.unlockedArtifacts || [];
+      const exileArtifacts = ['exile_rewritten_history', 'exile_resistance_code', 'exile_spread_of_corruption', 'exile_sealed_letter_layne'];
+      return exileArtifacts.every(id => artifacts.includes(id));
+    }
+  },
+  master_historian: {
+    id: 'master_historian',
+    name: 'Master Historian',
+    description: 'Collect all 26 artifacts',
+    icon: '📜',
+    hidden: true,
+    reward: { stat: StatType.KNOWLEDGE, amount: 5, stat2: StatType.INSIGHT, amount2: 5, title: 'Master Historian' },
+    check: (state) => (state.player.spellbook?.unlockedArtifacts?.length || 0) >= 26
   }
 };
 
@@ -728,13 +852,13 @@ class StatsManager {
 
   /**
    * Calculate max HP based on Stamina
-   * Base 100 + (Stamina * 5)
+   * Base 50 + (Stamina * 3) + level bonus
    */
   calculateMaxHp() {
     const stamina = this.getTotalStat(StatType.STAMINA);
-    const baseHp = 100;
-    const staminaBonus = stamina * 5;
-    const levelBonus = (this.state.player.level - 1) * 10;
+    const baseHp = 50; // Reduced from 100 to make HP feel meaningful
+    const staminaBonus = stamina * 3; // Reduced from 5 to 3 per stamina
+    const levelBonus = (this.state.player.level - 1) * 2;
     return baseHp + staminaBonus + levelBonus;
   }
 

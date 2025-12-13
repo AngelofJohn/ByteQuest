@@ -64,6 +64,8 @@ const GameState = {
       unlockedPages: ["pronouns"],
       lastViewed: null
     },
+    // Feature unlocks (alchemy, smithing, etc.)
+    unlockedFeatures: [],
     // Meta
     createdAt: null,
     playTime: 0
@@ -103,6 +105,7 @@ const GameState = {
     // Display
     textSpeed: "normal", // slow, normal, fast
     fontSize: "medium", // small, medium, large
+    uiTheme: "art", // art, pixel
     screenShake: true,
     animations: true,
     // Gameplay
@@ -192,6 +195,12 @@ let titleManager = null;
 // Initialize Alchemy Manager
 let alchemyManager = null;
 
+// Initialize Smithing Manager
+let smithingManager = null;
+
+// Initialize Enchanting Manager
+let enchantingManager = null;
+
 // =====================================================
 // Save/Load System
 // =====================================================
@@ -273,6 +282,25 @@ function renderHUD() {
   if (goldValue) goldValue.textContent = player.gold;
 }
 
+/**
+ * Update visibility of nav buttons based on unlocked features
+ */
+function updateNavButtonVisibility() {
+  const unlockedFeatures = GameState.player.unlockedFeatures || [];
+
+  // Find all nav buttons with data-feature attribute
+  document.querySelectorAll('.nav-btn[data-feature]').forEach(btn => {
+    const feature = btn.getAttribute('data-feature');
+    if (unlockedFeatures.includes(feature)) {
+      btn.style.display = '';
+      btn.classList.remove('feature-locked');
+    } else {
+      btn.style.display = 'none';
+      btn.classList.add('feature-locked');
+    }
+  });
+}
+
 function renderLocation() {
   // Try to use locationManager first, fallback to GAME_DATA
   let location;
@@ -281,19 +309,22 @@ function renderLocation() {
   } else {
     location = GAME_DATA.locations[GameState.currentLocation];
   }
-  
+
   if (!location) {
     console.warn('No location found');
     return;
   }
-  
+
   const locName = document.querySelector('.location-name');
   const locDesc = document.querySelector('.location-desc');
   if (locName) locName.textContent = location.name;
   if (locDesc) locDesc.textContent = location.description;
-  
+
   // Render NPCs in scene
   renderNPCs(location);
+
+  // Render hotspots in scene
+  renderHotspots(location);
 }
 
 function renderNPCs(location) {
@@ -346,18 +377,20 @@ function renderNPCs(location) {
     nameTag.textContent = npc.name;
     sprite.appendChild(nameTag);
     
-    // Add quest marker if NPC has available quest
+    // Add quest marker if NPC has available quest or quest ready to turn in
     if (hasAvailableQuest(npcId)) {
       const marker = document.createElement('div');
       marker.className = 'quest-marker';
       marker.textContent = '❗';
       sprite.appendChild(marker);
-    } else if (hasActiveQuest(npcId)) {
+    } else if (hasQuestReadyToTurnIn(npcId)) {
+      // Only show ❓ when quest objectives are ALL complete (ready to turn in)
       const marker = document.createElement('div');
-      marker.className = 'quest-marker';
+      marker.className = 'quest-marker quest-marker-turnin';
       marker.textContent = '❓';
       sprite.appendChild(marker);
     }
+    // No marker for in-progress quests - this was causing confusion
     
     sprite.addEventListener('click', () => interactWithNPC(npcId));
     scene.appendChild(sprite);
@@ -387,6 +420,188 @@ function getNPCEmoji(npc) {
     'the_veiled_one': '🔮'
   };
   return emojiMap[npc.id] || '👤';
+}
+
+function renderHotspots(location) {
+  const scene = document.getElementById('game-scene');
+  if (!scene) return;
+
+  // Clear existing hotspots
+  scene.querySelectorAll('.hotspot-sprite').forEach(el => el.remove());
+
+  // Check if location has hotspots
+  if (!location.hotspots || location.hotspots.length === 0) return;
+
+  // Initialize searched hotspots tracking if needed
+  if (!GameState.player.searchedHotspots) {
+    GameState.player.searchedHotspots = [];
+  }
+
+  // Hotspot positions (different from NPC positions)
+  const hotspotPositions = [
+    { x: 15, y: 30 },
+    { x: 75, y: 35 },
+    { x: 45, y: 25 }
+  ];
+
+  let visibleIndex = 0;
+  location.hotspots.forEach((hotspot) => {
+    // Check if already searched
+    const isSearched = GameState.player.searchedHotspots.includes(hotspot.id);
+
+    // Check reputation requirement
+    let canAccess = true;
+    if (hotspot.requiredRep) {
+      const currentRep = GameState.player.reputation?.[hotspot.requiredRep.faction] || 0;
+      canAccess = currentRep >= hotspot.requiredRep.amount;
+    }
+
+    // Don't show if already searched and artifact found
+    if (isSearched) return;
+
+    // Don't show if can't access yet
+    if (!canAccess) return;
+
+    const pos = hotspotPositions[visibleIndex % hotspotPositions.length];
+    const sprite = document.createElement('div');
+    sprite.className = 'hotspot-sprite';
+    sprite.setAttribute('data-hotspot', hotspot.id);
+    sprite.style.left = `${pos.x}%`;
+    sprite.style.bottom = `${pos.y}%`;
+    sprite.style.zIndex = Math.floor(100 - pos.y);
+
+    // Hotspot icon (sparkle to indicate something interesting)
+    const icon = document.createElement('div');
+    icon.className = 'hotspot-icon';
+    icon.textContent = '✨';
+    sprite.appendChild(icon);
+
+    // Name tag
+    const nameTag = document.createElement('div');
+    nameTag.className = 'hotspot-name';
+    nameTag.textContent = hotspot.name;
+    sprite.appendChild(nameTag);
+
+    sprite.addEventListener('click', () => interactWithHotspot(hotspot.id));
+    scene.appendChild(sprite);
+    visibleIndex++;
+  });
+}
+
+function interactWithHotspot(hotspotId) {
+  // Find the hotspot in current location
+  const location = GAME_DATA.locations[GameState.currentLocation];
+  if (!location || !location.hotspots) return;
+
+  const hotspot = location.hotspots.find(h => h.id === hotspotId);
+  if (!hotspot) return;
+
+  // Check if already searched
+  if (GameState.player.searchedHotspots?.includes(hotspotId)) {
+    showNotification('You\'ve already searched here.', 'info');
+    return;
+  }
+
+  // Check reputation requirement
+  if (hotspot.requiredRep) {
+    const currentRep = GameState.player.reputation?.[hotspot.requiredRep.faction] || 0;
+    if (currentRep < hotspot.requiredRep.amount) {
+      showNotification('Something tells you this isn\'t the right time...', 'info');
+      return;
+    }
+  }
+
+  // Show hotspot interaction modal
+  showHotspotModal(hotspot);
+}
+
+function showHotspotModal(hotspot) {
+  // Create modal content
+  const modalHtml = `
+    <div class="modal-overlay active" id="hotspot-modal">
+      <div class="modal-content hotspot-modal">
+        <div class="modal-header">
+          <h3>✨ ${hotspot.name}</h3>
+        </div>
+        <div class="modal-body">
+          <p class="hotspot-description">${hotspot.description}</p>
+          <div class="hotspot-actions">
+            <button class="btn btn-primary" onclick="searchHotspot('${hotspot.id}')">Search</button>
+            <button class="btn btn-secondary" onclick="closeHotspotModal()">Leave</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Add modal to page
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeHotspotModal() {
+  const modal = document.getElementById('hotspot-modal');
+  if (modal) modal.remove();
+}
+
+function searchHotspot(hotspotId) {
+  // Find the hotspot
+  const location = GAME_DATA.locations[GameState.currentLocation];
+  const hotspot = location?.hotspots?.find(h => h.id === hotspotId);
+  if (!hotspot) {
+    closeHotspotModal();
+    return;
+  }
+
+  // Mark as searched
+  if (!GameState.player.searchedHotspots) {
+    GameState.player.searchedHotspots = [];
+  }
+  GameState.player.searchedHotspots.push(hotspotId);
+
+  // Close the initial modal
+  closeHotspotModal();
+
+  // Show discovery text
+  const discoveryHtml = `
+    <div class="modal-overlay active" id="hotspot-discovery-modal">
+      <div class="modal-content hotspot-modal">
+        <div class="modal-header">
+          <h3>🔍 Discovery</h3>
+        </div>
+        <div class="modal-body">
+          <p class="hotspot-search-text">${hotspot.searchText}</p>
+          <div class="hotspot-actions">
+            <button class="btn btn-primary" onclick="claimHotspotArtifact('${hotspot.id}')">Take It</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML('beforeend', discoveryHtml);
+}
+
+function claimHotspotArtifact(hotspotId) {
+  // Find the hotspot
+  const location = GAME_DATA.locations[GameState.currentLocation];
+  const hotspot = location?.hotspots?.find(h => h.id === hotspotId);
+
+  // Close discovery modal
+  const modal = document.getElementById('hotspot-discovery-modal');
+  if (modal) modal.remove();
+
+  if (!hotspot || !hotspot.artifactId) return;
+
+  // Unlock the artifact
+  if (typeof unlockArtifact === 'function') {
+    unlockArtifact(hotspot.artifactId);
+  }
+
+  // Re-render to remove the hotspot from scene
+  renderLocation();
+
+  // Auto-save
+  autoSave();
 }
 
 function renderQuestPanel() {
@@ -672,6 +887,15 @@ function hasActiveQuest(npcId) {
   });
 }
 
+function hasQuestReadyToTurnIn(npcId) {
+  return GameState.player.activeQuests.some(q => {
+    const questData = getQuest(q.id);
+    if (questData?.giver !== npcId) return false;
+    // Check if all objectives are complete
+    return q.objectives.every(obj => obj.completed);
+  });
+}
+
 function selectQuest(questId) {
   GameState.selectedQuest = GameState.selectedQuest === questId ? null : questId;
   renderQuestPanel();
@@ -680,7 +904,7 @@ function selectQuest(questId) {
 function acceptQuest(questId) {
   const quest = getQuest(questId);
   if (!quest) return;
-  
+
   const questState = {
     id: questId,
     objectives: quest.objectives.map(obj => ({
@@ -690,9 +914,13 @@ function acceptQuest(questId) {
     })),
     startedAt: Date.now()
   };
-  
+
   GameState.player.activeQuests.push(questState);
   showNotification(`Quest Accepted: ${quest.name}`);
+
+  // Check gather objectives immediately (in case player already has items)
+  checkGatherObjectives();
+
   renderQuestPanel();
   renderNPCs(GAME_DATA.locations[GameState.currentLocation]);
 }
@@ -848,16 +1076,46 @@ function completeQuest(questId) {
             newRank: newRank.title
           });
         }
+
+        // Check for reputation-based artifact unlocks
+        checkReputationArtifacts(factionId, newRep);
       });
     }
-    
+
     // Spellbook pages
     if (questData.rewards.spellbookUnlock && typeof unlockSpellbookPages === 'function') {
       unlockSpellbookPages(questData.rewards.spellbookUnlock);
       rewardData.spellbookPages = questData.rewards.spellbookUnlock;
     }
+
+    // Artifacts
+    if (questData.rewards.artifactUnlock && typeof unlockArtifact === 'function') {
+      const artifactIds = Array.isArray(questData.rewards.artifactUnlock)
+        ? questData.rewards.artifactUnlock
+        : [questData.rewards.artifactUnlock];
+      artifactIds.forEach(artifactId => {
+        unlockArtifact(artifactId);
+      });
+      rewardData.artifacts = artifactIds;
+    }
+
+    // Feature unlocks (e.g., alchemy, smithing)
+    if (questData.rewards.unlocks) {
+      if (!GameState.player.unlockedFeatures) {
+        GameState.player.unlockedFeatures = [];
+      }
+      questData.rewards.unlocks.forEach(feature => {
+        if (!GameState.player.unlockedFeatures.includes(feature)) {
+          GameState.player.unlockedFeatures.push(feature);
+          showNotification(`Unlocked: ${feature.charAt(0).toUpperCase() + feature.slice(1)}!`, 'success');
+        }
+      });
+      rewardData.unlocks = questData.rewards.unlocks;
+      // Update nav buttons visibility
+      updateNavButtonVisibility();
+    }
   }
-  
+
   // Show rewards screen
   showRewardsScreen(rewardData);
   
@@ -870,6 +1128,27 @@ function completeQuest(questId) {
   renderHUD();
   renderQuestPanel();
   autoSave();
+}
+
+/**
+ * Check and unlock any artifacts that are tied to reputation thresholds
+ */
+function checkReputationArtifacts(factionId, currentRep) {
+  if (!GAME_DATA.artifacts || typeof unlockArtifact !== 'function' || typeof isArtifactUnlocked !== 'function') {
+    return;
+  }
+
+  // Find all artifacts that unlock via reputation for this faction
+  Object.values(GAME_DATA.artifacts).forEach(artifact => {
+    if (artifact.discoveryMethod !== 'reputation') return;
+    if (artifact.faction !== factionId) return;
+    if (isArtifactUnlocked(artifact.id)) return;
+
+    // Check if player has reached the threshold
+    if (currentRep >= artifact.threshold) {
+      unlockArtifact(artifact.id);
+    }
+  });
 }
 
 // Silent versions that don't show notifications (for rewards screen)
@@ -951,7 +1230,7 @@ function levelUpSilent() {
 function addItemToInventorySilent(itemId, count = 1) {
   const itemData = GAME_DATA.items[itemId];
   if (!itemData) return;
-  
+
   if (itemData.stackable) {
     const existing = GameState.player.inventory.find(i => i.id === itemId);
     if (existing) {
@@ -964,6 +1243,69 @@ function addItemToInventorySilent(itemId, count = 1) {
       GameState.player.inventory.push({ id: itemId, count: 1 });
     }
   }
+
+  // Check gather objectives after adding item
+  checkGatherObjectives(itemId);
+}
+
+/**
+ * Check and update gather-type quest objectives based on current inventory
+ * Called when items are added to inventory
+ */
+function checkGatherObjectives(itemId = null) {
+  if (!GameState.player.activeQuests) return;
+
+  for (const questProgress of GameState.player.activeQuests) {
+    const questData = getQuest(questProgress.id);
+    if (!questData) continue;
+
+    for (let i = 0; i < questProgress.objectives.length; i++) {
+      const objProgress = questProgress.objectives[i];
+      const objData = questData.objectives[i];
+
+      // Skip non-gather objectives or already completed ones
+      if (objData.type !== 'gather' || objProgress.completed) continue;
+
+      // Skip if we're checking a specific item and it doesn't match
+      if (itemId && objData.itemId !== itemId) continue;
+
+      // Count how many of the required item we have
+      const targetItem = objData.itemId;
+      const targetCount = objData.target || 1;
+      const currentCount = getItemCount(targetItem);
+
+      // Update progress
+      objProgress.count = Math.min(currentCount, targetCount);
+
+      // Check if objective is complete
+      if (currentCount >= targetCount && !objProgress.completed) {
+        objProgress.completed = true;
+        showNotification(`Objective complete: ${objData.text}`, 'success');
+
+        // Check if quest is now completable
+        const allComplete = questProgress.objectives.every(o => o.completed);
+        if (allComplete) {
+          showNotification(`Quest "${questData.name}" ready to turn in!`, 'success');
+        }
+      }
+    }
+  }
+
+  // Update quest panel to reflect changes
+  renderQuestPanel();
+}
+
+/**
+ * Get count of an item in player's inventory
+ */
+function getItemCount(itemId) {
+  if (typeof itemManager !== 'undefined' && itemManager) {
+    return itemManager.getItemCount(itemId);
+  }
+
+  // Fallback to direct inventory check
+  const invItem = GameState.player.inventory?.find(i => i.id === itemId);
+  return invItem ? invItem.count : 0;
 }
 
 // =====================================================
@@ -1031,11 +1373,20 @@ function showRewardsScreen(rewardData) {
   // Build spellbook HTML
   let spellbookHtml = '';
   if (rewardData.spellbookPages && rewardData.spellbookPages.length > 0) {
+    // Get page titles from SPELLBOOK_PAGES if available
+    const getPageTitle = (pageId) => {
+      if (typeof SPELLBOOK_PAGES !== 'undefined' && SPELLBOOK_PAGES[pageId]) {
+        return SPELLBOOK_PAGES[pageId].title;
+      }
+      // Fallback: format the ID nicely
+      return pageId.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    };
+
     spellbookHtml = `
       <div class="rewards-section">
-        <div class="rewards-section-title">📖 SPELLBOOK UPDATED</div>
+        <div class="rewards-section-title">📖 NEW LORE UNLOCKED</div>
         <div class="rewards-spellbook">
-          ${rewardData.spellbookPages.map(p => `<span class="spellbook-page-unlock">${p}</span>`).join(', ')}
+          ${rewardData.spellbookPages.map(p => `<span class="spellbook-page-unlock">${getPageTitle(p)}</span>`).join(', ')}
         </div>
       </div>
     `;
@@ -1106,6 +1457,177 @@ function showRewardsScreen(rewardData) {
   }, 0);
 }
 
+// =====================================================
+// Lesson Completion Screen
+// =====================================================
+
+function showLessonCompletionScreen(data) {
+  const {
+    lessonType,      // 'regular', 'review', 'exam'
+    passed,
+    successRate,
+    correctAnswers,
+    wrongAnswers,
+    totalQuestions,
+    xpEarned,
+    bonusXP,
+    hpRecovered,
+    hpLost,
+    isPerfect,
+    questObjective,  // optional - quest this was for
+    essenceEarned,   // optional - { type, amount }
+    leveledUp,
+    newLevel
+  } = data;
+
+  const percentage = Math.floor(successRate * 100);
+
+  // Determine header based on lesson type and outcome
+  let headerIcon, headerTitle, headerClass;
+  if (lessonType === 'exam') {
+    headerIcon = passed ? '🏆' : '📝';
+    headerTitle = passed ? 'EXAM PASSED!' : 'EXAM FAILED';
+    headerClass = passed ? 'success' : 'failed';
+  } else if (lessonType === 'review') {
+    headerIcon = '💚';
+    headerTitle = 'REVIEW COMPLETE';
+    headerClass = 'review';
+  } else {
+    headerIcon = passed ? '📚' : '📖';
+    headerTitle = passed ? 'LESSON COMPLETE!' : 'LESSON FAILED';
+    headerClass = passed ? 'success' : 'failed';
+  }
+
+  // Build score display
+  const scoreHtml = `
+    <div class="lesson-score ${isPerfect ? 'perfect' : ''}">
+      <div class="score-circle ${headerClass}">
+        <span class="score-value">${percentage}%</span>
+      </div>
+      ${isPerfect ? '<div class="perfect-badge">⭐ PERFECT!</div>' : ''}
+    </div>
+  `;
+
+  // Build stats breakdown
+  const statsHtml = `
+    <div class="lesson-stats-grid">
+      <div class="lesson-stat correct">
+        <span class="stat-icon">✓</span>
+        <span class="stat-value">${correctAnswers}</span>
+        <span class="stat-label">Correct</span>
+      </div>
+      <div class="lesson-stat wrong">
+        <span class="stat-icon">✗</span>
+        <span class="stat-value">${wrongAnswers}</span>
+        <span class="stat-label">Wrong</span>
+      </div>
+      <div class="lesson-stat total">
+        <span class="stat-icon">📝</span>
+        <span class="stat-value">${totalQuestions}</span>
+        <span class="stat-label">Questions</span>
+      </div>
+    </div>
+  `;
+
+  // Build rewards section
+  let rewardsHtml = '';
+  if (passed) {
+    let rewardItems = [];
+
+    if (xpEarned > 0) {
+      let xpText = `+${xpEarned} XP`;
+      if (bonusXP > 0) {
+        xpText = `+${xpEarned - bonusXP} XP <span class="bonus">(+${bonusXP} streak)</span>`;
+      }
+      rewardItems.push(`<div class="reward-item xp"><span class="reward-icon">⭐</span>${xpText}</div>`);
+    }
+
+    if (hpRecovered > 0) {
+      rewardItems.push(`<div class="reward-item hp"><span class="reward-icon">💚</span>+${hpRecovered} HP Restored</div>`);
+    }
+
+    if (essenceEarned && essenceEarned.amount > 0) {
+      const essenceIcons = { faded: '🔮', clear: '💎', vivid: '✨', brilliant: '🌟' };
+      const icon = essenceIcons[essenceEarned.type] || '🔮';
+      rewardItems.push(`<div class="reward-item essence"><span class="reward-icon">${icon}</span>+${essenceEarned.amount} ${essenceEarned.type} essence</div>`);
+    }
+
+    if (rewardItems.length > 0) {
+      rewardsHtml = `
+        <div class="lesson-rewards">
+          <div class="rewards-title">Rewards</div>
+          ${rewardItems.join('')}
+        </div>
+      `;
+    }
+  }
+
+  // Build HP lost warning (for failed lessons)
+  let hpWarningHtml = '';
+  if (hpLost > 0) {
+    hpWarningHtml = `
+      <div class="lesson-hp-warning">
+        <span class="warning-icon">💔</span>
+        <span>Lost ${hpLost} HP from wrong answers</span>
+      </div>
+    `;
+  }
+
+  // Level up celebration
+  let levelUpHtml = '';
+  if (leveledUp) {
+    levelUpHtml = `
+      <div class="lesson-level-up">
+        🎊 LEVEL UP! You are now Level ${newLevel}!
+      </div>
+    `;
+  }
+
+  // Quest objective progress
+  let questHtml = '';
+  if (questObjective && passed) {
+    questHtml = `
+      <div class="lesson-quest-progress">
+        <span class="quest-icon">📜</span>
+        <span>Quest objective completed!</span>
+      </div>
+    `;
+  }
+
+  // Failure message
+  let failureHtml = '';
+  if (!passed) {
+    const threshold = lessonType === 'exam' ? 70 : 60;
+    failureHtml = `
+      <div class="lesson-failure-msg">
+        <p>You need ${threshold}% to pass.</p>
+        <p>Keep practicing - you'll get it!</p>
+      </div>
+    `;
+  }
+
+  showModal('lesson-complete-modal', `
+    <div class="lesson-complete-screen ${headerClass}">
+      <div class="lesson-complete-header">
+        <div class="lesson-complete-icon">${headerIcon}</div>
+        <div class="lesson-complete-title">${headerTitle}</div>
+      </div>
+
+      ${levelUpHtml}
+      ${scoreHtml}
+      ${statsHtml}
+      ${rewardsHtml}
+      ${hpWarningHtml}
+      ${questHtml}
+      ${failureHtml}
+
+      <div class="lesson-complete-footer">
+        <button class="pixel-btn ${passed ? 'pixel-btn-gold' : ''}" onclick="hideModal('lesson-complete-modal')">Continue</button>
+      </div>
+    </div>
+  `);
+}
+
 function unlockDependentQuests(completedQuestId) {
   Object.values(GAME_DATA.quests).forEach(quest => {
     if (quest.prerequisites.includes(completedQuestId)) {
@@ -1162,7 +1684,7 @@ function levelUp() {
     GameState.player.maxHp = statsManager.calculateMaxHp();
   } else {
     // Fallback if stats manager not ready
-    GameState.player.maxHp += 10;
+    GameState.player.maxHp += 2; // Reduced from 10 to 2 per level
   }
   
   // Restore HP on level up
@@ -1369,7 +1891,7 @@ function restAtInn() {
 function addItemToInventory(itemId, count = 1) {
   const itemData = GAME_DATA.items[itemId];
   if (!itemData) return;
-  
+
   if (itemData.stackable) {
     const existing = GameState.player.inventory.find(i => i.id === itemId);
     if (existing) {
@@ -1382,8 +1904,11 @@ function addItemToInventory(itemId, count = 1) {
       GameState.player.inventory.push({ id: itemId, count: 1 });
     }
   }
-  
+
   showNotification(`Received: ${itemData.name}${count > 1 ? ` x${count}` : ''}`);
+
+  // Check gather objectives after adding item
+  checkGatherObjectives(itemId);
 }
 
 function useItem(itemId) {
@@ -1484,7 +2009,7 @@ function recalculateStats() {
     GameState.player.maxHp = statsManager.calculateMaxHp();
   } else {
     // Fallback if statsManager not initialized
-    const baseHp = 100 + (GameState.player.level - 1) * 10;
+    const baseHp = 50 + (GameState.player.level - 1) * 2; // Base 50, +2 per level
     GameState.player.maxHp = baseHp;
   }
   
@@ -1594,7 +2119,7 @@ function interactWithNPC(npcId) {
         if (lessonObjective) {
           const objDef = questData?.objectives?.find(obj => obj.id === lessonObjective.id);
           const isGrammar = objDef?.type === 'grammar_lesson';
-          
+
           options.push({
             text: isGrammar ? "Start Grammar Lesson" : "Start Lesson",
             action: () => {
@@ -1607,7 +2132,15 @@ function interactWithNPC(npcId) {
             }
           });
         }
-        
+
+        // Allow shop access during active quests if NPC has shop
+        if (npcHasAnyShop(npcId)) {
+          options.push({
+            text: "Browse Wares",
+            action: () => openShop(npcId)
+          });
+        }
+
         options.push({
           text: "Goodbye",
           action: hideDialog
@@ -1615,8 +2148,8 @@ function interactWithNPC(npcId) {
       }
     }
   }
-  // Check if NPC has shop
-  else if (npc.shop) {
+  // Check if NPC has shop (no active quest)
+  else if (npcHasAnyShop(npcId)) {
     options.push({
       text: "Browse Wares",
       action: () => openShop(npcId)
@@ -1881,13 +2414,16 @@ function startLesson(questId, objectiveId) {
     isBossExam: false
   };
 
-  // Tutorial: First lesson
+  // Show lesson modal first
+  showLessonModal();
+
+  // Tutorial: First lesson - show after modal is visible
   if (shouldShowTutorial('startedLesson')) {
     markTutorialComplete('startedLesson');
-    hideTutorialTip();
+    setTimeout(() => {
+      showTutorialTip('startLesson', '.question-container', () => {});
+    }, 500);
   }
-
-  showLessonModal();
 }
 
 function generateQuestionsFromVocab(vocab, count, categories = []) {
@@ -2010,8 +2546,17 @@ function startGrammarLesson(questId, objectiveId) {
     usedStreakProtection: false,
     isBossExam: false
   };
-  
+
+  // Show lesson modal first
   showLessonModal();
+
+  // Tutorial: First lesson - show after modal is visible
+  if (shouldShowTutorial('startedLesson')) {
+    markTutorialComplete('startedLesson');
+    setTimeout(() => {
+      showTutorialTip('startLesson', '.question-container', () => {});
+    }, 500);
+  }
 }
 
 /**
@@ -2835,78 +3380,89 @@ function completeLessonSession() {
     // HP recovery based on performance
     const hpRecovery = Math.floor(GameState.player.maxHp * successRate);
     GameState.player.hp = Math.min(GameState.player.maxHp, GameState.player.hp + hpRecovery);
-    
+
     // Track review recovery for achievement
     GameState.player.reviewRecoveries++;
-    
+
     // Small XP reward for reviewing
     const reviewXP = Math.floor(15 * successRate);
     if (reviewXP > 0) {
       addXP(reviewXP);
     }
-    
+
     // Update player stats
     GameState.player.lessonsCompleted++;
-    
+
     // Track perfect lesson
-    if (successRate === 1) {
+    const isPerfect = successRate === 1;
+    if (isPerfect) {
       GameState.player.perfectLessons++;
     }
-    
-    // Show results
-    showNotification(`Review Complete! ${Math.floor(successRate * 100)}%`, 'success');
-    setTimeout(() => {
-      showNotification(`💚 Restored ${hpRecovery} HP`, 'success');
-    }, 500);
-    
+
     // Check achievements
     checkAchievements();
-    
+
     renderHUD();
     autoSave();
-    
+
+    // Show completion screen
+    showLessonCompletionScreen({
+      lessonType: 'review',
+      passed: true,
+      successRate,
+      correctAnswers: state.correctAnswers,
+      wrongAnswers: state.wrongAnswers,
+      totalQuestions: state.questions.length,
+      xpEarned: reviewXP,
+      bonusXP: 0,
+      hpRecovered: hpRecovery,
+      hpLost: 0,
+      isPerfect
+    });
+
     // Reset lesson state
     resetLessonState();
     return;
   }
-  
+
   // Regular lesson completion
   const passThreshold = 0.6; // 60% to pass
   const passed = successRate >= passThreshold;
-  
+  const isPerfect = successRate === 1;
+
+  // Calculate HP lost from wrong answers (tracked during lesson)
+  const hpLost = state.wrongAnswers * 10; // Assuming 10 HP per wrong answer
+
+  // Track level before XP award to detect level up
+  const levelBefore = GameState.player.level;
+
+  let totalXP = 0;
+  let bonusXP = 0;
+  let essenceEarned = null;
+
   if (passed) {
     // Update quest progress
     updateQuestProgress(state.questId, state.objectiveId);
-    
+
     // Calculate base XP
     const baseXP = 25 + Math.floor(successRate * 50);
-    
+
     // Calculate average multiplier earned (simplified: use final streak's worth)
     const bestMultiplier = getMultiplierForStreak(state.correctAnswers);
-    const bonusXP = Math.floor(baseXP * (bestMultiplier - 1));
-    const totalXP = baseXP + bonusXP;
-    
+    bonusXP = Math.floor(baseXP * (bestMultiplier - 1));
+    totalXP = baseXP + bonusXP;
+
     // Award XP
     addXP(totalXP);
-    
+
     // Update player lesson stats
     GameState.player.lessonsCompleted++;
-    
+
     // Track perfect lesson
-    if (successRate === 1) {
+    if (isPerfect) {
       GameState.player.perfectLessons++;
     }
-    
-    // Show completion message
-    if (bonusXP > 0) {
-      showNotification(`Lesson Complete! ${Math.floor(successRate * 100)}%`, 'success');
-      setTimeout(() => {
-        showNotification(`🔥 Streak Bonus: +${bonusXP} XP!`, 'success');
-      }, 500);
-    } else {
-      showNotification(`Lesson Complete! ${Math.floor(successRate * 100)}% correct`, 'success');
-    }
-    
+
     // Check for hidden quest triggers
     checkHiddenQuestTriggers();
 
@@ -2915,29 +3471,50 @@ function completeLessonSession() {
 
     // Award linguistic essence based on performance
     if (typeof alchemyManager !== 'undefined' && alchemyManager) {
-      if (successRate === 1) {
+      if (isPerfect) {
         // Perfect: 3 faded + 1 clear
         alchemyManager.addEssence('faded', 3);
         alchemyManager.addEssence('clear', 1);
+        essenceEarned = { type: 'faded', amount: 3 };
       } else if (successRate >= 0.8) {
         // Good: 2 faded
         alchemyManager.addEssence('faded', 2);
+        essenceEarned = { type: 'faded', amount: 2 };
       } else {
         // Passed: 1 faded
         alchemyManager.addEssence('faded', 1);
+        essenceEarned = { type: 'faded', amount: 1 };
       }
     }
-
-  } else {
-    const thresholdPercent = Math.floor(difficultySettings.passThreshold * 100);
-    showNotification(`Need ${thresholdPercent}% to pass. You got ${Math.floor(successRate * 100)}%. Try again!`, 'error');
   }
-  
+
+  // Detect level up
+  const leveledUp = GameState.player.level > levelBefore;
+
+  renderHUD();
+  autoSave();
+
+  // Show completion screen
+  showLessonCompletionScreen({
+    lessonType: 'regular',
+    passed,
+    successRate,
+    correctAnswers: state.correctAnswers,
+    wrongAnswers: state.wrongAnswers,
+    totalQuestions: state.questions.length,
+    xpEarned: totalXP,
+    bonusXP,
+    hpRecovered: 0,
+    hpLost,
+    isPerfect,
+    questObjective: passed ? state.objectiveId : null,
+    essenceEarned,
+    leveledUp,
+    newLevel: GameState.player.level
+  });
+
   // Reset lesson state
   resetLessonState();
-  
-  // Save progress
-  autoSave();
 }
 
 function resetLessonState() {
@@ -3047,8 +3624,8 @@ const TutorialTips = {
   },
   startLesson: {
     icon: '📚',
-    title: 'Learning Time!',
-    content: 'Lessons teach you French vocabulary. Answer questions to earn XP and complete quest objectives.',
+    title: 'How Lessons Work',
+    content: 'Answer questions correctly to progress. You must get each question right before moving on. Wrong answers cost HP, but you can try again!',
     position: 'bottom'
   },
   wrongAnswer: {
@@ -3373,10 +3950,17 @@ function showModal(id, content) {
     modal.className = 'modal-overlay';
     modal.innerHTML = `<div class="modal-content pixel-border">${content}</div>`;
     document.body.appendChild(modal);
+
+    // Click outside to close
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        hideModal(id);
+      }
+    });
   } else {
     modal.querySelector('.modal-content').innerHTML = content;
   }
-  
+
   setTimeout(() => modal.classList.add('active'), 10);
 }
 
@@ -3385,6 +3969,28 @@ function hideModal(id) {
   if (modal) {
     modal.classList.remove('active');
   }
+}
+
+/**
+ * Check if NPC has any shop (either in NPC definition or in shopManager)
+ */
+function npcHasAnyShop(npcId) {
+  const npc = GAME_DATA.npcs[npcId];
+
+  // Check old-style NPC-defined shop
+  if (npc?.shop) {
+    return true;
+  }
+
+  // Check shopManager for shops associated with this NPC
+  if (typeof shopManager !== 'undefined' && shopManager) {
+    const shops = shopManager.getShopsByNpc(npcId);
+    if (shops && shops.length > 0) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function openShop(npcId, shopType = null) {
@@ -3589,6 +4195,7 @@ function renderAccountUpgradeShop(shopId) {
   });
 
   const categoryNames = {
+    starter: 'Starter Blessings',
     learning: 'Learning',
     resources: 'Resources',
     gameplay: 'Gameplay',
@@ -3605,7 +4212,6 @@ function renderAccountUpgradeShop(shopId) {
 
     upgradesHtml += items.map(entry => {
       const upgrade = entry.upgrade;
-      const canAfford = playerGold >= entry.price;
       const isPurchasable = entry.canPurchase;
       const isOwned = entry.owned && upgrade.oneTime;
       const stackInfo = upgrade.maxStacks ? ` (${entry.ownedCount}/${upgrade.maxStacks})` : '';
@@ -3620,16 +4226,45 @@ function renderAccountUpgradeShop(shopId) {
         statusText = entry.reason;
       }
 
+      // Build price display (gold and/or items)
+      let priceHtml = '';
+      const hasGoldCost = entry.price > 0;
+      const hasItemCosts = upgrade.cost?.items && Object.keys(upgrade.cost.items).length > 0;
+
+      if (hasGoldCost) {
+        priceHtml += `<div class="upgrade-gold-cost">
+          <span class="price-value">${entry.price}</span>
+          <span class="price-icon">💰</span>
+        </div>`;
+      }
+
+      if (hasItemCosts) {
+        const itemCostsHtml = Object.entries(upgrade.cost.items).map(([itemId, amount]) => {
+          const itemDef = GAME_DATA.items?.[itemId] || { name: itemId, icon: '📦' };
+          const playerHas = typeof itemManager !== 'undefined' ? itemManager.getItemCount(itemId) : 0;
+          const canAffordItem = playerHas >= amount;
+          return `<div class="item-cost ${canAffordItem ? 'affordable' : 'unaffordable'}">
+            <span class="item-icon">${itemDef.icon || '📦'}</span>
+            <span class="item-amount">${amount}x ${itemDef.name || itemId}</span>
+            <span class="item-have">(${playerHas})</span>
+          </div>`;
+        }).join('');
+        priceHtml += `<div class="upgrade-item-costs">${itemCostsHtml}</div>`;
+      }
+
+      if (!hasGoldCost && !hasItemCosts) {
+        priceHtml = '<div class="upgrade-gold-cost"><span class="price-value">Free</span></div>';
+      }
+
       return `
-        <div class="upgrade-item ${statusClass} ${canAfford && isPurchasable ? '' : 'cannot-afford'}">
+        <div class="upgrade-item ${statusClass} ${isPurchasable ? '' : 'cannot-afford'}">
           <div class="upgrade-info">
             <div class="upgrade-name">${upgrade.name}${stackInfo}</div>
             <div class="upgrade-desc">${upgrade.description}</div>
             ${statusText ? `<div class="upgrade-status">${statusText}</div>` : ''}
           </div>
           <div class="upgrade-price">
-            <span class="price-value">${entry.price}</span>
-            <span class="price-icon">💰</span>
+            ${priceHtml}
           </div>
           <button class="pixel-btn shop-buy-btn"
                   onclick="buyAccountUpgrade('${shopId}', '${entry.upgradeId}')"
@@ -3912,6 +4547,429 @@ function useCognitivePotion(itemId) {
     autoSave();
   } else {
     showNotification(result.message, 'error');
+  }
+}
+
+// =====================================================
+// Unified Crafting System (Alchemy, Smithing, Enchanting)
+// =====================================================
+
+function openCrafting(profession = 'alchemy') {
+  const validProfessions = ['alchemy', 'smithing', 'enchanting'];
+  if (!validProfessions.includes(profession)) {
+    profession = 'alchemy';
+  }
+
+  renderCraftingScreen(profession);
+}
+
+function renderCraftingScreen(profession, selectedCategory = 'all') {
+  // Build profession tabs
+  const professionTabs = [
+    { id: 'alchemy', name: 'Alchemy', icon: '⚗️', manager: alchemyManager },
+    { id: 'smithing', name: 'Smithing', icon: '🔨', manager: smithingManager },
+    { id: 'enchanting', name: 'Enchanting', icon: '✨', manager: enchantingManager }
+  ];
+
+  const profTabsHtml = professionTabs.map(prof => `
+    <button class="profession-tab ${profession === prof.id ? 'active' : ''}"
+            onclick="renderCraftingScreen('${prof.id}', 'all')"
+            ${!prof.manager ? 'disabled title="Coming soon"' : ''}>
+      <span class="prof-icon">${prof.icon}</span>
+      <span class="prof-name">${prof.name}</span>
+    </button>
+  `).join('');
+
+  // Render the appropriate profession content
+  let contentHtml = '';
+  switch (profession) {
+    case 'alchemy':
+      contentHtml = renderAlchemyContent(selectedCategory);
+      break;
+    case 'smithing':
+      contentHtml = renderSmithingContent(selectedCategory);
+      break;
+    case 'enchanting':
+      contentHtml = renderEnchantingContent(selectedCategory);
+      break;
+  }
+
+  showModal('crafting-modal', `
+    <div class="crafting-screen">
+      <div class="crafting-header">
+        <div class="crafting-title">Crafting Workshop</div>
+        <button class="close-btn" onclick="hideModal('crafting-modal')">✕</button>
+      </div>
+
+      <div class="profession-tabs">
+        ${profTabsHtml}
+      </div>
+
+      <div class="profession-content">
+        ${contentHtml}
+      </div>
+    </div>
+  `);
+}
+
+function renderAlchemyContent(selectedCategory = 'all') {
+  if (!alchemyManager) {
+    return '<p class="no-manager">Alchemy system not available.</p>';
+  }
+
+  const level = alchemyManager.getAlchemyLevel();
+  const tier = alchemyManager.getSkillTier();
+  const xpProgress = alchemyManager.getSkillProgressPercent();
+  const essence = alchemyManager.getAllEssence();
+  const recipes = selectedCategory === 'all'
+    ? alchemyManager.getAvailableRecipes()
+    : alchemyManager.getAvailableRecipes().filter(r => r.category === selectedCategory);
+
+  const essenceHtml = `
+    <div class="crafting-resources">
+      <div class="resource-item" title="Faded Essence">
+        <span class="resource-icon">💫</span>
+        <span class="resource-count">${essence.faded}</span>
+      </div>
+      <div class="resource-item" title="Clear Essence">
+        <span class="resource-icon">✨</span>
+        <span class="resource-count">${essence.clear}</span>
+      </div>
+      <div class="resource-item" title="Vivid Essence">
+        <span class="resource-icon">🌟</span>
+        <span class="resource-count">${essence.vivid}</span>
+      </div>
+      <div class="resource-item" title="Brilliant Essence">
+        <span class="resource-icon">💎</span>
+        <span class="resource-count">${essence.brilliant}</span>
+      </div>
+    </div>
+  `;
+
+  const categories = [
+    { id: 'all', name: 'All', icon: '📋' },
+    { id: 'healing', name: 'Healing', icon: '❤️' },
+    { id: 'cognitive', name: 'Cognitive', icon: '🧠' }
+  ];
+
+  const tabsHtml = categories.map(cat => `
+    <button class="category-tab ${selectedCategory === cat.id ? 'active' : ''}"
+            onclick="renderCraftingScreen('alchemy', '${cat.id}')">
+      ${cat.icon} ${cat.name}
+    </button>
+  `).join('');
+
+  let recipesHtml = buildRecipeList(recipes, 'alchemy');
+
+  return `
+    <div class="skill-header">
+      <div class="skill-info">
+        <span class="skill-icon">⚗️</span>
+        <span class="skill-tier">${tier.name}</span>
+        <span class="skill-level">Level ${level}</span>
+      </div>
+      <div class="skill-progress-bar">
+        <div class="skill-progress-fill" style="width: ${xpProgress}%"></div>
+      </div>
+    </div>
+
+    <div class="resources-section">
+      <div class="section-label">Linguistic Essence</div>
+      ${essenceHtml}
+    </div>
+
+    <div class="category-tabs">
+      ${tabsHtml}
+    </div>
+
+    <div class="recipe-list">
+      ${recipesHtml}
+    </div>
+  `;
+}
+
+function renderSmithingContent(selectedCategory = 'all') {
+  if (!smithingManager) {
+    return '<p class="no-manager">Smithing system not available.</p>';
+  }
+
+  const level = smithingManager.getSmithingLevel();
+  const tier = smithingManager.getSkillTier();
+  const xpProgress = smithingManager.getSkillProgressPercent();
+  const recipes = selectedCategory === 'all'
+    ? smithingManager.getAvailableRecipes()
+    : smithingManager.getAvailableRecipes().filter(r => r.category === selectedCategory);
+
+  const categories = [
+    { id: 'all', name: 'All', icon: '📋' },
+    { id: 'smelting', name: 'Smelting', icon: '🔥' },
+    { id: 'weapons', name: 'Weapons', icon: '⚔️' },
+    { id: 'armor', name: 'Armor', icon: '🛡️' }
+  ];
+
+  const tabsHtml = categories.map(cat => `
+    <button class="category-tab ${selectedCategory === cat.id ? 'active' : ''}"
+            onclick="renderCraftingScreen('smithing', '${cat.id}')">
+      ${cat.icon} ${cat.name}
+    </button>
+  `).join('');
+
+  let recipesHtml = buildRecipeList(recipes, 'smithing');
+
+  return `
+    <div class="skill-header">
+      <div class="skill-info">
+        <span class="skill-icon">🔨</span>
+        <span class="skill-tier">${tier.name}</span>
+        <span class="skill-level">Level ${level}</span>
+      </div>
+      <div class="skill-progress-bar">
+        <div class="skill-progress-fill" style="width: ${xpProgress}%"></div>
+      </div>
+    </div>
+
+    <div class="category-tabs">
+      ${tabsHtml}
+    </div>
+
+    <div class="recipe-list">
+      ${recipesHtml}
+    </div>
+  `;
+}
+
+function renderEnchantingContent(selectedCategory = 'all') {
+  if (!enchantingManager) {
+    return '<p class="no-manager">Enchanting system not available.</p>';
+  }
+
+  const level = enchantingManager.getEnchantingLevel();
+  const tier = enchantingManager.getSkillTier();
+  const xpProgress = enchantingManager.getSkillProgressPercent();
+  const recipes = selectedCategory === 'all'
+    ? enchantingManager.getAvailableRecipes()
+    : enchantingManager.getAvailableRecipes().filter(r => r.category === selectedCategory);
+
+  const essence = alchemyManager ? alchemyManager.getAllEssence() : { faded: 0, clear: 0, vivid: 0, brilliant: 0 };
+
+  const essenceHtml = `
+    <div class="crafting-resources">
+      <div class="resource-item" title="Vivid Essence">
+        <span class="resource-icon">🌟</span>
+        <span class="resource-count">${essence.vivid}</span>
+      </div>
+      <div class="resource-item" title="Clear Essence">
+        <span class="resource-icon">✨</span>
+        <span class="resource-count">${essence.clear}</span>
+      </div>
+    </div>
+  `;
+
+  const categories = [
+    { id: 'all', name: 'All', icon: '📋' },
+    { id: 'weapon_enchants', name: 'Weapons', icon: '⚔️' },
+    { id: 'armor_enchants', name: 'Armor', icon: '🛡️' }
+  ];
+
+  const tabsHtml = categories.map(cat => `
+    <button class="category-tab ${selectedCategory === cat.id ? 'active' : ''}"
+            onclick="renderCraftingScreen('enchanting', '${cat.id}')">
+      ${cat.icon} ${cat.name}
+    </button>
+  `).join('');
+
+  let recipesHtml = buildEnchantingRecipeList(recipes);
+
+  return `
+    <div class="skill-header">
+      <div class="skill-info">
+        <span class="skill-icon">✨</span>
+        <span class="skill-tier">${tier.name}</span>
+        <span class="skill-level">Level ${level}</span>
+      </div>
+      <div class="skill-progress-bar">
+        <div class="skill-progress-fill" style="width: ${xpProgress}%"></div>
+      </div>
+    </div>
+
+    <div class="resources-section">
+      <div class="section-label">Essence (shared with Alchemy)</div>
+      ${essenceHtml}
+    </div>
+
+    <div class="category-tabs">
+      ${tabsHtml}
+    </div>
+
+    <div class="recipe-list">
+      ${recipesHtml}
+    </div>
+  `;
+}
+
+function buildRecipeList(recipes, profession) {
+  if (recipes.length === 0) {
+    return '<p class="no-recipes">No recipes available in this category.</p>';
+  }
+
+  const manager = profession === 'alchemy' ? alchemyManager : smithingManager;
+
+  return recipes.map(recipe => {
+    const canCraftResult = manager.canCraft(recipe.id);
+    const canCraft = canCraftResult.canCraft;
+
+    const ingredientsHtml = recipe.ingredients.map(ing => {
+      const formatted = manager.formatIngredient(ing);
+      const hasEnough = formatted.have >= ing.amount;
+      return `
+        <span class="ingredient ${hasEnough ? '' : 'missing'}">
+          ${formatted.icon} ${formatted.name} (${formatted.have}/${ing.amount})
+        </span>
+      `;
+    }).join('');
+
+    const outputHtml = recipe.output ? `
+      <div class="recipe-output">
+        Creates: ${GAME_DATA.items[recipe.output.item]?.icon || '?'} ${GAME_DATA.items[recipe.output.item]?.name || recipe.output.item} x${recipe.output.amount}
+      </div>
+    ` : '';
+
+    return `
+      <div class="crafting-recipe ${canCraft ? '' : 'cannot-craft'}">
+        <div class="recipe-header">
+          <span class="recipe-icon">${recipe.icon}</span>
+          <span class="recipe-name">${recipe.name}</span>
+          <span class="recipe-level">Lv.${recipe.levelRequired}</span>
+        </div>
+        <div class="recipe-description">${recipe.description}</div>
+        ${outputHtml}
+        <div class="recipe-ingredients">${ingredientsHtml}</div>
+        <div class="recipe-footer">
+          <span class="recipe-xp">+${recipe.xpReward} XP</span>
+          <button class="pixel-btn craft-btn"
+                  onclick="craftItem('${profession}', '${recipe.id}')"
+                  ${canCraft ? '' : 'disabled'}>
+            Craft
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function buildEnchantingRecipeList(recipes) {
+  if (recipes.length === 0) {
+    return '<p class="no-recipes">No enchanting recipes available.</p>';
+  }
+
+  return recipes.map(recipe => {
+    const enchantableItems = enchantingManager.getEnchantableItems(recipe.id);
+    const hasItems = enchantableItems.length > 0;
+
+    const ingredientsHtml = recipe.ingredients.map(ing => {
+      const formatted = enchantingManager.formatIngredient(ing);
+      const hasEnough = formatted.have >= ing.amount;
+      return `
+        <span class="ingredient ${hasEnough ? '' : 'missing'}">
+          ${formatted.icon} ${formatted.name} (${formatted.have}/${ing.amount})
+        </span>
+      `;
+    }).join('');
+
+    const itemSelectHtml = hasItems ? `
+      <div class="enchant-item-select">
+        <label>Base Item:</label>
+        <select id="enchant-item-${recipe.id}" class="enchant-select">
+          ${enchantableItems.map(item => `
+            <option value="${item.id}">${item.icon} ${item.name} (x${item.count}) → ${item.outputName}</option>
+          `).join('')}
+        </select>
+      </div>
+    ` : '<div class="no-enchantable-items">No enchantable items in inventory</div>';
+
+    const canEnchant = hasItems && recipe.ingredients.every(ing => {
+      const formatted = enchantingManager.formatIngredient(ing);
+      return formatted.have >= ing.amount;
+    });
+
+    return `
+      <div class="crafting-recipe enchanting-recipe ${canEnchant ? '' : 'cannot-craft'}">
+        <div class="recipe-header">
+          <span class="recipe-icon">${recipe.icon}</span>
+          <span class="recipe-name">${recipe.name}</span>
+          <span class="recipe-level">Lv.${recipe.levelRequired}</span>
+        </div>
+        <div class="recipe-description">${recipe.description}</div>
+        ${itemSelectHtml}
+        <div class="recipe-ingredients">${ingredientsHtml}</div>
+        <div class="recipe-footer">
+          <span class="recipe-xp">+${recipe.xpReward} XP</span>
+          <button class="pixel-btn craft-btn"
+                  onclick="enchantItem('${recipe.id}')"
+                  ${canEnchant ? '' : 'disabled'}>
+            Enchant
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function craftItem(profession, recipeId) {
+  let manager, result;
+
+  switch (profession) {
+    case 'alchemy':
+      manager = alchemyManager;
+      result = manager.craft(recipeId);
+      break;
+    case 'smithing':
+      manager = smithingManager;
+      result = manager.craft(recipeId);
+      break;
+    default:
+      showNotification('Unknown crafting profession', 'error');
+      return;
+  }
+
+  if (result.success) {
+    let message = `Crafted ${result.recipe.name}!`;
+    if (result.leveledUp) {
+      message += ` ${profession.charAt(0).toUpperCase() + profession.slice(1)} leveled up to ${result.newLevel}!`;
+    }
+    showNotification(message, 'success');
+    renderCraftingScreen(profession);
+    autoSave();
+  } else {
+    showNotification(result.reason || 'Cannot craft this recipe', 'error');
+  }
+}
+
+function enchantItem(recipeId) {
+  if (!enchantingManager) {
+    showNotification('Enchanting system not available', 'error');
+    return;
+  }
+
+  const selectElement = document.getElementById(`enchant-item-${recipeId}`);
+  if (!selectElement) {
+    showNotification('Please select an item to enchant', 'error');
+    return;
+  }
+
+  const baseItemId = selectElement.value;
+  const result = enchantingManager.enchant(recipeId, baseItemId);
+
+  if (result.success) {
+    let message = `Enchanted ${result.output.name}!`;
+    if (result.leveledUp) {
+      message += ` Enchanting leveled up to ${result.newLevel}!`;
+    }
+    showNotification(message, 'success');
+    renderCraftingScreen('enchanting');
+    autoSave();
+  } else {
+    showNotification(result.reason || 'Cannot enchant this item', 'error');
   }
 }
 
@@ -4296,12 +5354,15 @@ function addReputationWithNotification(factionId, amount) {
       setTimeout(() => {
         showNotification(`🎉 ${result.factionName}: ${result.newRank.name}!`, 'success');
       }, 500);
-      
+
       // Check if this triggers any achievements or milestones
       checkAchievements();
     }
+
+    // Check for reputation-based artifact unlocks
+    checkReputationArtifacts(factionId, result.newTotal);
   }
-  
+
   return result;
 }
 
@@ -4331,42 +5392,76 @@ function showCharacterCreation() {
       Create Your Character
     </h2>
     <div style="margin-bottom: 24px; text-align: center;">
-      <label style="display: block; font-family: var(--font-display); font-size: 10px; margin-bottom: 8px;">Your Name</label>
+      <label style="display: block; font-family: var(--font-display); font-size: 14px; margin-bottom: 8px;">Your Name</label>
       <input type="text" class="name-input" id="player-name-input" placeholder="Enter name..." maxlength="20">
+      <div id="name-error" style="color: #e63946; font-size: 16px; margin-top: 8px; display: none;">Please enter a name to continue</div>
     </div>
-    <label style="display: block; font-family: var(--font-display); font-size: 10px; margin-bottom: 8px; text-align: center;">Choose Your Path</label>
+    <label style="display: block; font-family: var(--font-display); font-size: 14px; margin-bottom: 8px; text-align: center;">Choose Your Path</label>
     <div class="class-options">
       ${classOptions}
     </div>
-    <div style="text-align: center; margin-top: 24px;">
-      <button class="pixel-btn pixel-btn-gold" id="start-adventure-btn" disabled>
+    <div style="text-align: center; margin-top: 24px; display: flex; flex-direction: column; align-items: center; gap: 12px;">
+      <button class="art-btn art-btn-large art-btn-gold" id="start-adventure-btn" disabled>
         Begin Adventure
+      </button>
+      <button class="art-btn art-btn-small" id="back-to-menu-btn">
+        Back
       </button>
     </div>
   `);
-  
+
+  // Back button handler
+  document.getElementById('back-to-menu-btn').addEventListener('click', () => {
+    hideModal('character-creation');
+    document.getElementById('title-screen').style.display = 'flex';
+  });
+
   // Add class selection handlers
   let selectedClass = null;
+  const nameInput = document.getElementById('player-name-input');
+  const nameError = document.getElementById('name-error');
+
   document.querySelectorAll('.class-card').forEach(card => {
     card.addEventListener('click', () => {
+      const name = nameInput.value.trim();
+
+      // Show error if no name entered when selecting a class
+      if (!name) {
+        nameError.style.display = 'block';
+        nameInput.focus();
+        // Still allow class selection visually
+      }
+
       document.querySelectorAll('.class-card').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
       selectedClass = card.dataset.class;
       checkCanStart();
     });
   });
-  
-  const nameInput = document.getElementById('player-name-input');
+
   nameInput.addEventListener('input', checkCanStart);
-  
+  nameInput.addEventListener('focus', () => {
+    nameError.style.display = 'none';
+  });
+
   function checkCanStart() {
     const name = nameInput.value.trim();
     const btn = document.getElementById('start-adventure-btn');
     btn.disabled = !name || !selectedClass;
+
+    // Hide error when user starts typing
+    if (name) {
+      nameError.style.display = 'none';
+    }
   }
-  
+
   document.getElementById('start-adventure-btn').addEventListener('click', () => {
     const name = nameInput.value.trim();
+    if (!name) {
+      nameError.style.display = 'block';
+      nameInput.focus();
+      return;
+    }
     if (name && selectedClass) {
       hideModal('character-creation');
       showLanguageSelection(name, selectedClass);
@@ -4403,7 +5498,7 @@ function showLanguageSelection(playerName, classId) {
       ${languageCards}
     </div>
     <div style="text-align: center; margin-top: 24px;">
-      <button class="pixel-btn pixel-btn-gold" id="confirm-language-btn" disabled>
+      <button class="art-btn art-btn-large art-btn-gold" id="confirm-language-btn" disabled>
         Continue
       </button>
     </div>
@@ -4463,9 +5558,19 @@ function startGame() {
   document.getElementById('title-screen').style.display = 'none';
   document.getElementById('game-container').style.display = 'flex';
 
+  // Check for locations that should be discovered based on completed quests
+  // This is a recovery for saves before location discovery was implemented
+  if (locationManager) {
+    const discovered = locationManager.checkQuestBasedDiscovery();
+    if (discovered.length > 0) {
+      console.log('Recovered location discovery:', discovered.map(l => l.name));
+    }
+  }
+
   renderHUD();
   renderLocation();
   renderQuestPanel();
+  updateNavButtonVisibility();
 
   // Only show intro dialog for new games (intro not yet completed)
   if (shouldShowTutorial('intro')) {
@@ -4534,6 +5639,16 @@ function initGame() {
   // Initialize Alchemy Manager
   if (typeof AlchemyManager !== 'undefined') {
     alchemyManager = new AlchemyManager(GameState);
+  }
+
+  // Initialize Smithing Manager
+  if (typeof SmithingManager !== 'undefined') {
+    smithingManager = new SmithingManager(GameState);
+  }
+
+  // Initialize Enchanting Manager
+  if (typeof EnchantingManager !== 'undefined') {
+    enchantingManager = new EnchantingManager(GameState);
   }
 
   // Initialize Spellbook Manager
@@ -4749,7 +5864,16 @@ function handleNavigation(screen) {
       showGatherScreen();
       break;
     case 'alchemy':
-      openAlchemy();
+      openCrafting('alchemy');
+      break;
+    case 'smithing':
+      openCrafting('smithing');
+      break;
+    case 'enchanting':
+      openCrafting('enchanting');
+      break;
+    case 'crafting':
+      openCrafting('alchemy');
       break;
   }
 }
@@ -4954,7 +6078,8 @@ function showInventoryScreen() {
       ${inventoryHtml}
     </div>
     ${resourcesHtml}
-    <div style="text-align: right; margin-top: 16px;">
+    <div style="display: flex; justify-content: space-between; margin-top: 16px;">
+      <button class="pixel-btn" onclick="hideModal('inventory-modal'); showSellScreen();">💰 Sell Items</button>
       <button class="pixel-btn" onclick="hideModal('inventory-modal')">Close</button>
     </div>
   `);
@@ -4999,6 +6124,87 @@ function showInventoryScreen() {
       const itemId = el.dataset.resource;
       TooltipSystem.bindItem(el, itemId);
     });
+  }
+}
+
+// =====================================================
+// Sell Screen
+// =====================================================
+
+function showSellScreen() {
+  if (!shopManager) {
+    showNotification("Shop system not available!", 'error');
+    return;
+  }
+
+  const sellableItems = shopManager.getSellableItems();
+  const playerGold = shopManager.getPlayerGold();
+
+  let itemsHtml = '';
+  if (sellableItems.length === 0) {
+    itemsHtml = '<p style="color: var(--text-muted); text-align: center; padding: 20px;">No items to sell.</p>';
+  } else {
+    itemsHtml = sellableItems.map(entry => `
+      <div class="sell-item" data-item="${entry.itemId}">
+        <div class="sell-item-icon">${entry.item.icon || '?'}</div>
+        <div class="sell-item-info">
+          <div class="sell-item-name">${entry.item.name}</div>
+          <div class="sell-item-count">Owned: ${entry.count}</div>
+        </div>
+        <div class="sell-item-price">
+          <span class="price-value">${entry.sellPrice}</span>
+          <span class="price-icon">💰</span>
+        </div>
+        <div class="sell-item-actions">
+          <button class="pixel-btn pixel-btn-small" onclick="sellItemFromScreen('${entry.itemId}', 1)">Sell 1</button>
+          ${entry.count > 1 ? `<button class="pixel-btn pixel-btn-small" onclick="sellItemFromScreen('${entry.itemId}', ${entry.count})">Sell All</button>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  showModal('sell-modal', `
+    <div class="sell-screen">
+      <div class="sell-header">
+        <h2 style="font-family: var(--font-display); font-size: 14px; color: var(--accent-gold);">SELL ITEMS</h2>
+        <div class="sell-gold">
+          <span class="gold-icon">💰</span>
+          <span class="gold-value">${playerGold}</span>
+        </div>
+      </div>
+      <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">Items sell for 50% of their value.</p>
+      <div class="sell-items-list">
+        ${itemsHtml}
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-top: 16px;">
+        <button class="pixel-btn" onclick="hideModal('sell-modal'); showInventoryScreen();">Back</button>
+        <button class="pixel-btn" onclick="hideModal('sell-modal')">Close</button>
+      </div>
+    </div>
+  `);
+
+  // Bind tooltips
+  if (typeof TooltipSystem !== 'undefined') {
+    document.querySelectorAll('.sell-item[data-item]').forEach(el => {
+      const itemId = el.dataset.item;
+      TooltipSystem.bindItem(el, itemId);
+    });
+  }
+}
+
+function sellItemFromScreen(itemId, quantity) {
+  if (!shopManager) return;
+
+  const result = shopManager.sellItem(itemId, quantity);
+
+  if (result.success) {
+    showNotification(result.message, 'success');
+    renderHUD();
+    autoSave();
+    // Refresh sell screen
+    showSellScreen();
+  } else {
+    showNotification(result.message, 'error');
   }
 }
 
@@ -5124,6 +6330,11 @@ function showMapScreen() {
       `;
     }
     
+    // Check for boss exam
+    const hasExam = loc.hasBossExam;
+    const examHistory = hasExam && GameState.player.examHistory?.[loc.id];
+    const examPassed = examHistory?.passed;
+
     return `
       <div class="map-location ${statusClass}" data-location="${loc.id}">
         <div class="map-location-icon" style="background: ${loc.color};">${loc.icon}</div>
@@ -5131,11 +6342,18 @@ function showMapScreen() {
           <div class="map-location-name">${loc.name}</div>
           <div class="map-location-desc">${loc.description}</div>
           <div class="map-location-level">Level ${loc.levelRequired}+</div>
+          ${hasExam && isCurrent ? `
+            <div class="map-location-exam" style="margin-top: 4px; font-size: 12px;">
+              📜 Boss Exam: ${examPassed ? '<span style="color: var(--accent-green);">Passed</span>' : '<span style="color: var(--accent-gold);">Available</span>'}
+            </div>
+          ` : ''}
         </div>
         <div class="map-location-action">
-          ${canTravel 
+          ${canTravel
             ? `<button class="pixel-btn pixel-btn-gold" onclick="travelToLocation('${loc.id}')">Travel</button>`
-            : `<span class="map-location-status">${statusText}</span>`
+            : isCurrent && hasExam
+              ? `<button class="pixel-btn" onclick="hideModal('map-modal'); showExamInfo('${loc.id}')">Take Exam</button>`
+              : `<span class="map-location-status">${statusText}</span>`
           }
         </div>
       </div>
@@ -5362,10 +6580,6 @@ function renderSettingsScreen() {
 function renderAudioSettings(settings) {
   return `
     <div class="settings-section">
-      <div class="settings-note" style="color: var(--text-muted); font-size: 12px; margin-bottom: 16px; font-style: italic;">
-        🔇 Audio not yet implemented - settings saved for future use
-      </div>
-      
       <div class="setting-item">
         <label class="setting-label">Master Volume</label>
         <div class="setting-control">
@@ -5450,11 +6664,24 @@ function renderDisplaySettings(settings) {
       <div class="setting-item">
         <label class="setting-label">Animations</label>
         <div class="setting-control">
-          <button class="setting-toggle ${settings.animations ? 'active' : ''}" 
+          <button class="setting-toggle ${settings.animations ? 'active' : ''}"
                   onclick="toggleSetting('animations')">
             ${settings.animations ? 'ON' : 'OFF'}
           </button>
         </div>
+      </div>
+
+      <div class="setting-item">
+        <label class="setting-label">UI Theme</label>
+        <div class="setting-control">
+          <div class="setting-options">
+            <button class="setting-option ${settings.uiTheme === 'art' ? 'active' : ''}"
+                    onclick="updateSetting('uiTheme', 'art')">Paper Art</button>
+            <button class="setting-option ${settings.uiTheme === 'pixel' ? 'active' : ''}"
+                    onclick="updateSetting('uiTheme', 'pixel')">Pixel</button>
+          </div>
+        </div>
+        <div class="setting-desc">Switch between visual styles</div>
       </div>
     </div>
   `;
@@ -5729,6 +6956,18 @@ function applySettings() {
     document.body.classList.add('reduce-motion');
   } else {
     document.body.classList.remove('reduce-motion');
+  }
+
+  // Apply UI theme
+  if (settings.uiTheme === 'pixel') {
+    document.body.classList.add('theme-pixel');
+  } else {
+    document.body.classList.remove('theme-pixel');
+  }
+
+  // Apply audio settings
+  if (typeof AudioManager !== 'undefined') {
+    AudioManager.applySettings(settings);
   }
 }
 

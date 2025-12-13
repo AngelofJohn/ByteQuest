@@ -177,6 +177,7 @@ const SHOP_DEFINITIONS = {
     icon: '🌟',
 
     accountUpgrades: [
+      'gatherers_blessing',
       'max_health_boost_1',
       'max_health_boost_2',
       'starting_level_boost',
@@ -188,7 +189,7 @@ const SHOP_DEFINITIONS = {
     dialogue: {
       greeting: "The elders have always shared their blessings with worthy travelers. These gifts will follow you always.",
       purchase: "The blessing is yours. May it serve you well.",
-      cantAfford: "Even blessings require sacrifice. Gather more gold.",
+      cantAfford: "Even blessings require sacrifice. Gather more resources.",
       alreadyOwned: "This blessing already flows through you."
     }
   }
@@ -479,6 +480,143 @@ class ShopManager {
   }
 
   // ===================================================
+  // Selling Items
+  // ===================================================
+
+  /**
+   * Calculate sell price for an item
+   * Default is 50% of item value, rounded down
+   */
+  getSellPrice(itemId) {
+    const itemDef = this.itemManager ? this.itemManager.getDefinition(itemId) : null;
+    if (!itemDef) return 0;
+
+    // Use sellPrice if defined, otherwise 50% of value
+    if (itemDef.sellPrice !== undefined && itemDef.sellPrice > 0) {
+      return itemDef.sellPrice;
+    }
+
+    // Use value field (from gamedata.js items)
+    if (itemDef.value !== undefined) {
+      return Math.floor(itemDef.value * 0.5);
+    }
+
+    return 0;
+  }
+
+  /**
+   * Check if an item can be sold
+   */
+  canSellItem(itemId) {
+    const itemDef = this.itemManager ? this.itemManager.getDefinition(itemId) : null;
+    if (!itemDef) return { canSell: false, reason: 'Item not found' };
+
+    // Check category - quest items and collectibles cannot be sold
+    const category = itemDef.category || itemDef.type;
+    if (category === 'quest_item') {
+      return { canSell: false, reason: 'Quest items cannot be sold' };
+    }
+    if (category === 'collectible') {
+      return { canSell: false, reason: 'Collectibles cannot be sold' };
+    }
+
+    // Check soulbound flag
+    if (itemDef.soulbound) {
+      return { canSell: false, reason: 'This item is soulbound' };
+    }
+
+    // Check if item has any value
+    const sellPrice = this.getSellPrice(itemId);
+    if (sellPrice <= 0) {
+      return { canSell: false, reason: 'This item has no value' };
+    }
+
+    return { canSell: true, sellPrice };
+  }
+
+  /**
+   * Get sellable items from player inventory
+   */
+  getSellableItems() {
+    if (!this.itemManager) return [];
+
+    const inventory = this.itemManager.getInventory();
+    const sellableItems = [];
+
+    for (const invItem of inventory) {
+      const canSell = this.canSellItem(invItem.id);
+      if (canSell.canSell) {
+        const itemDef = this.itemManager.getDefinition(invItem.id);
+        sellableItems.push({
+          itemId: invItem.id,
+          item: itemDef,
+          count: invItem.count,
+          sellPrice: canSell.sellPrice,
+          totalValue: canSell.sellPrice * invItem.count
+        });
+      }
+    }
+
+    return sellableItems;
+  }
+
+  /**
+   * Sell an item from inventory
+   */
+  sellItem(itemId, quantity = 1) {
+    // Check if we have the item
+    if (!this.itemManager || !this.itemManager.hasItem(itemId, quantity)) {
+      return { success: false, message: 'You do not have enough of this item' };
+    }
+
+    // Check if sellable
+    const canSell = this.canSellItem(itemId);
+    if (!canSell.canSell) {
+      return { success: false, message: canSell.reason };
+    }
+
+    const itemDef = this.itemManager.getDefinition(itemId);
+    const totalGold = canSell.sellPrice * quantity;
+
+    // Remove item from inventory
+    const removeResult = this.itemManager.removeItem(itemId, quantity);
+    if (!removeResult.success) {
+      return { success: false, message: removeResult.message };
+    }
+
+    // Add gold to player
+    this.state.player.gold += totalGold;
+
+    // Track gold earned
+    if (this.state.player.totalGoldEarned !== undefined) {
+      this.state.player.totalGoldEarned += totalGold;
+    }
+
+    return {
+      success: true,
+      message: `Sold ${itemDef.name}${quantity > 1 ? ` x${quantity}` : ''} for ${totalGold} gold`,
+      item: itemDef,
+      quantity,
+      goldEarned: totalGold,
+      newGoldTotal: this.getPlayerGold()
+    };
+  }
+
+  /**
+   * Sell all of a specific item
+   */
+  sellAllOfItem(itemId) {
+    if (!this.itemManager) return { success: false, message: 'Item system unavailable' };
+
+    const count = this.itemManager.getItemCount(itemId);
+    if (count <= 0) {
+      return { success: false, message: 'You do not have this item' };
+    }
+
+    return this.sellItem(itemId, count);
+  }
+
+  // ===================================================
   // Account Upgrade Methods
   // ===================================================
 
@@ -566,10 +704,19 @@ class ShopManager {
       return { canPurchase: false, reason: `Requires: ${prereq?.name || upgrade.requires}` };
     }
 
-    // Check gold
-    const price = upgrade.cost?.gold || 0;
-    if (!this.canAfford(price)) {
-      return { canPurchase: false, reason: `Need ${price} gold` };
+    // Check gold (if gold cost exists)
+    const goldPrice = upgrade.cost?.gold || 0;
+    if (goldPrice > 0 && !this.canAfford(goldPrice)) {
+      return { canPurchase: false, reason: `Need ${goldPrice} gold` };
+    }
+
+    // Check item costs (if item costs exist)
+    if (upgrade.cost?.items) {
+      const missingItems = accountProgression.checkItemCosts(upgrade.cost.items);
+      if (missingItems.length > 0) {
+        const firstMissing = missingItems[0];
+        return { canPurchase: false, reason: `Need ${firstMissing.need} ${firstMissing.name}` };
+      }
     }
 
     return { canPurchase: true, reason: null };

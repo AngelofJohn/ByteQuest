@@ -1,7 +1,7 @@
 # ByteQuest Creative Direction
 
-**Status:** Planning
-**Last Updated:** December 7, 2025
+**Status:** Phase 2 - Testing & Polish
+**Last Updated:** December 10, 2025
 **Priority:** Phase 2-3
 
 ---
@@ -189,6 +189,44 @@ Parlons ("Let's speak"), Mot a Mot ("Word by word"), Belle Langue ("Beautiful la
 | Animation Frames | 4-8 per action | Walk, idle, talk |
 | Portrait | 64x64 or 96x96 | Dialogue close-up |
 | Emotion Variants | 3-5 per character | Happy, sad, angry |
+
+### Animation Requirements
+
+**Currently Implemented (CSS):**
+- UI transitions (buttons, hovers, 0.1-0.3s ease)
+- Feedback animations (correct/wrong pulse, shake)
+- Streak effects (pulse-glow, streak-break)
+- Level up pulse
+- Damage flash (red overlay)
+- Quest marker bounce
+- Tutorial highlight pulse
+- Minigame feedback (fishing bite alert, etc.)
+
+**Priority Animations Needed:**
+
+| Priority | Animation | Purpose | Implementation |
+|----------|-----------|---------|----------------|
+| **High** | NPC talking indicator | Shows active speaker | CSS pulse on portrait or speech bubble |
+| **High** | Zone travel transition | Zone-to-zone feels meaningful | Fade/slide transition, ~0.5s |
+| **High** | Reward pop-up | Gold/XP/items feel impactful | Scale + fade, particle optional |
+| **Medium** | Quest complete fanfare | Satisfying completion | Banner slide + glow effect |
+| **Medium** | Dialogue typewriter | Text appears letter-by-letter | JS interval, skippable |
+| **Low** | NPC idle sway | Scene feels alive | Subtle CSS transform loop |
+| **Low** | Weather effects | Zone atmosphere | CSS particles (rain, dust) |
+| **Low** | Background parallax | Depth on scroll/movement | CSS transform layers |
+
+**Animation Principles:**
+- Keep durations short (0.2-0.5s for feedback, 1-2s max for ambient)
+- All animations should be skippable or non-blocking
+- Respect `prefers-reduced-motion` accessibility setting
+- Use CSS transforms over position changes (GPU accelerated)
+- Easing: `ease-out` for entrances, `ease-in` for exits
+
+**Sprite Animation (Future):**
+- Idle: 2-4 frames, 0.5s loop
+- Walk: 4-8 frames, synced to movement
+- Talk: 2-3 frames, loop while dialogue open
+- Emote: 3-5 frames, one-shot on trigger
 
 ---
 

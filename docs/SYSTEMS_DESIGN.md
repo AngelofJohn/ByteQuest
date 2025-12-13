@@ -1,8 +1,8 @@
 # ByteQuest Systems Design Document
 
-**Version:** 3.13
-**Last Updated:** December 7, 2025  
-**Status:** Phase 1 - Core Systems Complete
+**Version:** 3.16
+**Last Updated:** December 10, 2025
+**Status:** Phase 2 - Testing & Polish
 
 ---
 
@@ -71,7 +71,7 @@ ByteClaude/
 ├── docs/
 │   ├── SYSTEMS_DESIGN.md   # This file
 │   ├── ROADMAP.md          # Development roadmap
-│   └── CLEANUP_CHECKLIST.md# Task tracking
+│   └── PATCH_NOTES.md      # Bugs, cleanup, testing, ideas
 └── legal/
     ├── TERMS_OF_SERVICE.md
     ├── PRIVACY_POLICY.md
@@ -557,11 +557,51 @@ const NPC_DEFAULTS = {
 
 ```javascript
 isNPCVisible(npc, gameState)      // Check visibility
-getNPCsInLocation(loc, state)     // Get visible NPCs in location
+getNPCsInLocation(loc, state)     // Get visible NPCs in location (with overrides)
 getNPCsByTag(tag, state)          // Filter by tag
 getQuestGivers(state)             // All NPCs with quests
 getMerchants(state)               // All NPCs with shops
+getNPCWithState(id, state)        // Get single NPC with state overrides applied
+applyNPCStateOverrides(npc, state) // Apply overrides to NPC object
 ```
+
+### State Overrides (Dynamic NPC Properties)
+
+NPCs can change location, dialogue, or other properties based on quest state using `stateOverrides`. This keeps all NPC states in a single definition rather than duplicating entries.
+
+```javascript
+pardu: {
+  name: "Pardu",
+  title: "Wandering Guide",
+  location: "dawnmere",           // Default location
+  dialogue: {
+    greeting: "Ready to head out?",
+    idle: ["The road calls to me."]
+  },
+  stateOverrides: [
+    {
+      when: { questActive: "journey_to_haari" },
+      location: "haari_fields",   // Moves during quest
+      dialogue: { greeting: "These fields remind me of home..." }
+    },
+    {
+      when: { quest: "journey_to_haari" },
+      location: "haari_fields",   // Stays after quest complete
+      dialogue: { greeting: "Good to settle here for a while." }
+    }
+  ]
+}
+```
+
+**Override Conditions:** Same as visibility conditions (`quest`, `questActive`, `level`, `flag`, `reputation`)
+
+**Priority:** Later overrides take precedence (last matching wins)
+
+**Mergeable Properties:**
+- `location` - NPC appears in different location
+- `dialogue` - Greeting/idle changes (merges with base dialogue)
+- `disposition` - Attitude changes
+- Any other NPC property
 
 ---
 
@@ -1100,18 +1140,7 @@ The goal is to create a web of interconnected systems where:
 | **Knowledge** | Lessons, research | Thousands | Spellbook unlocks, skill upgrades |
 | **Reputation** | Per faction | 0-10,000+ | Faction ranks, special access |
 
-#### Secondary Resources (Gathered/Earned)
-
-| Resource | Category | Example Tiers |
-|----------|----------|---------------|
-| **Ore** | Mining | Copper → Iron → Gold → Mythril → Celestial |
-| **Herbs** | Botanical | Common → Uncommon → Rare → Legendary |
-| **Ink** | Scribing | Basic → Fine → Enchanted → Divine |
-| **Fragments** | Ancient | Shards → Pieces → Relics → Artifacts |
-| **Essence** | Magical | Dim → Glowing → Radiant → Eternal |
-| **Linguistic Essence** | Knowledge | Faded → Clear → Vivid → Brilliant |
-
-#### Tiered Resource Names (Complete)
+#### Secondary Resources (Tiered)
 
 | Tier | Ore | Herbs | Ink | Fragments | Essence | Linguistic Essence |
 |------|-----|-------|-----|-----------|---------|-------------------|
@@ -1346,105 +1375,25 @@ Instead of quality tiers or RNG variants, players personalize gear with enchantm
 
 Same base item, different builds. Player choice drives customization, not RNG.
 
-#### Example Recipes by Tier
+#### Equipment Slots (Smithing)
 
-**Smithing (Initiate 1-75)**
-| Recipe | Skill Req | Materials | Output Stats |
-|--------|-----------|-----------|--------------|
-| Copper Bar | 1 | 2 Copper Ore | Crafting material |
-| Copper Dagger | 10 | 2 Copper Bar | +1 Attack |
-| Copper Helm | 20 | 3 Copper Bar | +5 HP |
-| Iron Bar | 25 | 3 Iron Ore, 1 Coal | Crafting material |
-| Copper Chestplate | 35 | 5 Copper Bar, 1 Leather Wrap | +10 HP |
-| Iron Dagger | 40 | 2 Iron Bar | +2 Attack |
-| Iron Sword | 50 | 3 Iron Bar, 1 Leather Wrap | +3 Attack |
-| Iron Helm | 60 | 4 Iron Bar | +10 HP |
-| Iron Chestplate | 70 | 6 Iron Bar, 2 Leather Wrap | +20 HP |
+| Slot | Types | Notes |
+|------|-------|-------|
+| Weapon | Dagger, Sword, Greatsword | Greatswords are 2H |
+| Off-hand | Shield | HP + block chance |
+| Head | Helm | HP focus |
+| Body | Chestplate | Primary defense |
 
-**Smithing (Journeyman 75-150)**
-| Recipe | Skill Req | Materials | Output Stats |
-|--------|-----------|-----------|--------------|
-| Steel Bar | 75 | 2 Iron Bar, 2 Coal | Crafting material |
-| Iron Shield | 80 | 5 Iron Bar, 1 Wood Plank | +15 HP, Block chance |
-| Steel Dagger | 90 | 2 Steel Bar | +4 Attack |
-| Steel Sword | 100 | 3 Steel Bar, 1 Leather Wrap | +5 Attack |
-| Steel Helm | 115 | 4 Steel Bar | +15 HP |
-| Steel Shield | 125 | 5 Steel Bar, 2 Wood Plank | +25 HP, Block chance |
-| Steel Chestplate | 140 | 6 Steel Bar, 3 Leather Wrap | +35 HP |
+#### Material Progression
 
-**Smithing (Expert 150-225)**
-| Recipe | Skill Req | Materials | Output Stats |
-|--------|-----------|-----------|--------------|
-| Mythril Bar | 150 | 3 Mythril Ore, 1 Dim Essence | Crafting material |
-| Steel Greatsword | 160 | 5 Steel Bar, 2 Leather Wrap | +7 Attack (2H) |
-| Mythril Dagger | 175 | 2 Mythril Bar | +6 Attack, +1 Luck |
-| Mythril Sword | 190 | 3 Mythril Bar, 1 Leather Wrap | +8 Attack |
-| Mythril Helm | 200 | 4 Mythril Bar, 1 Faint Essence | +20 HP, +1 Insight |
-| Mythril Chestplate | 220 | 6 Mythril Bar, 2 Faint Essence | +50 HP |
+| Tier | Metal | Skill Range | Zone |
+|------|-------|-------------|------|
+| T1 | Copper | 1-75 | Dawnmere |
+| T2 | Iron/Steel | 75-150 | Haari Fields |
+| T3 | Mythril | 150-225 | Lurenium |
+| T4 | Lurenium | 225-300 | Ancient Ruins |
 
-**Smithing (Master 225-300)**
-| Recipe | Skill Req | Materials | Output Stats |
-|--------|-----------|-----------|--------------|
-| Lurenium Bar | 225 | 3 Lurenium Ore, 1 Glowing Essence | Crafting material |
-| Mythril Greatsword | 240 | 5 Mythril Bar, 1 Faint Essence | +10 Attack (2H), +1 Insight |
-| Lurenium Dagger | 260 | 2 Lurenium Bar, 1 Glowing Essence | +9 Attack, +2 Luck |
-| Lurenium Sword | 275 | 3 Lurenium Bar, 1 Glowing Essence | +12 Attack, +1 Devotion |
-| Lurenium Helm | 285 | 4 Lurenium Bar, 1 Radiant Essence | +30 HP, +2 Insight |
-| Lurenium Chestplate | 300 | 6 Lurenium Bar, 2 Radiant Essence | +75 HP, +1 All Stats |
-
-#### Smithing Equipment Slots
-
-| Slot | Available Types | Notes |
-|------|-----------------|-------|
-| **Weapon** | Dagger, Sword, Greatsword | Greatswords are 2H (no shield) |
-| **Off-hand** | Shield | Provides HP + block chance |
-| **Head** | Helm | HP focus |
-| **Body** | Chestplate | Primary defense |
-| **Accessory** | (Not smithed) | Rings, amulets from other sources |
-
-#### Material Tiers
-
-| Tier | Metal | Level Range | Source |
-|------|-------|-------------|--------|
-| T1 | Copper | 1-35 | Dawnmere mines |
-| T2 | Iron | 25-75 | Haari Fields deposits |
-| T3 | Steel | 75-150 | Crafted from Iron + Coal |
-| T4 | Mythril | 150-225 | Lurenium outskirts |
-| T5 | Lurenium | 225-300 | Ancient Lurenium ruins |
-
-#### Cross-Craft Requirements
-
-| Material | Source Skill | Used In |
-|----------|--------------|---------|
-| Leather Wrap | Hunting/Leatherworking | Weapon grips, armor padding |
-| Wood Plank | Woodcutting/Carpentry | Shield bases, weapon handles |
-| Coal | Mining | Steel smelting |
-| Essence | Enchanting/Gathering | High-tier equipment |
-
-#### French Vocabulary Integration (Optional)
-
-Smithing can reinforce French through recipe steps:
-
-| Step | French | English |
-|------|--------|---------|
-| Heat the forge | Chauffez la forge | Heat the forge |
-| Add the ore | Ajoutez le minerai | Add the ore |
-| Strike the metal | Frappez le métal | Strike the metal |
-| Quench in water | Trempez dans l'eau | Quench in water |
-| Polish the blade | Polissez la lame | Polish the blade |
-
-Players who correctly identify/translate steps could receive bonus XP or quality bonuses.
-
-**Alchemy (Initiate 1-75)**
-| Recipe | Skill Req | Materials |
-|--------|-----------|-----------|
-| Minor Health Potion | 1 | 2 Nettle, 1 Empty Bottle |
-| Minor Mana Potion | 15 | 2 Sage, 1 Empty Bottle |
-| Antidote | 30 | 1 Nettle, 1 Sage, 1 Empty Bottle |
-| Health Potion | 50 | 3 Rosemary, 1 Empty Bottle |
-| Stamina Elixir | 65 | 2 Sage, 2 Nettle, 1 Empty Bottle |
-
-**Note:** Full recipe lists for Alchemy, Cooking, Leatherworking, and Carpentry to be developed during implementation.
+> **Note:** Detailed recipe lists (30+ Smithing, 15+ Alchemy) to be defined in data files during Phase 3 implementation.
 
 ### Quest Design Structures
 
@@ -2079,25 +2028,11 @@ A multi-floor dungeon that unlocks after completing the main story (or reaching 
 
 **Mechanics:**
 
-```
-Enter Ruins
-    ↓
-Floor Challenge (8-12 questions)
-    ↓
-    ├── Pass (≥70%) → Advance to next floor
-    │                → Earn floor rewards
-    │                → Unlock lore fragment
-    │
-    └── Fail → Return to surface
-              → Keep partial rewards
-              → Can retry from floor 1
-    ↓
-Boss Floor (every 5 floors)
-    ↓
-Major Exam (15-20 questions, 80% to pass)
-    ↓
-Checkpoint unlocked (can restart from here)
-```
+| Step | Requirements | Result |
+|------|--------------|--------|
+| Floor Challenge | 8-12 questions, ≥70% | Advance + rewards + lore |
+| Fail | <70% | Return to surface, keep partial rewards |
+| Boss Floor | Every 5 floors, 15-20 questions, ≥80% | Checkpoint unlocked |
 
 **Rewards:**
 
@@ -2167,16 +2102,12 @@ An endless tower challenge. See how high you can climb. Each floor gets progress
 
 **Structure:**
 
-```
-Floor 1: 5 questions, generous timing
-Floor 2: 5 questions, slightly harder
-...
-Floor 10: 8 questions, strict timing
-...
-Floor 20: 10 questions, very strict timing
-...
-Floor 50+: Expert mode — typo-strict, no hints, mixed content
-```
+| Floor Range | Questions | Timing | Notes |
+|-------------|-----------|--------|-------|
+| 1-9 | 5 | Generous | Warm-up |
+| 10-19 | 8 | Strict | Challenge begins |
+| 20-49 | 10 | Very strict | Advanced |
+| 50+ | 10+ | Expert | Typo-strict, no hints, mixed content |
 
 **Mechanics:**
 - One wrong answer = lose a life (start with 3)
@@ -2375,198 +2306,30 @@ Endgame currency earned from repeat clears. Can be exchanged for:
 
 ### Lesson Flow
 
-```
-Start Lesson
-    ↓
-Generate Questions (vocabulary or grammar)
-    ↓
-[Loop] Show Question
-    ↓
-    ├── Correct → Update streak, SRS, continue
-    │   └── Agility may protect streak on first wrong
-    │
-    └── Wrong → HP damage (Strength/Luck may reduce)
-              → Reset streak (unless Agility protected)
-    ↓
-All Questions Done
-    ↓
-Calculate Results
-    ├── Pass (≥60%) → Award XP, update quest
-    │                 → Unlock Spellbook pages if grammar
-    └── Fail → Encourage review
-    ↓
-Update Stats & Save
-```
+| Step | Action | Outcomes |
+|------|--------|----------|
+| 1 | Start Lesson | Generate questions (vocab or grammar) |
+| 2 | Show Question | Wait for answer |
+| 3a | Correct Answer | Update streak, SRS, continue |
+| 3b | Wrong Answer | HP damage (Strength/Luck reduce), reset streak (Agility may protect) |
+| 4 | All Questions Done | Calculate results |
+| 5a | Pass (≥60%) | Award XP, update quest, unlock Spellbook pages |
+| 5b | Fail | Encourage review |
+| 6 | End | Update stats & save |
 
 ### Grammar Quest Flow
 
-```
-Complete prerequisite quest (e.g., meeting_family)
-    ↓
-Sage Aldric appears (appearsWhen triggered)
-    ↓
-Talk to Sage Aldric → Accept grammar quest
-    ↓
-Talk again → "Start Grammar Lesson" button
-    ↓
-startGrammarLesson() generates questions
-    ├── Conjugation (je ___ être)
-    ├── Fill-in-blank (Je ___ français)
-    └── Gender match (pain → le/la)
-    ↓
-Complete lesson → Quest complete
-    ↓
-Spellbook pages unlocked
-```
+| Step | Trigger | Result |
+|------|---------|--------|
+| 1 | Complete prerequisite (e.g., meeting_family) | Sage Aldric appears |
+| 2 | Talk to Sage Aldric | Accept grammar quest |
+| 3 | Talk again | "Start Grammar Lesson" button |
+| 4 | Start lesson | Generate: Conjugation, Fill-in-blank, Gender match |
+| 5 | Complete lesson | Quest complete, Spellbook pages unlocked |
 
 ---
 
-## Art Direction & Visual Design
-
-**Status:** Planning Phase  
-**Reference Images:** See `/docs/art-reference/` folder (to be created)
-
-### Target Aesthetic
-
-The visual style aims for a **cozy, vibrant pixel-art RPG** aesthetic reminiscent of classic 16-bit era games with modern polish. Key characteristics:
-
-- **Warm, inviting color palette** with teal/blue roofs, warm wood tones, lush greens
-- **Detailed pixel art** with visible but refined pixelation
-- **Rich environmental storytelling** through visual details (gardens, market stalls, water features)
-- **Fantasy RPG atmosphere** that supports the language-learning narrative
-
-### Reference Style Analysis
-
-**Village Scenes (Dawnmere):**
-- Isometric or panoramic perspective showing depth
-- River with wooden bridges as central feature
-- Mix of building types: homes, shops with awnings, church/temple
-- Scattered NPCs and environmental details (barrels, crates, flowers)
-- Distant views to other zones (fields, mountains, forests)
-- Time-of-day lighting variations possible
-
-**Spellbook/Cookbook UI:**
-- Physical open book with aged parchment texture
-- Categorized pages with visual icons for each grammar topic
-- Magical elements (glowing cauldron, mystical symbols)
-- Tab navigation at bottom with colored category icons
-- Food/cooking metaphor for grammar concepts ("Appetizers" = basics, "Main Courses" = core content)
-
-**UI Framework:**
-- Dark panel backgrounds with golden/ornate frame borders
-- Bottom HUD bar with icon-based navigation
-- Location name display with progress indicators
-- Character portrait integration
-- Inventory grid with detailed item icons
-
-### Asset Requirements
-
-#### Backgrounds (Per Location)
-| Location | Description | Priority |
-|----------|-------------|----------|
-| Dawnmere | Riverside frontier settlement, wooden buildings, market area | High |
-| Haari Fields | Golden wheat fields, scattered farms, boar creatures | Medium |
-| Lurenium | Ancient golden city, grand architecture, walls | Medium |
-| World Map | Stylized map showing all regions | Low |
-
-#### Character Sprites
-| Type | Needed | Priority |
-|------|--------|----------|
-| Player classes | 3 (Scholar, Warrior, Traveler) | High |
-| Dawnmere NPCs | 6 (Urma, Rega, Merchant, Baker, Sage, Pierre) | High |
-| Haari Fields NPCs | 2 (Dave, Mary) | Medium |
-| Enemy/creature sprites | Slimes, boars | Low |
-
-#### UI Elements
-| Element | Description | Priority |
-|---------|-------------|----------|
-| Icon set | Inventory items, quest markers, stats | High |
-| Panel frames | Golden ornate borders for modals | Medium |
-| Spellbook texture | Aged book with parchment pages | Medium |
-| Button styles | Pixel-art styled buttons | Medium |
-| Progress bars | HP, XP, reputation bars | Low (functional exists) |
-
-#### Effects & Polish
-| Element | Description | Priority |
-|---------|-------------|----------|
-| Transition effects | Scene changes, modal opens | Low |
-| Particle effects | Level up, quest complete | Low |
-| Animated elements | Water, smoke, NPC idle | Low |
-
-### Art Sourcing Options
-
-#### Option 1: AI-Generated Art
-- **Pros:** Quick iteration, matches reference style, cost-effective for backgrounds
-- **Cons:** Consistency challenges, can't animate, licensing considerations
-- **Best for:** Background scenes, concept art, placeholder assets
-
-#### Option 2: Commissioned Pixel Art
-- **Pros:** Consistent style, animatable, full ownership, unique to ByteQuest
-- **Cons:** Expensive ($50-200+ per asset), time-consuming
-- **Best for:** Character sprites, key UI elements, iconic items
-
-#### Option 3: Asset Packs (itch.io, GameDev Market)
-- **Pros:** Professional quality, ready-to-use, affordable ($10-50 per pack)
-- **Cons:** Not unique, may need multiple packs to cover needs
-- **Best for:** Tilesets, generic icons, UI frameworks
-- **Recommended packs to evaluate:** (TBD)
-
-#### Option 4: Hybrid Approach (Recommended)
-- AI-generated backgrounds for each location
-- Asset pack sprites and icons for consistency
-- Commissioned custom work for player characters and key NPCs
-- Custom UI polish using CSS with asset pack elements
-
-### Color Palette (Derived from References)
-
-```
-Primary Colors:
-- Teal/Cyan: #4ECDC4 (roofs, water, accents)
-- Warm Brown: #8B7355 (wood, buildings)
-- Forest Green: #228B22 (grass, trees)
-- Golden Yellow: #FFD700 (UI accents, important items)
-
-UI Colors (Current):
-- Dark Background: #1a1a2e
-- Panel Background: #1f2833
-- Gold Accent: #ffd700
-- Text Light: #edf2f4
-
-Potential Updates:
-- Consider warmer dark tones to match pixel art warmth
-- Add parchment/cream color for book interfaces
-- Introduce more green tones for nature areas
-```
-
-### Open Design Questions
-
-See **[PATCH_NOTES.md](PATCH_NOTES.md#art-direction)** for art direction pending decisions.
-
-### Implementation Phases
-
-**Phase A: Asset Collection (Future)**
-- [ ] Create `/docs/art-reference/` folder with reference images
-- [ ] Research and bookmark suitable asset packs
-- [ ] Get quotes for commissioned work
-- [ ] Generate AI background concepts for each location
-
-**Phase B: UI Framework Update (Future)**
-- [ ] Implement icon-based navigation (once icons available)
-- [ ] Add panel frame graphics
-- [ ] Update color scheme to match art direction
-- [ ] Create spellbook visual redesign
-
-**Phase C: Scene Integration (Future)**
-- [ ] Replace CSS gradient backgrounds with art
-- [ ] Add NPC sprite positioning system
-- [ ] Implement scene transition effects
-- [ ] Add ambient animations
-
-**Phase D: Polish (Future)**
-- [ ] Particle effects for rewards/level up
-- [ ] Character portrait integration
-- [ ] Loading screens with art
-- [ ] Title screen redesign
+> **Note:** Art direction specs moved to CREATIVE_DIRECTION.md
 
 ---
 
@@ -2574,6 +2337,8 @@ See **[PATCH_NOTES.md](PATCH_NOTES.md#art-direction)** for art direction pending
 
 | Date | Version | Changes |
 |------|---------|---------|
+| Dec 10, 2025 | 3.16 | Slimmed professions section: condensed recipe tables (~90 lines → notes), merged resource tier tables |
+| Dec 10, 2025 | 3.15 | Cleanup: Removed Art Direction section (→ CREATIVE_DIRECTION.md), removed vocabulary word lists (→ data files) |
 | Dec 8, 2025 | 3.14 | Expanded Smithing profession - 4 skill tiers, 30+ recipes, equipment slots, material progression, cross-craft requirements, French vocabulary integration |
 | Dec 7, 2025 | 3.13 | Completed Review Alchemy - storage, potion rules, cooldowns, failure states, notifications, data structures, UI mockups |
 | Dec 7, 2025 | 3.12 | Expanded Review Alchemy - recipe acquisition via shops, reputation, and quests |
@@ -2679,178 +2444,66 @@ Session 4+: Mastery
 
 ---
 
-### Stats System Tutorial
+### Stats Tutorial
 
-#### When It Triggers
+**Trigger:** Level 2 with unspent stat points
 
-**Trigger:** Player reaches Level 2 and has unspent stat points
+**Flow:** Level up celebration → Stats overview (5 stats) → Detailed breakdown (optional) → First allocation → Confirmation
 
-#### Tutorial Flow
+**Key Learnings:**
+- 5 stats: Vitality (HP), Wisdom (XP%), Fortune (Gold%), Precision (auto-correct), Agility (streaks)
+- 3 points per level, all builds viable
+- Manage in Profile screen
 
-**Step 1: Level Up Celebration**
-```
-╔═══════════════════════════════════════════════════════════╗
-║  ✨ LEVEL UP! ✨                                          ║
-║                                                           ║
-║  You are now Level 2!                                     ║
-║                                                           ║
-║  You have earned 3 STAT POINTS to spend.                  ║
-║  These will shape how you learn and grow.                 ║
-║                                                           ║
-║              [ Learn About Stats ]                        ║
-╚═══════════════════════════════════════════════════════════╝
-```
+---
 
-**Step 2: Stats Overview Panel**
-```
-╔═══════════════════════════════════════════════════════════╗
-║  📊 YOUR STATS                                            ║
-║                                                           ║
-║  You have 5 attributes that affect your journey:          ║
-║                                                           ║
-║  ❤️ VITALITY - Your health and survival                   ║
-║  📚 WISDOM - XP gains and learning speed                  ║
-║  💰 FORTUNE - Gold rewards and lucky finds                ║
-║  🎯 PRECISION - Answer accuracy bonuses                   ║
-║  💨 AGILITY - Streak protection and recovery              ║
-║                                                           ║
-║              [ Tell Me More ] [ Skip ]                    ║
-╚═══════════════════════════════════════════════════════════╝
-```
+### Reputation Tutorial
 
-**Step 3: Detailed Breakdown (if "Tell Me More")**
+**Trigger:** First reputation gain (after "Meet the Settlers")
 
-*Page 1: Vitality*
-```
-╔═══════════════════════════════════════════════════════════╗
-║  ❤️ VITALITY                                              ║
-║  "The strength to endure"                                 ║
-║                                                           ║
-║  Every point in Vitality gives you:                       ║
-║  • +5 Maximum HP                                          ║
-║  • More chances to make mistakes and recover              ║
-║                                                           ║
-║  BEST FOR: Players who want a safety net while learning   ║
-║                                                           ║
-║  Example: At 10 Vitality, you have 150 HP instead of 100  ║
-║                                                           ║
-║         [ ← Back ]  [ Next: Wisdom → ]                    ║
-╚═══════════════════════════════════════════════════════════╝
+**Flow:** Reputation notification → Benefits explanation → Faction ranks preview → Multiple factions teaser
+
+**Key Learnings:**
+- Multiple factions with independent ranks
+- Earned through quests/actions
+- Higher ranks = discounts, quests, items
+- Some factions conflict
+- Check in Progress → Reputation tab
+
+---
+
+### Tutorial Quests
+
+| Quest | Trigger | Teaches |
+|-------|---------|---------|
+| Welcome to Dawnmere | Game start | Basic interaction, quests |
+| Meet the Settlers | After welcome | Exploration, NPCs, Reputation |
+| Learning the Basics | First lesson | Lessons, HP, answering |
+| Understanding Your Strengths | Level 2 | Stats system |
+| A Place in the Community | After settlers | Reputation system |
+
+---
+
+### Tutorial State
+
+```javascript
+tutorialState: {
+  completed: { basicInteraction, questSystem, lessonMechanics,
+               statsSystem, reputationSystem, inventorySystem,
+               spellbookSystem, titleSystem },
+  currentTutorial: null,
+  tutorialStep: 0,
+  skipAll: false
+}
 ```
 
-*Page 2: Wisdom*
-```
-╔═══════════════════════════════════════════════════════════╗
-║  📚 WISDOM                                                ║
-║  "Knowledge grows faster for the wise"                    ║
-║                                                           ║
-║  Every point in Wisdom gives you:                         ║
-║  • +2% XP from all sources                                ║
-║  • Level up faster                                        ║
-║  • Unlock content sooner                                  ║
-║                                                           ║
-║  BEST FOR: Players who want to progress quickly           ║
-║                                                           ║
-║  Example: At 10 Wisdom, you earn 20% bonus XP             ║
-║                                                           ║
-║         [ ← Vitality ]  [ Next: Fortune → ]               ║
-╚═══════════════════════════════════════════════════════════╝
-```
+**Implementation:** TutorialManager class, "first time" flags, skip option, Settings toggle
 
-*Page 3: Fortune*
-```
-╔═══════════════════════════════════════════════════════════╗
-║  💰 FORTUNE                                               ║
-║  "Luck favors the prepared"                               ║
-║                                                           ║
-║  Every point in Fortune gives you:                        ║
-║  • +3% Gold from all sources                              ║
-║  • Better shop deals                                      ║
-║  • More resources for items and equipment                 ║
-║                                                           ║
-║  BEST FOR: Players who love collecting and shopping       ║
-║                                                           ║
-║  Example: At 10 Fortune, you earn 30% bonus gold          ║
-║                                                           ║
-║         [ ← Wisdom ]  [ Next: Precision → ]               ║
-╚═══════════════════════════════════════════════════════════╝
-```
+> **Note:** Detailed UI mockups archived in dev notes.
 
-*Page 4: Precision*
-```
-╔═══════════════════════════════════════════════════════════╗
-║  🎯 PRECISION                                             ║
-║  "Accuracy is the path to mastery"                        ║
-║                                                           ║
-║  Every point in Precision gives you:                      ║
-║  • +1% chance to auto-correct wrong answers               ║
-║  • Occasionally saves you from mistakes                   ║
-║  • Reduces frustration on near-misses                     ║
-║                                                           ║
-║  BEST FOR: Players who sometimes click too fast           ║
-║                                                           ║
-║  Example: At 10 Precision, 10% chance to save mistakes    ║
-║                                                           ║
-║         [ ← Fortune ]  [ Next: Agility → ]                ║
-╚═══════════════════════════════════════════════════════════╝
-```
+---
 
-*Page 5: Agility*
-```
-╔═══════════════════════════════════════════════════════════╗
-║  💨 AGILITY                                               ║
-║  "Swift recovery, unbroken momentum"                      ║
-║                                                           ║
-║  Every point in Agility gives you:                        ║
-║  • Better streak protection                               ║
-║  • Once per lesson: save your streak from breaking        ║
-║  • Keep your bonus multipliers longer                     ║
-║                                                           ║
-║  BEST FOR: Players who build long answer streaks          ║
-║                                                           ║
-║  Example: High Agility = streak survives one mistake      ║
-║                                                           ║
-║         [ ← Precision ]  [ Finish Tutorial ]              ║
-╚═══════════════════════════════════════════════════════════╝
-```
-
-**Step 4: First Stat Point Allocation**
-
-```
-╔═══════════════════════════════════════════════════════════╗
-║  🎮 TRY IT NOW                                            ║
-║                                                           ║
-║  Let's spend your first stat point!                       ║
-║                                                           ║
-║  Choose a stat to increase:                               ║
-║                                                           ║
-║  [ ❤️ VIT ]  [ 📚 WIS ]  [ 💰 FOR ]  [ 🎯 PRE ]  [ 💨 AGI ]║
-║                                                           ║
-║  Don't worry - you can build any way you like.            ║
-║  There's no "wrong" choice!                               ║
-║                                                           ║
-║  Remaining points: 2                                      ║
-╚═══════════════════════════════════════════════════════════╝
-```
-
-**Step 5: Confirmation & Tip**
-
-```
-╔═══════════════════════════════════════════════════════════╗
-║  ✅ Stats Updated!                                        ║
-║                                                           ║
-║  You increased Wisdom to 2.                               ║
-║  You now earn +4% bonus XP!                               ║
-║                                                           ║
-║  💡 TIP: You can always check your stats in the           ║
-║  Profile screen. Click 👤 Profile in the sidebar.         ║
-║                                                           ║
-║  You still have 2 points to spend - or save them          ║
-║  for later!                                               ║
-║                                                           ║
-║              [ Open Profile ]  [ Continue ]               ║
-╚═══════════════════════════════════════════════════════════╝
-```
+### Tutorial Dialogue Scripts
 
 #### Stats Tutorial - NPC Reinforcement
 
@@ -2870,78 +2523,12 @@ Session 4+: Mastery
 
 #### Tutorial Flow
 
-**Step 1: First Reputation Gain**
-
-```
-╔═══════════════════════════════════════════════════════════╗
-║  🏘️ REPUTATION GAINED                                     ║
-║                                                           ║
-║  +10 Reputation with Dawnmere Settlers                    ║
-║                                                           ║
-║  The people of Dawnmere are starting to trust you!        ║
-║                                                           ║
-║              [ What is Reputation? ]  [ OK ]              ║
-╚═══════════════════════════════════════════════════════════╝
-```
-
-**Step 2: Reputation Explanation (if clicked)**
-
-```
-╔═══════════════════════════════════════════════════════════╗
-║  🤝 REPUTATION                                            ║
-║                                                           ║
-║  As you help people and complete quests, you build        ║
-║  REPUTATION with different factions.                      ║
-║                                                           ║
-║  Higher reputation unlocks:                               ║
-║  • 🛒 Shop discounts                                      ║
-║  • 📜 Special quests                                      ║
-║  • 🎁 Unique items                                        ║
-║  • 🏆 Titles and rewards                                  ║
-║                                                           ║
-║              [ Show Me More ]  [ Got It ]                 ║
-╚═══════════════════════════════════════════════════════════╝
-```
-
-**Step 3: Faction Ranks (if "Show Me More")**
-
-```
-╔═══════════════════════════════════════════════════════════╗
-║  📊 DAWNMERE SETTLERS - RANKS                             ║
-║                                                           ║
-║  ○ Stranger (0) ......... No special benefits             ║
-║  ○ Visitor (100) ........ 5% shop discount                ║
-║  ○ Friend (250) ......... 10% discount + special quests   ║
-║  ○ Honored (500) ........ 15% discount + unique items     ║
-║  ● Champion (1000) ...... 25% discount + exclusive title  ║
-║                                                           ║
-║  Your current standing: Stranger (10/100 to Visitor)      ║
-║  ████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 10%   ║
-║                                                           ║
-║              [ View All Factions ]  [ Close ]             ║
-╚═══════════════════════════════════════════════════════════╝
-```
-
-**Step 4: Multiple Factions Preview**
-
-```
-╔═══════════════════════════════════════════════════════════╗
-║  🌍 FACTIONS OF TURUEM                                    ║
-║                                                           ║
-║  You will encounter many groups on your journey:          ║
-║                                                           ║
-║  🏘️ Dawnmere Settlers - The frontier community            ║
-║  🌾 Horticulturists - Farmers and plant cultivators       ║
-║  ⛏️ Miners Guild - Craftsmen and metalworkers             ║
-║  🛡️ The Old Guard - Keepers of the old ways              ║
-║  👑 Loyalists - Supporters of King Hermeau                ║
-║  ...and more to discover                                  ║
-║                                                           ║
-║  💡 Some factions have conflicting goals. Choose wisely!  ║
-║                                                           ║
-║              [ Close ]                                    ║
-╚═══════════════════════════════════════════════════════════╝
-```
+| Step | Content | Actions |
+|------|---------|---------|
+| 1 | First Reputation Gain | Shows "+X Reputation with [Faction]" notification with [What is Reputation?] button |
+| 2 | Reputation Explanation | Explains factions, shows benefits: shop discounts, special quests, unique items, titles |
+| 3 | Faction Ranks | Shows rank progression (Stranger → Visitor → Friend → Honored → Champion) with benefits |
+| 4 | Factions Preview | Lists major factions: Dawnmere Settlers, Horticulturists, Miners Guild, Old Guard, Loyalists |
 
 #### Reputation Tutorial - NPC Reinforcement
 
@@ -3044,28 +2631,6 @@ After tutorials complete, these remain accessible:
 └── Next Rank Bonus: 10% discount + special quests
 ```
 
-#### Contextual Reminders
-
-**On Level Up (if points unspent):**
-```
-💡 You have 3 unspent stat points!
-   Open Profile to allocate them.
-   [ Open Profile ] [ Later ]
-```
-
-**On Reputation Rank Up:**
-```
-🎉 Rank Up! You are now "Friend" with Dawnmere Settlers!
-   New benefits: 10% shop discount, new quests available
-   [ View Details ] [ OK ]
-```
-
-**On Significant Reputation Gain:**
-```
-+25 Reputation with Miners Guild
-Progress: ████████░░ 80% to next rank
-```
-
 ---
 
 ### Tutorial Implementation Notes
@@ -3133,9 +2698,9 @@ tutorialState: {
 
 ---
 
-### Tutorial Dialogue Scripts
+### Extended NPC Dialogue Scripts
 
-#### Sage Aldric - Stats Dialogue
+#### Sage Aldric - Stats Dialogue (Extended)
 
 **First Meeting (post-Level 2):**
 > "Greetings, young learner. I am Aldric, keeper of knowledge in these parts. I sense potential within you—but potential must be shaped. Have you considered how to develop your abilities?"
@@ -3146,7 +2711,7 @@ tutorialState: {
 **After tutorial:**
 > "Remember: there is no single path to mastery. A warrior may value Vitality, a scholar may prize Wisdom, but the greatest among us find their own balance."
 
-#### Elder Urma - Reputation Dialogue
+#### Elder Urma - Reputation Dialogue (Extended)
 
 **After Meet the Settlers:**
 > "You've begun to know our people. But knowing and trusting are different things. In Turuem, reputation is currency more valuable than gold. Earn it carefully."
@@ -3203,139 +2768,47 @@ Resource gathering minigames combine language learning with crafting material co
 
 #### Mining: Timed Quiz
 
-**Concept:** Answer as many vocabulary questions as possible before time runs out. Each correct answer = 1 ore.
+**Concept:** Answer vocabulary questions before time runs out. Each correct = 1 ore.
 
-**Implementation:** Reuses existing lesson system with timer overlay.
+| Element | Value |
+|---------|-------|
+| Timer | 60 seconds (countdown) |
+| Correct answer | +1 resource |
+| Wrong answer | -3 second penalty |
+| Speed bonus | <2 seconds = chance for bonus ore |
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  ⛏️ MINING - Copper Vein                                │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  Time Remaining: [████████░░░░] 45s                     │
-│                                                         │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │           What does "le fer" mean?              │   │
-│  └─────────────────────────────────────────────────┘   │
-│                                                         │
-│    ┌──────────┐  ┌──────────┐                          │
-│    │   iron   │  │  copper  │                          │
-│    └──────────┘  └──────────┘                          │
-│    ┌──────────┐  ┌──────────┐                          │
-│    │   gold   │  │  silver  │                          │
-│    └──────────┘  └──────────┘                          │
-│                                                         │
-│  Gathered: 🪨🪨🪨🪨 (4 Copper Chunks)                    │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
-```
-
-**Mechanics:**
-- 60 second timer
-- Each correct answer = 1 resource
-- Wrong answers = 3 second penalty
-- Speed bonus: Answer in <2 seconds = chance for bonus ore
-- Difficulty scales with ore tier
-
-**Code Requirements:**
-- Timer countdown display
-- Running resource counter
-- Speed tracking per question
-- End state with results
+**UI Elements:** Timer bar, question display, 4 answer buttons, gathered resource counter
 
 ---
 
 #### Woodcutting: Streak Challenge
 
-**Concept:** Get as many correct answers in a row as possible. Streak determines wood quality/quantity.
+**Concept:** Build answer streaks. Streak determines wood quality/quantity.
 
-**Implementation:** Modified lesson with streak emphasis.
+| Element | Value |
+|---------|-------|
+| Questions | 15 total |
+| Base reward | 1 log per 3 correct |
+| Streak bonuses | 5 streak = +1, 10 = +2, 15 = +3 |
+| Wrong answer | Resets streak |
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  🪓 WOODCUTTING - Pine Forest                           │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  Current Streak: 🔥🔥🔥🔥🔥 5                            │
-│  Best Streak: 8                                         │
-│                                                         │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │         How do you say "tree" in French?        │   │
-│  └─────────────────────────────────────────────────┘   │
-│                                                         │
-│    ┌──────────┐  ┌──────────┐                          │
-│    │  arbre   │  │  forêt   │                          │
-│    └──────────┘  └──────────┘                          │
-│    ┌──────────┐  ┌──────────┐                          │
-│    │  bois    │  │  feuille │                          │
-│    └──────────┘  └──────────┘                          │
-│                                                         │
-│  Logs collected: 🪵🪵🪵 (3 Pine Logs)                   │
-│                                                         │
-│  Streak Bonuses:                                        │
-│  5 streak = +1 log | 10 streak = +2 logs               │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
-```
-
-**Mechanics:**
-- 15 questions total
-- Base: 1 log per 3 correct answers
-- Streak bonus at 5, 10, 15
-- Wrong answer resets streak
-- Final reward based on best streak achieved
-
-**Code Requirements:**
-- Streak counter with visual feedback
-- Streak milestone rewards
-- Streak reset animation
-- Best streak tracking
+**UI Elements:** Streak counter with fire icons, best streak display, milestone indicators
 
 ---
 
 #### Hunting: Speed Round
 
-**Concept:** Quick reflexes! Answer 10 questions as fast as possible. Total time determines hide quality.
+**Concept:** Answer 10 questions fast. Total time determines hide quality.
 
-**Implementation:** Lesson with cumulative timer.
+| Element | Value |
+|---------|-------|
+| Questions | 10 total |
+| Timer | Counts up (cumulative) |
+| Wrong answer | +5 second penalty |
+| Star ratings | 3-star <30s, 2-star <45s, 1-star <60s |
+| Perfect bonus | No mistakes + <30s = rare hide |
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  🏹 HUNTING - Boar Territory                            │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  Question 6/10                                          │
-│  Total Time: 23.4s                                      │
-│                                                         │
-│  ┌─────────────────────────────────────────────────┐   │
-│  │        "rapide" = ?                             │   │
-│  └─────────────────────────────────────────────────┘   │
-│                                                         │
-│    ┌──────────┐  ┌──────────┐                          │
-│    │   fast   │  │   slow   │                          │
-│    └──────────┘  └──────────┘                          │
-│    ┌──────────┐  ┌──────────┐                          │
-│    │  strong  │  │   weak   │                          │
-│    └──────────┘  └──────────┘                          │
-│                                                         │
-│  Time Targets:                                          │
-│  ⭐⭐⭐ <30s | ⭐⭐ <45s | ⭐ <60s                       │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
-```
-
-**Mechanics:**
-- 10 questions, timer counts up
-- Wrong answer adds 5 second penalty
-- Star rating based on total time
-- Stars determine hide quantity (1-3)
-- Perfect run (no mistakes, <30s) = bonus rare hide
-
-**Code Requirements:**
-- Cumulative timer (counts up)
-- Penalty time additions
-- Star rating calculation
-- Results screen with time breakdown
+**UI Elements:** Question counter, cumulative timer, star target display
 
 ---
 
@@ -3343,348 +2816,53 @@ Resource gathering minigames combine language learning with crafting material co
 
 #### Herbalism: Matching Pairs
 
-**Concept:** Match French words to English meanings by clicking pairs. Calm, methodical gameplay fits plant gathering theme.
+**Concept:** Match French words to English meanings. Calm, methodical gameplay.
 
-**Implementation:** New minigame type with pair-matching logic.
+| Element | Value |
+|---------|-------|
+| Pairs | 6-8 to match |
+| Mechanic | Click French, then English |
+| Correct match | Pair fades, +1 herb |
+| Wrong match | +1 mistake |
+| Bonus | 0-1 mistakes = extra herbs |
+| Timer | None (relaxed pace) |
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  🌿 HERBALISM - Meadow Gathering                        │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  Match the French words to their English meanings       │
-│                                                         │
-│  ┌─────────────────────┐   ┌─────────────────────┐     │
-│  │                     │   │                     │     │
-│  │  [fleur]  [plante]  │   │  [leaf]   [flower]  │     │
-│  │                     │   │                     │     │
-│  │  [feuille] [racine] │   │  [root]   [plant]   │     │
-│  │                     │   │                     │     │
-│  │  [herbe]   [tige]   │   │  [stem]   [grass]   │     │
-│  │                     │   │                     │     │
-│  └─────────────────────┘   └─────────────────────┘     │
-│                                                         │
-│  Pairs Found: 3/6                                       │
-│  Mistakes: 1                                            │
-│                                                         │
-│  Herbs gathered: 🌿🌿🌿 (3 Meadow Leaf)                 │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
-```
+**UI Elements:** Two-column display (French/English), selection highlighting, mistake counter
 
-**Mechanics:**
-- 6-8 pairs to match
-- Click French word, then click English meaning
-- Correct match = pair disappears, +1 herb
-- Wrong match = mistake counter +1
-- Bonus herbs for 0-1 mistakes
-- No timer (relaxing pace)
-
-**Code Requirements:**
-- Two-column word display
-- Selection state tracking
-- Pair validation
-- Match animation (fade out)
-- Mistake counter
-
-**Implementation Details:**
-
-```javascript
-// Matching game state
-const matchingState = {
-  pairs: [],           // {french, english, matched}
-  selectedFrench: null,
-  selectedEnglish: null,
-  mistakes: 0,
-  matched: 0
-};
-
-// Check for match
-function checkMatch() {
-  if (selectedFrench && selectedEnglish) {
-    const pair = pairs.find(p =>
-      p.french === selectedFrench &&
-      p.english === selectedEnglish
-    );
-    if (pair) {
-      pair.matched = true;
-      matched++;
-      // Success animation
-    } else {
-      mistakes++;
-      // Shake animation
-    }
-    // Reset selections
-    selectedFrench = null;
-    selectedEnglish = null;
-  }
-}
-```
+**State:** `{ pairs[], selectedFrench, selectedEnglish, mistakes, matched }`
 
 ---
 
 #### Fishing: Reaction + Question
 
-**Concept:** Wait for a bite, react quickly, then answer a question to catch the fish.
+**Concept:** Wait for bite → react quickly → answer question to catch fish.
 
-**Implementation:** New minigame with timing element.
+| Phase | Duration | Action |
+|-------|----------|--------|
+| Waiting | 2-6s random | Watch for bite |
+| Bite | 1.5s window | Press SPACE |
+| Question | Until answer | 4-choice vocab |
+| Result | Instant | Caught or escaped |
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  🎣 FISHING - Dawnmere River                            │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│                    ~~~~~~~~                             │
-│                   ~~~ 🎣 ~~~                            │
-│                    ~~~~~~~~                             │
-│                                                         │
-│            Waiting for a bite...                        │
-│                                                         │
-│                                                         │
-│                                                         │
-│                                                         │
-│  Fish Caught: 🐟🐟 (2 River Perch)                      │
-│  Attempts: 3/5                                          │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+| Element | Value |
+|---------|-------|
+| Attempts | 5 per session |
+| Miss reaction | Fish escapes |
+| Wrong answer | Fish escapes |
+| Fast reaction + correct | Chance for rare fish |
 
-        ↓ After random 2-6 seconds ↓
-
-┌─────────────────────────────────────────────────────────┐
-│  🎣 FISHING - Dawnmere River                            │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│                    ~~~~~~~~                             │
-│                 ~~~ 🎣💥 ~~~                            │
-│                    ~~~~~~~~                             │
-│                                                         │
-│         !! BITE !! Press SPACE quickly!                 │
-│                                                         │
-│                [████████░░] React!                      │
-│                                                         │
-│                                                         │
-│  Fish Caught: 🐟🐟 (2 River Perch)                      │
-│  Attempts: 3/5                                          │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
-
-        ↓ If reacted in time ↓
-
-┌─────────────────────────────────────────────────────────┐
-│  🎣 FISHING - Dawnmere River                            │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  🐟 Fish on the line!                                   │
-│                                                         │
-│  Quick! What does "poisson" mean?                       │
-│                                                         │
-│    ┌──────────┐  ┌──────────┐                          │
-│    │   fish   │  │   water  │                          │
-│    └──────────┘  └──────────┘                          │
-│    ┌──────────┐  ┌──────────┐                          │
-│    │   boat   │  │   river  │                          │
-│    └──────────┘  └──────────┘                          │
-│                                                         │
-│  Fish Caught: 🐟🐟 (2 River Perch)                      │
-│  Attempts: 3/5                                          │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
-```
-
-**Mechanics:**
-- 5 fishing attempts per session
-- Wait phase: Random 2-6 seconds
-- React phase: 1.5 second window to press SPACE
-- Question phase: Answer correctly to catch fish
-- Miss reaction = fish escapes (no question)
-- Wrong answer = fish escapes
-- Rare fish chance on fast reaction + correct answer
-
-**Code Requirements:**
-- Random timer for bite
-- Reaction window with countdown
-- Keyboard listener (spacebar)
-- State machine (waiting → bite → question → result)
-- Visual feedback animations
-
-**State Machine:**
-
-```javascript
-const FishingState = {
-  WAITING: 'waiting',
-  BITE: 'bite',
-  QUESTION: 'question',
-  CAUGHT: 'caught',
-  ESCAPED: 'escaped'
-};
-
-// Fishing flow
-function startFishing() {
-  state = FishingState.WAITING;
-  const biteDelay = 2000 + Math.random() * 4000; // 2-6 seconds
-  setTimeout(triggerBite, biteDelay);
-}
-
-function triggerBite() {
-  state = FishingState.BITE;
-  playSound('splash');
-  startReactionTimer(1500); // 1.5 second window
-}
-
-function onSpacePressed() {
-  if (state === FishingState.BITE) {
-    state = FishingState.QUESTION;
-    showQuestion();
-  }
-}
-
-function onReactionTimeout() {
-  if (state === FishingState.BITE) {
-    state = FishingState.ESCAPED;
-    showMessage("The fish got away!");
-  }
-}
-```
+**States:** WAITING → BITE → QUESTION → CAUGHT/ESCAPED
 
 ---
 
 ### Tier 3 Minigames (Future)
 
-#### Word Scramble
-
-**Concept:** Unscramble letters to spell the correct French word.
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  Unscramble the French word for "house"                 │
-│                                                         │
-│       [ O ] [ S ] [ I ] [ N ] [ A ] [ M ]               │
-│                                                         │
-│  Your answer: [ M ] [ A ] [ I ] [   ] [   ] [   ]       │
-│                                                         │
-│        [Clear]              [Submit]                    │
-└─────────────────────────────────────────────────────────┘
-```
-
-**Mechanics:**
-- Click letters to add to answer
-- Click answer letters to remove
-- Submit to check
-- Hint: reveal one letter position
-
-**Technical Requirements:**
-- Letter tile components
-- Drag-and-drop OR click-to-place
-- Answer validation
-- Hint system
-
----
-
-#### Memory Card Game
-
-**Concept:** Classic memory game with French/English pairs on cards.
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  Find the matching pairs!                               │
-│                                                         │
-│    [???] [cat] [???] [???]                              │
-│                                                         │
-│    [???] [???] [chat] [???]                             │
-│                                                         │
-│    [???] [???] [???] [???]                              │
-│                                                         │
-│  Pairs found: 1/6    Flips: 8                          │
-└─────────────────────────────────────────────────────────┘
-```
-
-**Mechanics:**
-- 12 cards (6 French/English pairs)
-- Flip two cards at a time
-- Match = cards stay revealed
-- No match = cards flip back
-- Score based on number of flips
-
-**Technical Requirements:**
-- Card flip animation (CSS 3D transform)
-- Card state management
-- Pair tracking
-- Flip counter
-
----
-
-#### Rhythm Mining
-
-**Concept:** Hit keys in sequence as they scroll, answer question at end.
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  ⛏️ RHYTHM MINING                                       │
-│                                                         │
-│     [A]        [S]        [D]        [F]                │
-│      ↓          ↓          ↓          ↓                 │
-│      ○                                                  │
-│                 ○                                       │
-│                            ○                            │
-│      ●                                ○                 │
-│  ────●─────────────────────────────────────             │
-│      A          S          D          F                 │
-│                                                         │
-│  Combo: 12    Score: 2400                               │
-└─────────────────────────────────────────────────────────┘
-```
-
-**Mechanics:**
-- Notes fall toward hit line
-- Press correct key when note crosses line
-- Build combo for multiplier
-- After rhythm section, answer vocabulary question
-- Rhythm score + correct answer = resources
-
-**Technical Requirements:**
-- Game loop with delta time
-- Note spawning and movement
-- Timing windows (perfect/good/miss)
-- Combo tracking
-- Sync with beat (optional music)
-
----
-
-#### Hangman
-
-**Concept:** Classic hangman with French words.
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  Guess the French word for "butterfly"                  │
-│                                                         │
-│       ┌───┐                                             │
-│       │   O                                             │
-│       │  /│\                                            │
-│       │                                                 │
-│       │                                                 │
-│    ───┴───                                              │
-│                                                         │
-│    _ A _ I _ _ O N                                      │
-│                                                         │
-│  Used: E, R, T, U                                       │
-│  Remaining: 4 guesses                                   │
-│                                                         │
-│  [A-Z keyboard]                                         │
-└─────────────────────────────────────────────────────────┘
-```
-
-**Mechanics:**
-- Word revealed as letters guessed
-- Wrong guesses build hangman
-- 6-8 wrong guesses = lose
-- Complete word = win + resources
-
-**Technical Requirements:**
-- Letter tracking (used/available)
-- Hangman drawing stages
-- Word reveal animation
-- Keyboard input or clickable letters
+| Minigame | Concept | Key Mechanic |
+|----------|---------|--------------|
+| **Word Scramble** | Unscramble letters for French word | Click tiles to build word |
+| **Memory Cards** | Match French/English pairs | Flip 2 cards, find matches |
+| **Rhythm Mining** | Hit keys as notes scroll | Timing + vocab question |
+| **Hangman** | Guess French word by letters | Classic hangman rules |
 
 ---
 
@@ -3692,134 +2870,14 @@ function onReactionTimeout() {
 
 *High complexity. Consider only after core game is polished.*
 
-#### Typing Race
+| Minigame | Concept | Technical Challenge |
+|----------|---------|---------------------|
+| **Typing Race** | Type translations as words scroll | Real-time input, scrolling |
+| **Word Grid** | Place tiles to form French words | Grid system, word validation |
+| **Conversation** | Dynamic NPC dialogue in French | Branching dialogue |
+| **Pronunciation** | Speak French words | Web Speech API |
 
-**Concept:** French words scroll across screen, type translations before they disappear.
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  ← maison ← chien ← livre ← [          ]               │
-│                                                         │
-│  Type the English translations!                         │
-│                                                         │
-│  Score: 1250    Combo: x3    Lives: ♥♥♥                 │
-└─────────────────────────────────────────────────────────┘
-```
-
-**Technical Challenge:** Continuous scrolling, real-time text input, collision detection.
-
----
-
-#### Word Grid (Scrabble-lite)
-
-**Concept:** Place letter tiles on grid to form French words.
-
-**Technical Challenge:** Grid system, valid word checking, scoring rules, tile management.
-
----
-
-#### Conversation Simulation
-
-**Concept:** Dynamic dialogue with NPC, choose responses in French.
-
-**Technical Challenge:** Branching dialogue, context tracking, response validation.
-
----
-
-#### Pronunciation Game
-
-**Concept:** Use microphone to pronounce French words.
-
-**Technical Challenge:** Web Speech API, accent tolerance, scoring pronunciation.
-
----
-
-### Vocabulary by Resource
-
-#### Mining Vocabulary
-
-| French | English | Tier |
-|--------|---------|------|
-| le fer | iron | 1 |
-| le cuivre | copper | 1 |
-| la pierre | stone | 1 |
-| le métal | metal | 1 |
-| l'argent | silver | 2 |
-| l'or | gold | 2 |
-| la mine | mine | 2 |
-| creuser | to dig | 2 |
-| le marteau | hammer | 3 |
-| la pioche | pickaxe | 3 |
-| le minerai | ore | 3 |
-| fondre | to melt | 3 |
-
-#### Fishing Vocabulary
-
-| French | English | Tier |
-|--------|---------|------|
-| le poisson | fish | 1 |
-| l'eau | water | 1 |
-| la rivière | river | 1 |
-| le lac | lake | 1 |
-| la mer | sea | 2 |
-| pêcher | to fish | 2 |
-| le bateau | boat | 2 |
-| la canne | fishing rod | 2 |
-| l'hameçon | hook | 3 |
-| le filet | net | 3 |
-| la truite | trout | 3 |
-| le saumon | salmon | 3 |
-
-#### Herbalism Vocabulary
-
-| French | English | Tier |
-|--------|---------|------|
-| la plante | plant | 1 |
-| la fleur | flower | 1 |
-| la feuille | leaf | 1 |
-| l'herbe | grass/herb | 1 |
-| la racine | root | 2 |
-| la tige | stem | 2 |
-| le jardin | garden | 2 |
-| cueillir | to pick/gather | 2 |
-| le pétale | petal | 3 |
-| la graine | seed | 3 |
-| le pollen | pollen | 3 |
-| la sève | sap | 3 |
-
-#### Woodcutting Vocabulary
-
-| French | English | Tier |
-|--------|---------|------|
-| l'arbre | tree | 1 |
-| le bois | wood | 1 |
-| la forêt | forest | 1 |
-| la branche | branch | 1 |
-| le tronc | trunk | 2 |
-| couper | to cut | 2 |
-| la hache | axe | 2 |
-| le chêne | oak | 2 |
-| le pin | pine | 3 |
-| la scie | saw | 3 |
-| l'écorce | bark | 3 |
-| la souche | stump | 3 |
-
-#### Hunting Vocabulary
-
-| French | English | Tier |
-|--------|---------|------|
-| l'animal | animal | 1 |
-| chasser | to hunt | 1 |
-| rapide | fast | 1 |
-| lent | slow | 1 |
-| le sanglier | boar | 2 |
-| le loup | wolf | 2 |
-| l'arc | bow | 2 |
-| la flèche | arrow | 2 |
-| l'ours | bear | 3 |
-| le cerf | deer | 3 |
-| la piste | track/trail | 3 |
-| le piège | trap | 3 |
+> **Note:** Resource vocabulary lists in data/vocabulary.js
 
 ---
 
@@ -3882,62 +2940,6 @@ function onReactionTimeout() {
 - [x] Memory Card Game
 - [ ] Rhythm Mining
 - [x] Hangman
-
----
-
-### Minigame Technical Architecture
-
-#### Minigame Base Class
-
-```javascript
-class ResourceMinigame {
-  constructor(resourceType, tier) {
-    this.resourceType = resourceType;
-    this.tier = tier;
-    this.vocabulary = this.loadVocabulary();
-    this.score = 0;
-    this.resources = 0;
-  }
-
-  loadVocabulary() {
-    // Load themed vocab for this resource type and tier
-  }
-
-  start() {
-    // Override in subclass
-  }
-
-  end() {
-    this.calculateRewards();
-    this.grantResources();
-    this.showResults();
-  }
-
-  calculateRewards() {
-    // Based on score/performance
-  }
-
-  grantResources() {
-    // Add to player inventory
-  }
-}
-
-class TimedQuizMinigame extends ResourceMinigame {
-  // Mining implementation
-}
-
-class StreakMinigame extends ResourceMinigame {
-  // Woodcutting implementation
-}
-
-class MatchingMinigame extends ResourceMinigame {
-  // Herbalism implementation
-}
-
-class ReactionMinigame extends ResourceMinigame {
-  // Fishing implementation
-}
-```
 
 ---
 
@@ -4037,323 +3039,147 @@ When new resources are added, assign them to appropriate zones:
 
 ## Endgame Lore Bosses
 
-> **Note:** This section covers **Lore/Story Bosses** - narrative encounters with combat, dialogue, and moral choices.
->
-> For the **Translation Gauntlet** system (repeatable language mastery challenges), see the "Translation Gauntlet Raid Bosses" section above.
->
-> Both systems coexist as endgame content:
-> - **Lore Bosses** = One-time story progression, narrative weight
-> - **Translation Gauntlet** = Repeatable grind, language mastery testing
+> **Note:** Full lore, dialogue, and narrative details in **WORLD_BIBLE.md → Appendix E**.
 
 ### Overview
 
-These raid bosses are designed to escalate the player's understanding of the true conflict. Rather than simple "defeat evil" encounters, each boss represents a facet of Hermeau's rise to power, The Corruption, or the cost of truth-seeking.
-
-**Progression Structure:**
-1. **Corruption Incursions** (repeated, escalating) — Random/procedural encounters with Corruption manifestations
-2. **Ruins of the Ancients** (dungeon) — Environmental puzzles revealing pre-war knowledge
-3. **Spire of Trials** (endless tower) — Increasingly difficult encounters with philosophical weight
-
----
-
-### Corruption Incursions - Manifestations
-
-These are repeated encounters with different "faces" of The Corruption. Each one is a different aspect of what Hermeau unleashed.
-
-#### Boss 1: The Hollow Shepherd
-**Difficulty:** Medium
-**Type:** Corruption Manifestation
-**Location:** Agricultural regions, farmland ruins
-
-**Lore:**
-Once a beloved shepherd who led flocks through the fertile lands during King Dran's reign, this figure was caught in the initial wave of Corruption during Hermeau's war. The Corruption didn't kill him—it hollowed him out, leaving a puppet that still wears his face and voice but moves in unsettling ways.
-
-Players may recognize him from NPC dialogue as someone lost during "the attacks on the farmlands." The shock is realizing he's *still* affecting the region—appearing to contaminate new crops, draw away livestock, and whisper falsehoods to farmers.
-
-**What He Represents:** The Corruption's power to pervert the natural and familiar. The tragedy of individuals lost to it.
-
-**Mechanics Hint:**
-- Can temporarily charm livestock/village animals
-- Attacks with shepherd's crook (blunt weapon)
-- Speaks in fragmented sentences mixing old memories with corrupted whispers
-- Vulnerable when grounded (connection to the land)
-
-**Dialogue Example:**
-> "The... the flocks were so full. The grass was so green. Now I tend to rot. I tend to the [unintelligible sound] that grows where the green was. Why do you hurt me? I was... I was happy once."
-
-**Reward:** Dropped item hints at his original purpose (shepherd's horn, wool sample). Defeating him provides environmental clues about Corruption's nature.
-
----
-
-#### Boss 2: The Magistrate's Echo
-**Difficulty:** Medium-High
-**Type:** Corruption Manifestation
-**Location:** Urban centers, administrative districts
-
-**Lore:**
-A local magistrate who enforced Hermeau's policies post-war, this official was corrupted not by accident but by choice—seduced by promises of power. Unlike the Hollow Shepherd, the Echo *knows* what it is and actively serves The Corruption.
-
-The Echo embodies bureaucratic cruelty: It enforces Hermeau's laws with twisted logic, hunts dissidents, and corrupts anyone who questions authority. It's become something worse than human—a corruption that understands manipulation.
-
-**What He Represents:** The willing collaboration with darkness. How systems can become corrupted from within. The horror of recognizing that some people *chose* this.
-
-**Mechanics Hint:**
-- Summons "loyalty enforcers" (minion adds) that must be convinced or defeated
-- Uses twisted legal arguments to confuse players (status effects based on dialogue)
-- Armor/shield made of official seals and documents
-- Weak to truth-telling (specific dialogue choices during fight reduce defenses)
-
-**Dialogue Example:**
-> "You speak of Hermeau as usurper? Nonsense. I have the seals, the stamps, the words of a hundred officials. What have you? Sentiment? The law serves order, and order serves... us. Why would I refuse power when it was offered freely?"
-
-**Moral Complexity:**
-Was this person corrupted, or did Corruption simply amplify their worst instincts? Players should feel the ambiguity.
-
-**Reward:** Corrupted official documents revealing some of Hermeau's early policies.
-
----
-
-#### Boss 3: The Rotting Prophet
-**Difficulty:** High
-**Type:** Corruption Manifestation
-**Location:** Religious sites, temples
-
-**Lore:**
-A priest who genuinely believed the Light would protect him—until Hermeau's dark magic proved stronger. The Corruption doesn't possess him; it *lives inside* him, and he's aware of every moment of it.
-
-He speaks sermons mixed with agonized pleas. His faith is shattered, replaced by cosmic horror at discovering that the Light he devoted his life to has limits. This boss is *tragic*—he didn't choose this and suffers from it, but he's also dangerous.
-
-**What He Represents:** The failure of faith when confronted with systemic evil. The realization that protection doesn't come from belief alone.
-
-**Mechanics Hint:**
-- Uses "blessing" attacks that are actually corrupted Light magic
-- Can heal himself and minions
-- Monologues reveal fragments of what happened to the priesthood
-- Defeating him without mercy may corrupt the player's reputation with religious factions
-- Options for redemption/mercy exist
-
-**Dialogue Example:**
-> "I felt the Light leave me. Not gradually—like a door slamming. I called and called, and it did not answer. Something *else* answered. Something that wore the Light's voice. I am... I am still calling. I don't know why. It doesn't listen either."
-
-**Moral Complexity:**
-This boss may generate the most player debate: Do you spare him if possible? What does it mean to put someone out of misery when they're also dangerous?
-
-**Reward:** Fragments of forbidden knowledge about the limits of Light magic. Clues about the priesthood's secret doubts.
-
----
-
-### Ruins of the Ancients - Lore Bosses
-
-These are major encounters within a dungeon exploring pre-Verandum history. The Ruins reveal that Turuem had advanced civilizations before the current age—and they fell because of similar corruptions.
-
-#### Boss 4: The Archivist Prime
-**Difficulty:** Medium
-**Type:** Guardian (Golem-like construct)
-**Location:** Central archive chamber in Ruins
-
-**Lore:**
-Before the current age, advanced civilizations kept vast archives of knowledge. The Archivist Prime was constructed to protect and preserve these records. It's not alive and not entirely mechanical—it's something in between, sustained by the same Light magic that built the Ruins themselves.
-
-After centuries, it's begun to degrade. It no longer understands what knowledge it's protecting, only that it *must* protect it. It challenges anyone entering with impossible questions—not maliciously, but because that's what it was programmed to do.
-
-**What He Represents:** The erosion of purpose over time. How systems intended to preserve truth can become obstacles to it. The tragedy of guardianship without context.
-
-**Mechanics:**
-- Asks riddle-based questions; answers are correct only if they align with *ancient* knowledge (not modern propaganda)
-- Becomes hostile if challenged
-- Immune to most damage; vulnerable only by solving the archive's core puzzle
-- Teaches the player about pre-Verandum civilizations
-
-**Dialogue Example:**
-> "What is truth? Once I knew. I was built to defend it. But centuries have passed, and I have watched truths become lies and lies become accepted. I defend this archive, but I no longer remember: Was I defending wisdom, or was I preserving the seeds of our downfall?"
-
-**Reward:** Access to ancient texts revealing:
-- That previous civilizations fell due to similar corruption (cyclical pattern)
-- Hints about the true origin of Dark magic
-- Knowledge that might help identify Corruption's source
-
----
-
-#### Boss 5: The Last Regent
-**Difficulty:** High
-**Type:** Spectral Guardian
-**Location:** Throne room in Ruins
-
-**Lore:**
-The Ruins contain remnants of a pre-Verandum civilization that was ruled by wise regents. The Last Regent refused to leave when the civilization fell, binding their spirit to the archive to preserve it for future generations. Over ages, they've become something between a ghost and a curse—powerful, lonely, and questioning whether their sacrifice meant anything.
-
-The Regent appears as a figure of Light (not corrupted), but fights with the weariness of someone who has guarded an empty throne for centuries.
-
-**What He Represents:** The cost of loyalty. Sacrifice that may have been meaningless. The question: "Was my duty to my people worth this loneliness?"
-
-**Combat:**
-- Uses Light magic defensively
-- Creates temporary barriers and zones
-- Summons echoes of past regents (minion encounters)
-- Can be *talked to* mid-fight; player choices affect the encounter
-- Option to convince him that his sacrifice *did* matter (by proving new civilizations learned from the old)
-
-**Dialogue Example (beginning of encounter):**
-> "A visitor. How strange. I have not spoken to a living voice in... I have forgotten how long. Are you here to reclaim the archives? Or here to add more rubble to this tomb?"
-
-**Ending Dialogue (if befriended):**
-> "Then perhaps I was not foolish to stay. If new peoples learn from our mistakes, my watch was not in vain. But you must promise—do not repeat our fall. Do not let the darkness win as we did."
-
-**Reward:**
-- If defeated: Equipment from pre-Verandum era
-- If befriended: Title "Keeper of the Archives," access to unique quests, knowledge about how to counter Dark magic specifically
-
----
-
-### Spire of Trials - Philosophical Bosses
-
-An endless tower where each floor presents increasingly difficult opponents. But the true challenge is philosophical—each boss forces the player to confront the contradictions and costs of truth-seeking.
-
-#### Boss 6: The Truthseeker's Doubt
-**Difficulty:** Varies (scales with tower level)
-**Type:** Shadow/Mirror Match
-**Location:** Mid-levels of Spire
-
-**Lore:**
-This boss is a manifestation of the player's own doubts—a shadow created by the Spire's strange magic. It fights like the player and speaks with the player's voice, but it argues the opposite position for every choice the player has made.
-
-If the player has been seeking truth, this manifestation argues that ignorance is peace. If the player has sided with factions, this shadow argues for neutrality. It's not evil—it's compromise personified.
-
-**What He Represents:** The cost of commitment. The validity of doubt. The question: "Am I right to pursue this, or am I being destructively righteous?"
-
-**Mechanics:**
-- Adapts to player's build and strategy
-- Each hit the player lands damages the shadow but also damages the player (literal internal conflict)
-- Can be won through mercy (refusing to fight fully) or through overwhelming conviction
-- Different resolutions based on player's ideological consistency
-
-**Dialogue:**
-> "Every path you've chosen means abandoning another. How many people have you left behind? How many causes did you ignore? You call this truth-seeking, but maybe it's just... choosing comfortable lies."
-
-**Reward (variable):**
-- If defeated: Artifact symbolizing conviction (bonus to willpower-related traits)
-- If spared/compromised: Artifact symbolizing balance (recovery benefits)
-
----
-
-#### Boss 7: The Corrupted Idealist
-**Difficulty:** Very High
-**Type:** Humanoid, powerful mage
-**Location:** Upper levels of Spire
-
-**Lore:**
-This was once a prominent member of the Old Guard who truly believed in restoring Layne and returning to the "good old days." But they discovered something horrifying: Layne may not be what the resistance believes. Or perhaps the resistance's methods have become as corrupt as Hermeau's.
-
-Broken by this revelation, they fled to the Spire seeking isolation. But The Corruption followed them there, and they've been consumed by it—not body, but will. They've become a cautionary tale: What happens to idealists who lose their ideals?
-
-**What He Represents:** The danger of ideological purity. How even just causes can corrupt those who pursue them. The tragedy of a good person broken by too much truth.
-
-**Combat:**
-- Uses both Light and Dark magic (conflicted)
-- Attacks are powerful but sometimes hesitate
-- Between attacks, they speak fragmented monologues revealing their disillusionment
-- Can be reasoned with; different dialogue checks reveal different aspects of their crisis
-
-**Monologue Example (mid-fight):**
-> "I fought for light. For the return of the rightful heir. But what if the heir is no better? What if the resistance is just another Hermeau waiting to seize power? I realized I couldn't trust anyone... so I trusted nothing. And Corruption rewards that perfectly."
-
-**Resolution Options:**
-- Defeat them, putting them out of their misery
-- Help them see that doubt doesn't require surrender (reform them)
-- Absorb their knowledge/burden (player gains understanding of resistance's internal conflicts)
-
-**Reward:**
-- Intelligence about Old Guard factions
-- Equipment symbolizing "hard truths"
-- Potential ally or enemy in later encounters, depending on how the fight resolved
-
----
-
-#### Boss 8: The Apotheosis of Corruption
-**Difficulty:** Extreme (Final Spire Boss)
-**Type:** Manifestation of The Corruption itself
-**Location:** Tower's peak
-
-**Lore:**
-At the Spire's peak, the player encounters The Corruption itself—not as an abstract force, but as a *being*. This isn't Hermeau (he's the *user* of Corruption, not its source). This is what he unleashed: a force of entropy and malice that predates the current kingdom, possibly predates recorded civilization.
-
-It has no true form—it appears differently to each observer. To some, it looks like the plague of their nightmares. To others, it wears a face they trust.
-
-**What It Represents:**
-- The danger that evil is often *not* a person but a force amplified by human ambition
-- The question: Can you defeat a force by defeating its current user?
-- The cost of knowledge: Some truths break people
-
-**Combat:**
-This fight has multiple phases representing different aspects of Corruption:
-
-**Phase 1: The Truth**
-- Corruption reveals hidden truths about everything the player believes
-- Does it lie? Can it lie? Or does it speak only truths that hurt?
-- Attacks are based on the player's guilt, regrets, doubts
-
-**Phase 2: The Seduction**
-- Corruption offers the player power, answers, peace
-- Damage is taken through refusal (constantly saying "no")
-- Regenerates if the player accepts its offers
-
-**Phase 3: The Hunger**
-- Corruption becomes desperate, violent, trying to consume the player
-- All previous attacks combine
-- Can be won through understanding rather than pure damage
-
-**Dialogue (constantly shifting):**
-> "I am old. Older than your kingdoms. I am hunger. I am the crack in your certainty. I have worn many faces—your leader, your prophet, your doubt. Why do you resist? You carry me already."
-
-**Victory Conditions (multiple paths):**
-1. **Pure Destruction:** Defeat it through overwhelming power (requires high stats)
-2. **Acceptance & Release:** Accept it exists and choose to limit it rather than destroy it (requires wisdom)
-3. **Understanding:** Prove that Corruption's nature can be changed/contained rather than eliminated (requires lore knowledge from previous bosses)
-
----
-
-### End-Game Lore Integration
-
-#### Connection to Main Story
-These bosses serve as the endgame content but also reinforce the main narrative:
-
-1. **Corruption Incursions** reveal that The Corruption is still spreading—Hermeau's control is slipping
-2. **Ruins of the Ancients** prove that Hermeau didn't invent Dark magic—he just awakened something older
-3. **Spire of Trials** forces the player to confront what they've learned and decide if truth is worth its cost
-
-#### Impact on Final Confrontation
-The player's approach to these bosses affects how they confront Hermeau:
-- If they understand Corruption's nature, they can potentially turn it against Hermeau
-- If they've made allies among the bosses (The Last Regent, The Corrupted Idealist), those relationships matter
-- If they've only used force, they may lack the knowledge/allies needed for certain story resolutions
-
----
-
-### Lore Boss Difficulty Scaling
-
-| Boss | Intended Level | Solo Viable | Recommended Party |
-|------|-----------------|------------|-------------------|
-| Hollow Shepherd | 15+ | Yes | 1-3 players |
-| Magistrate's Echo | 18+ | Yes | 1-3 players |
-| Rotting Prophet | 20+ | Challenging | 2-4 players |
-| Archivist Prime | 22+ | No (puzzle-based) | 1-4 players |
-| Last Regent | 25+ | Challenging | 2-4 players |
-| Truthseeker's Doubt | 28+ (scales) | Varies | 1-4 players |
-| Corrupted Idealist | 30+ | Challenging | 2-4 players |
-| Apotheosis | 35+ | Very Hard | 3-4 players (scaled) |
-
----
-
-### Lore Boss Open Questions
-
-1. **Corruption's True Nature** — Is it a living entity, a force, or something else? How does it think?
-2. **Dark Magic Origins** — Where did Hermeau find it? Did he create it or awaken it?
-3. **Multiple Endings** — How much do these boss encounters affect the ending?
-4. **Party System** — Is this game solo or multiplayer? How many players affect boss design?
-5. **Loot & Progression** — What equipment drops from these bosses? How unique should it be?
-6. **Lore Conflicts** — Do some boss paths contradict each other? (Should they? Unreliable narrator approach?)
-7. **NPC Cameos** — Should any established NPCs (Pardu, Kolpa, etc.) appear in endgame?
-8. **Post-Game Content** — What happens after defeating The Apotheosis?
+| System | Type | Purpose |
+|--------|------|---------|
+| Corruption Incursions | Repeated encounters | Corruption manifestation bosses |
+| Ruins of the Ancients | Dungeon | Environmental puzzles + lore |
+| Spire of Trials | Endless tower | Philosophical/scaling challenges |
+
+### Boss Roster
+
+| # | Boss | Difficulty | Type | Key Mechanic |
+|---|------|------------|------|--------------|
+| 1 | Hollow Shepherd | Medium | Corruption | Charm livestock, vulnerable when grounded |
+| 2 | Magistrate's Echo | Medium-High | Corruption | Summons minions, weak to truth dialogue |
+| 3 | Rotting Prophet | High | Corruption | Corrupted healing, mercy/redemption options |
+| 4 | Archivist Prime | Medium | Guardian | Riddle-based, puzzle immunity |
+| 5 | Last Regent | High | Spectral | Mid-fight dialogue, befriend option |
+| 6 | Truthseeker's Doubt | Scales | Mirror | Adapts to player, damages both sides |
+| 7 | Corrupted Idealist | Very High | Mage | Light+Dark magic, can be reformed |
+| 8 | Apotheosis | Extreme | Final | 3 phases: Truth → Seduction → Hunger |
+
+### Difficulty Scaling
+
+| Boss | Level | Solo | Party |
+|------|-------|------|-------|
+| Hollow Shepherd | 15+ | Yes | 1-3 |
+| Magistrate's Echo | 18+ | Yes | 1-3 |
+| Rotting Prophet | 20+ | Hard | 2-4 |
+| Archivist Prime | 22+ | No | 1-4 |
+| Last Regent | 25+ | Hard | 2-4 |
+| Truthseeker's Doubt | 28+ | Varies | 1-4 |
+| Corrupted Idealist | 30+ | Hard | 2-4 |
+| Apotheosis | 35+ | Very Hard | 3-4 |
+
+### Encounter Triggers
+
+| Boss | Location | Trigger Condition | Availability |
+|------|----------|-------------------|--------------|
+| Hollow Shepherd | Corrupted farmland | Random spawn post-story | Repeatable weekly |
+| Magistrate's Echo | Abandoned courthouse | Quest chain completion | Once per playthrough |
+| Rotting Prophet | Defiled temple | Reputation + quest flag | Once per playthrough |
+| Archivist Prime | Ancient archive entrance | Solve entry puzzle | Once per playthrough |
+| Last Regent | Archive inner sanctum | Defeat Archivist Prime | Once per playthrough |
+| Truthseeker's Doubt | Spire floor 50 | Reach floor 50 | Each Spire run |
+| Corrupted Idealist | Spire floor 75 | Reach floor 75 | Each Spire run |
+| Apotheosis | Spire floor 100 | Reach floor 100 | Each Spire run |
+
+### Combat Phases
+
+#### Corruption Incursion Bosses
+
+**Hollow Shepherd (3 phases)**
+| Phase | HP Threshold | Mechanic | Counter |
+|-------|--------------|----------|---------|
+| 1 | 100-60% | Summons corrupted sheep (distractions) | Answer vocab to dispel |
+| 2 | 60-30% | Levitates, AoE corruption spread | Ground him with nature vocab |
+| 3 | 30-0% | Desperate charges, erratic patterns | Maintain streak for damage |
+
+**Magistrate's Echo (3 phases)**
+| Phase | HP Threshold | Mechanic | Counter |
+|-------|--------------|----------|---------|
+| 1 | 100-70% | Summons bureaucrat minions | Clear minions first |
+| 2 | 70-40% | Legal immunity shield | Use "truth" dialogue options |
+| 3 | 40-0% | Rapid-fire accusations | Perfect answers break shield |
+
+**Rotting Prophet (4 phases)**
+| Phase | HP Threshold | Mechanic | Counter |
+|-------|--------------|----------|---------|
+| 1 | 100-75% | Corrupted prayers (healing self) | Interrupt with quick answers |
+| 2 | 75-50% | Spreads doubt (player debuff) | Religious vocab removes debuff |
+| 3 | 50-25% | Desperate plea phase | Mercy option unlocks here |
+| 4 | 25-0% | Full corruption unleashed | DPS race or complete mercy path |
+
+#### Ruins Bosses
+
+**Archivist Prime (Puzzle boss)**
+| Phase | Mechanic | Requirement |
+|-------|----------|-------------|
+| Entry | Archive riddle | Solve 3 riddles to start fight |
+| Combat | Immunity cycles | Only damageable after correct answer |
+| Enrage | Speed increase | Must complete within time limit |
+
+**Last Regent (Dialogue boss)**
+| Phase | Mechanic | Outcome |
+|-------|----------|---------|
+| Intro | Extended dialogue | Choices affect difficulty |
+| Combat | Mid-fight conversations | Correct responses reduce HP |
+| Resolution | Final choice | Befriend = ally, Defeat = equipment |
+
+#### Spire Bosses
+
+**Truthseeker's Doubt (Mirror boss)**
+| Mechanic | Description |
+|----------|-------------|
+| Mirroring | Copies player's stats and abilities |
+| Reflection damage | Wrong answers hurt both combatants |
+| Adaptation | Changes tactics based on player patterns |
+| Victory condition | Maintain conviction (streak) while taking damage |
+
+**Corrupted Idealist (Mage boss)**
+| Phase | Magic Type | Counter |
+|-------|------------|---------|
+| 1 | Light magic attacks | Dark vocab answers |
+| 2 | Dark magic attacks | Light vocab answers |
+| 3 | Combined assault | Mixed vocab mastery |
+| Reform path | Extended dialogue | 80%+ correct unlocks redemption |
+
+**Apotheosis (Final boss - 3 distinct phases)**
+| Phase | Name | Mechanic | Victory Condition |
+|-------|------|----------|-------------------|
+| 1 | Truth | Tests knowledge breadth | Answer from all categories |
+| 2 | Seduction | Temptation choices | Resist shortcuts, stay honest |
+| 3 | Hunger | Endurance challenge | Survive 20-question gauntlet |
+
+### Resolution Types
+
+| Boss | Defeat | Mercy/Befriend | Special |
+|------|--------|----------------|---------|
+| Hollow Shepherd | Standard loot | Release spirit (+rep) | - |
+| Magistrate's Echo | Evidence documents | - | Expose corruption quest |
+| Rotting Prophet | Standard loot | Redemption (+major rep) | Unlocks priest ally |
+| Archivist Prime | Archive access | - | Lore documents |
+| Last Regent | Ancient equipment | Title + ally + quests | Unlocks secret area |
+| Truthseeker's Doubt | Conviction artifact | Balance artifact | Different stat bonuses |
+| Corrupted Idealist | Mage equipment | Ally recruitment | Intel on Hermeau |
+| Apotheosis | Destruction ending | Acceptance ending | Understanding ending |
+
+### Language Challenge Integration
+
+| Boss | Primary Category | Secondary Category |
+|------|------------------|-------------------|
+| Hollow Shepherd | Nature, Animals | Agriculture |
+| Magistrate's Echo | Government, Law | Formal speech |
+| Rotting Prophet | Religion, Faith | Emotions |
+| Archivist Prime | History, Time | Academic |
+| Last Regent | Royalty, Legacy | Ancient terms |
+| Truthseeker's Doubt | Self, Identity | Philosophy |
+| Corrupted Idealist | Politics, Morality | Persuasion |
+| Apotheosis | All categories | Mixed difficulty |
 
 ---
 

@@ -30,7 +30,34 @@ const GAME_DATA = {
       type: "town",
       level: 1,
       discovered: true,
+      hasBossExam: true,  // Zone mastery test
       npcs: ["urma", "rega", "merchant", "baker", "sage_aldric", "old_pieron", "yris", "brother_varek", "tommen", "widow_senna", "old_jorel"],
+      hotspots: [
+        {
+          id: "shrine_alcove",
+          name: "Dusty Alcove",
+          description: "A small alcove behind the shrine's altar, barely visible in the flickering candlelight.",
+          searchText: "You carefully reach into the alcove and find something wrapped in old cloth...",
+          artifactId: "faith_forbidden_text",
+          requiredRep: { faction: "order_of_dawn", amount: 100 }
+        },
+        {
+          id: "old_bookshelf",
+          name: "Weathered Bookshelf",
+          description: "An old bookshelf in the village hall, its bottom shelf warped from years of river flooding.",
+          searchText: "Behind the warped wood, you discover papers that were hidden long ago...",
+          artifactId: "exile_rewritten_history",
+          requiredRep: null
+        },
+        {
+          id: "riverside_debris",
+          name: "River Debris",
+          description: "A pile of debris washed up by the river, tangled with old roots and forgotten things.",
+          searchText: "Digging through the debris, your fingers close around something that doesn't belong here...",
+          artifactId: "dran_hermeau_journal",
+          requiredRep: null
+        }
+      ],
       quests: [
         "meeting_family",
         "slime_farming",
@@ -71,11 +98,39 @@ const GAME_DATA = {
       type: "wilderness",
       level: 2,
       discovered: false,
+      hasBossExam: true,  // Zone mastery test
       npcs: ["dave", "lyra", "venn", "rask", "the_veiled_one"],
+      hotspots: [
+        {
+          id: "old_battlefield",
+          name: "Overgrown Battlefield",
+          description: "The grass grows thick here, but underneath... bones. And other things left behind.",
+          searchText: "Your foot catches on something half-buried. A soldier's satchel, the leather cracked with age...",
+          artifactId: "war_soldiers_letter",
+          requiredRep: null
+        },
+        {
+          id: "abandoned_cart",
+          name: "Abandoned Merchant Cart",
+          description: "A cart that never made it to market. Weather-beaten but not empty.",
+          searchText: "Hidden in a false bottom, you find documents that someone wanted to smuggle out...",
+          artifactId: "golden_trade_manifest",
+          requiredRep: null
+        },
+        {
+          id: "ancient_stones",
+          name: "Standing Stones",
+          description: "Ancient stones that predate the fields. Farmers avoid them, but you notice markings...",
+          searchText: "Beneath one tilted stone, protected from centuries of weather, something waits...",
+          artifactId: "silence_bone_carving",
+          requiredRep: null
+        }
+      ],
       quests: [
         // Main quests
         "harvest_time",
         "lyras_garden",
+        "secrets_of_the_soil",  // Alchemy unlock quest
         "corruption_rises",
         // Travel quests - Merchant journey chain (continues here)
         "haari_arrival",
@@ -89,6 +144,46 @@ const GAME_DATA = {
       ],
       connectedTo: ["dawnmere", "lurenium"],
       atmosphere: "pastoral",
+      music: null
+    },
+    lurenium: {
+      id: "lurenium",
+      name: "Lurenium",
+      description: "An ancient city of gold, built before the time of the current world. Its citizens preserve foundations they no longer understand.",
+      type: "city",
+      level: 10,
+      discovered: false,
+      hasBossExam: true,
+      npcs: ["magistrate_corinne", "archivist_thelon", "captain_varro", "merchant_liselle", "brother_cassius", "old_jorel"],
+      hotspots: [
+        {
+          id: "ancient_foundation",
+          name: "Ancient Foundation Stone",
+          description: "A massive stone at the base of the city walls, covered in symbols that predate Lurenium itself.",
+          searchText: "You trace the weathered symbols with your fingers. One stone is loose... behind it, something glints in the darkness.",
+          artifactId: "ancient_seal_fragment",
+          requiredRep: null
+        },
+        {
+          id: "archive_vault",
+          name: "Sealed Archive Vault",
+          description: "A section of the archives that hasn't been opened in generations. The archivist pretends it doesn't exist.",
+          searchText: "The old lock crumbles at your touch. Inside, documents that were never meant to be forgotten...",
+          artifactId: "founding_charter_fragment",
+          requiredRep: { faction: "see_of_lurenium", amount: 150 }
+        },
+        {
+          id: "royal_memorial",
+          name: "Forgotten Royal Memorial",
+          description: "A small memorial in a neglected corner of the palace district. The inscription has been deliberately obscured.",
+          searchText: "Behind the memorial's false back, hidden for centuries, you find what the first kings wanted their heirs to remember...",
+          artifactId: "founding_first_kings_decree",
+          requiredRep: { faction: "old_guard", amount: 200 }
+        }
+      ],
+      quests: [],
+      connectedTo: ["haari_fields"],
+      atmosphere: "ancient",
       music: null
     }
   },
@@ -652,12 +747,13 @@ const GAME_DATA = {
         xp: 70,  // was 100
         gold: 25,
         items: ["solstice_lantern"],
-        reputation: { dawnmere: 50 }
+        reputation: { dawnmere: 50 },
+        spellbookUnlock: ["founding"]
       },
       repeatRewardMultiplier: null,
-      
+
       vocabulary: ["time.basic", "basics.greetings"],
-      
+
       cannotAbandon: false,
       hiddenTrigger: null
     },
@@ -716,11 +812,12 @@ const GAME_DATA = {
         xp: 35,  // was 50
         gold: 10,
         items: [],
-        reputation: { dawnmere: 25 }
+        reputation: { dawnmere: 25 },
+        spellbookUnlock: ["silence"]
       },
       repeatRewardMultiplier: null,
 
-      vocabulary: ["nature.beginner"],
+      vocabulary: ["nature.landscape", "nature.wildlife"],
 
       cannotAbandon: false,
       hiddenTrigger: null
@@ -774,11 +871,13 @@ const GAME_DATA = {
         xp: 35,  // was 50  // was 75
         gold: 15,
         items: ["river_stone"],
-        reputation: { dawnmere: 50 }
+        reputation: { dawnmere: 50 },
+        spellbookUnlock: ["ancients"],
+        artifactUnlock: "ancient_warning_stone"
       },
       repeatRewardMultiplier: null,
 
-      vocabulary: ["colors.beginner"],
+      vocabulary: ["nature.weather", "nature.plants"],
 
       cannotAbandon: false,
       hiddenTrigger: null
@@ -833,7 +932,8 @@ const GAME_DATA = {
         xp: 35,  // was 50
         gold: 5,
         items: [],
-        reputation: { dawnmere: 25, order_of_dawn: 25 }
+        reputation: { dawnmere: 25, order_of_dawn: 25 },
+        spellbookUnlock: ["faith"]
       },
       repeatRewardMultiplier: null,
 
@@ -891,7 +991,9 @@ const GAME_DATA = {
         xp: 70,  // was 100
         gold: 0,
         items: ["shrine_blessing"],
-        reputation: { dawnmere: 50, order_of_dawn: 50 }
+        reputation: { dawnmere: 50, order_of_dawn: 50 },
+        spellbookUnlock: ["golden_age"],
+        artifactUnlock: "faith_schism_letter"
       },
       repeatRewardMultiplier: null,
 
@@ -1184,7 +1286,9 @@ const GAME_DATA = {
         xp: 70,  // was 100
         gold: 0,
         items: ["renque_medal"],
-        reputation: { dawnmere: 75 }
+        reputation: { dawnmere: 75 },
+        spellbookUnlock: ["king_dran"],
+        artifactUnlock: "dran_private_letter"
       },
       repeatRewardMultiplier: null,
 
@@ -1313,6 +1417,67 @@ const GAME_DATA = {
         gold: 20,
         items: ["herb_bundle"],
         reputation: { haari_fields: 30 }
+      },
+      repeatRewardMultiplier: null,
+
+      vocabulary: ["agriculture.herbs"],
+
+      cannotAbandon: false,
+      hiddenTrigger: null
+    },
+
+    // DAVE - Alchemy Introduction (unlocks crafting system)
+    secrets_of_the_soil: {
+      id: "secrets_of_the_soil",
+      name: "Secrets of the Soil",
+      giver: "dave",
+      location: "haari_fields",
+
+      type: "side",
+      category: "unlock",
+      status: "locked",
+
+      levelRequired: 3,
+      prerequisites: ["lyras_garden"],
+      classRequired: null,
+      reputationRequired: null,
+
+      chainId: null,
+      chainOrder: null,
+      chainNext: null,
+
+      timeLimit: null,
+      cooldown: null,
+      seasonalWindow: null,
+
+      description: "Dave offers to teach you the ancient art of combining herbs and essences into potions.",
+      objectives: [
+        {
+          id: "gather_herbs",
+          type: "gather",
+          text: "Gather 3 Meadow Leaves",
+          target: 3,
+          itemId: "meadow_leaf"
+        },
+        {
+          id: "learn_basics",
+          type: "lesson",
+          text: "Learn the basics of alchemy",
+          target: 1
+        }
+      ],
+      dialogue: {
+        intro: "You've shown respect for the plants. Now I'll teach you something special — how to transform herbs into powerful remedies. The old ways call it 'l'alchimie'. Bring me some meadow leaves to begin.",
+        progress: "Gather the herbs first. Then we'll begin the lesson.",
+        complete: "Excellent! You now understand the fundamentals. The Alchemy Workbench is yours to use. Combine what you gather to create potions that will aid your journey."
+      },
+
+      rewards: {
+        xp: 60,
+        gold: 20,
+        items: ["health_potion"],
+        reputation: { haari_fields: 40 },
+        unlocks: ["alchemy"]
       },
       repeatRewardMultiplier: null,
 
@@ -1550,7 +1715,9 @@ const GAME_DATA = {
         xp: 70,  // was 100
         gold: 0,
         items: ["corrupted_sample"],
-        reputation: { haari_fields: 75 }
+        reputation: { haari_fields: 75 },
+        spellbookUnlock: ["exile"],
+        artifactUnlock: "war_commanders_confession"
       },
       repeatRewardMultiplier: null,
 
@@ -1610,7 +1777,9 @@ const GAME_DATA = {
         xp: 105,  // was 150
         gold: 0,
         items: ["veiled_insight"],
-        reputation: {}
+        reputation: {},
+        spellbookUnlock: ["the_war"],
+        artifactUnlock: "founding_builders_journal"
       },
       repeatRewardMultiplier: null,
 
@@ -1842,7 +2011,7 @@ const GAME_DATA = {
       
       chainId: "corruption_arc",
       chainOrder: 1,
-      chainNext: "corruption_spreads",
+      chainNext: null,  // TODO: Create corruption_spreads quest to continue arc
       
       timeLimit: null,
       cooldown: null,
@@ -1879,12 +2048,13 @@ const GAME_DATA = {
         xp: 140,  // was 200
         gold: 40,
         items: ["herbalist_pouch"],
-        reputation: { dawnmere: 50, old_guard: 25 }
+        reputation: { dawnmere: 50, old_guard: 25 },
+        artifactUnlock: "exile_spread_of_corruption"
       },
       repeatRewardMultiplier: null,
-      
+
       vocabulary: ["farming.intermediate", "farming.creatures"],
-      
+
       cannotAbandon: false,
       hiddenTrigger: null
     }
@@ -2227,6 +2397,74 @@ const GAME_DATA = {
       icon: "🫙"
     },
 
+    // =====================================================
+    // Metal Bars (Smithing Intermediates)
+    // =====================================================
+    copper_bar: {
+      id: "copper_bar",
+      name: "Copper Bar",
+      type: "resource",
+      category: "bar",
+      description: "A refined copper bar. Used for basic smithing.",
+      value: 8,
+      stackable: true,
+      icon: "🔶"
+    },
+    iron_bar: {
+      id: "iron_bar",
+      name: "Iron Bar",
+      type: "resource",
+      category: "bar",
+      description: "A sturdy iron bar. The backbone of metalworking.",
+      value: 20,
+      stackable: true,
+      icon: "🔷"
+    },
+    silver_bar: {
+      id: "silver_bar",
+      name: "Silver Bar",
+      type: "resource",
+      category: "bar",
+      description: "A gleaming silver bar. Prized for fine work.",
+      value: 50,
+      stackable: true,
+      icon: "⬜"
+    },
+
+    // =====================================================
+    // Enchanting Materials
+    // =====================================================
+    fire_shard: {
+      id: "fire_shard",
+      name: "Fire Shard",
+      type: "resource",
+      category: "enchanting",
+      description: "A crystallized fragment of elemental fire.",
+      value: 30,
+      stackable: true,
+      icon: "🔥"
+    },
+    frost_shard: {
+      id: "frost_shard",
+      name: "Frost Shard",
+      type: "resource",
+      category: "enchanting",
+      description: "A crystallized fragment of elemental frost.",
+      value: 30,
+      stackable: true,
+      icon: "❄️"
+    },
+    wisdom_dust: {
+      id: "wisdom_dust",
+      name: "Wisdom Dust",
+      type: "resource",
+      category: "enchanting",
+      description: "Fine powder infused with knowledge.",
+      value: 25,
+      stackable: true,
+      icon: "✨"
+    },
+
     // Fishing Resources
     river_perch: {
       id: "river_perch",
@@ -2304,7 +2542,175 @@ const GAME_DATA = {
       stackable: false,
       icon: "🗡️"
     },
-    
+
+    // =====================================================
+    // Smithed Weapons (Copper Tier)
+    // =====================================================
+    copper_dagger: {
+      id: "copper_dagger",
+      name: "Copper Dagger",
+      type: "weapon",
+      description: "A simple copper blade. +3 Strength",
+      stats: { strength: 3 },
+      value: 25,
+      stackable: false,
+      icon: "🗡️"
+    },
+    copper_sword: {
+      id: "copper_sword",
+      name: "Copper Sword",
+      type: "weapon",
+      description: "A basic copper sword. +4 Strength",
+      stats: { strength: 4 },
+      value: 40,
+      stackable: false,
+      icon: "⚔️"
+    },
+
+    // Smithed Weapons (Iron Tier)
+    iron_dagger: {
+      id: "iron_dagger",
+      name: "Iron Dagger",
+      type: "weapon",
+      description: "A sharp iron blade. +5 Strength",
+      stats: { strength: 5 },
+      value: 60,
+      stackable: false,
+      icon: "🗡️"
+    },
+    iron_sword: {
+      id: "iron_sword",
+      name: "Iron Sword",
+      type: "weapon",
+      description: "A reliable iron sword. +7 Strength",
+      stats: { strength: 7 },
+      value: 100,
+      stackable: false,
+      icon: "⚔️"
+    },
+
+    // =====================================================
+    // Smithed Armor (Copper Tier)
+    // =====================================================
+    copper_helm: {
+      id: "copper_helm",
+      name: "Copper Helm",
+      type: "helm",
+      description: "A copper helmet. +2 Stamina",
+      stats: { stamina: 2 },
+      value: 30,
+      stackable: false,
+      icon: "🪖"
+    },
+    copper_chestplate: {
+      id: "copper_chestplate",
+      name: "Copper Chestplate",
+      type: "armor",
+      description: "Basic copper armor. +3 Stamina",
+      stats: { stamina: 3 },
+      value: 50,
+      stackable: false,
+      icon: "🛡️"
+    },
+
+    // Smithed Armor (Iron Tier)
+    iron_helm: {
+      id: "iron_helm",
+      name: "Iron Helm",
+      type: "helm",
+      description: "An iron helmet. +4 Stamina",
+      stats: { stamina: 4 },
+      value: 70,
+      stackable: false,
+      icon: "🪖"
+    },
+    iron_chestplate: {
+      id: "iron_chestplate",
+      name: "Iron Chestplate",
+      type: "armor",
+      description: "Sturdy iron armor. +6 Stamina",
+      stats: { stamina: 6 },
+      value: 120,
+      stackable: false,
+      icon: "🛡️"
+    },
+
+    // =====================================================
+    // Enchanted Equipment
+    // =====================================================
+    copper_sword_fire: {
+      id: "copper_sword_fire",
+      name: "Copper Sword (Fire)",
+      type: "weapon",
+      description: "A copper sword burning with elemental fire. +4 Strength, +1 Insight",
+      stats: { strength: 4, insight: 1 },
+      value: 80,
+      stackable: false,
+      icon: "🔥",
+      enchantment: "fire",
+      baseItem: "copper_sword"
+    },
+    copper_sword_frost: {
+      id: "copper_sword_frost",
+      name: "Copper Sword (Frost)",
+      type: "weapon",
+      description: "A copper sword chilled with elemental frost. +4 Strength, +1 Agility",
+      stats: { strength: 4, agility: 1 },
+      value: 80,
+      stackable: false,
+      icon: "❄️",
+      enchantment: "frost",
+      baseItem: "copper_sword"
+    },
+    iron_sword_fire: {
+      id: "iron_sword_fire",
+      name: "Iron Sword (Fire)",
+      type: "weapon",
+      description: "An iron sword burning with elemental fire. +7 Strength, +2 Insight",
+      stats: { strength: 7, insight: 2 },
+      value: 180,
+      stackable: false,
+      icon: "🔥",
+      enchantment: "fire",
+      baseItem: "iron_sword"
+    },
+    iron_sword_frost: {
+      id: "iron_sword_frost",
+      name: "Iron Sword (Frost)",
+      type: "weapon",
+      description: "An iron sword chilled with elemental frost. +7 Strength, +2 Agility",
+      stats: { strength: 7, agility: 2 },
+      value: 180,
+      stackable: false,
+      icon: "❄️",
+      enchantment: "frost",
+      baseItem: "iron_sword"
+    },
+    copper_helm_wisdom: {
+      id: "copper_helm_wisdom",
+      name: "Copper Helm (Wisdom)",
+      type: "helm",
+      description: "A copper helm inscribed with runes of learning. +2 Stamina, +2 Knowledge",
+      stats: { stamina: 2, knowledge: 2 },
+      value: 70,
+      stackable: false,
+      icon: "📚",
+      enchantment: "wisdom",
+      baseItem: "copper_helm"
+    },
+    iron_helm_wisdom: {
+      id: "iron_helm_wisdom",
+      name: "Iron Helm (Wisdom)",
+      type: "helm",
+      description: "An iron helm inscribed with runes of learning. +4 Stamina, +3 Knowledge",
+      stats: { stamina: 4, knowledge: 3 },
+      value: 150,
+      stackable: false,
+      icon: "📚",
+      enchantment: "wisdom",
+      baseItem: "iron_helm"
+    },
+
     // Equipment - Armor
     leather_vest: {
       id: "leather_vest",
@@ -2520,6 +2926,386 @@ const GAME_DATA = {
       bonus: "Better shop prices",
       bonusDesc: "10% discount at shops",
       icon: "🗡️"
+    }
+  },
+
+  // =====================================================
+  // Artifacts - Hidden items that reveal true history
+  // =====================================================
+  artifacts: {
+    // -------------------------------------------------
+    // THE ANCIENTS (2 fragments)
+    // -------------------------------------------------
+    ancient_seal_fragment: {
+      id: "ancient_seal_fragment",
+      name: "Broken Seal Fragment",
+      era: "ancients",
+      order: 1,
+      category: "relic",
+      description: "A piece of an ancient seal, covered in symbols no scholar can read.",
+      loreText: "The symbols predate all known languages. Whatever civilization created this seal was sealing something away—not keeping something in, but keeping something out. The craftsmanship suggests they knew exactly what they were doing.",
+      icon: "🔮",
+      discoveryMethod: "hotspot",
+      location: "lurenium",
+      hint: "Hidden among the oldest stones of the capital"
+    },
+    ancient_warning_stone: {
+      id: "ancient_warning_stone",
+      name: "Warning Stone",
+      era: "ancients",
+      order: 2,
+      category: "relic",
+      description: "A small stone tablet with a single repeated symbol.",
+      loreText: "The same symbol, carved over and over. Whatever it means, whoever carved it wanted to make absolutely certain the message would survive. It has. The meaning has not.",
+      icon: "🪨",
+      discoveryMethod: "quest",
+      questId: "lights_below",
+      hint: "Yris knows of old things beneath the water"
+    },
+
+    // -------------------------------------------------
+    // THE SILENCE (2 fragments)
+    // -------------------------------------------------
+    silence_bone_carving: {
+      id: "silence_bone_carving",
+      name: "Bone Carving",
+      era: "silence",
+      order: 1,
+      category: "personal_item",
+      description: "A crude carving made from bone, depicting figures fleeing something.",
+      loreText: "No written records survive from the Silence. Only carvings like this—desperate images scratched into bone by people who had no other way to record what they saw. The figures are running. What they're running from has been worn away by time.",
+      icon: "🦴",
+      discoveryMethod: "hotspot",
+      location: "haari_fields",
+      hint: "Buried in the old fields, where farmers sometimes find strange things"
+    },
+    silence_empty_shrine: {
+      id: "silence_empty_shrine",
+      name: "Miniature Shrine",
+      era: "silence",
+      order: 2,
+      category: "relic",
+      description: "A tiny shrine, its central figure deliberately removed.",
+      loreText: "People worshipped something during the Silence—but whatever idol once stood in this shrine was removed. Not broken, not lost. Carefully, intentionally taken out. Someone wanted to forget.",
+      icon: "🏛️",
+      discoveryMethod: "reputation",
+      faction: "order_of_dawn",
+      threshold: 200,
+      hint: "The Order of Dawn keeps old relics in their care"
+    },
+
+    // -------------------------------------------------
+    // THE FOUNDING (3 fragments)
+    // -------------------------------------------------
+    founding_charter_fragment: {
+      id: "founding_charter_fragment",
+      name: "Original Charter Fragment",
+      era: "founding",
+      order: 1,
+      category: "official_document",
+      description: "A scrap of the original founding charter of Verandum.",
+      loreText: "The official histories say Verandum was founded to 'bring order to chaos.' This fragment tells a different story: '...and should the seal ever weaken, let the kingdom stand as the second line...' Second line against what?",
+      icon: "📜",
+      discoveryMethod: "hotspot",
+      location: "lurenium",
+      hint: "Somewhere in the archives of the capital"
+    },
+    founding_builders_journal: {
+      id: "founding_builders_journal",
+      name: "Builder's Journal Page",
+      era: "founding",
+      order: 2,
+      category: "correspondence",
+      description: "A page from a journal kept by one of Lurenium's original builders.",
+      loreText: "We build upon the bones of the old city. The foreman says not to dig too deep. I asked why. He said some foundations are meant to stay buried. I do not think he meant the stones.",
+      icon: "📖",
+      discoveryMethod: "quest",
+      questId: "shadows_of_light",
+      hint: "Those who see through veils know where old things hide"
+    },
+    founding_first_kings_decree: {
+      id: "founding_first_kings_decree",
+      name: "First King's Private Decree",
+      era: "founding",
+      order: 3,
+      category: "official_document",
+      description: "A decree never meant for public eyes.",
+      loreText: "Let it be known only to my successors: the crown exists not to rule, but to watch. We are guardians first, kings second. Should any heir forget this duty, may the Light forgive them—for history will not.",
+      icon: "👑",
+      discoveryMethod: "hotspot",
+      location: "lurenium",
+      hint: "Hidden in the royal quarters, passed down through generations"
+    },
+
+    // -------------------------------------------------
+    // THE FAITH (3 fragments)
+    // -------------------------------------------------
+    faith_original_prayer: {
+      id: "faith_original_prayer",
+      name: "Original Prayer Scroll",
+      era: "faith",
+      order: 1,
+      category: "religious",
+      description: "A prayer from before the church became powerful.",
+      loreText: "The original prayers speak of vigilance and sacrifice. 'Keep us watchful, keep us humble, let us never forget what sleeps beneath.' Modern prayers mention none of this. What changed?",
+      icon: "📿",
+      discoveryMethod: "reputation",
+      faction: "order_of_dawn",
+      threshold: 350,
+      hint: "Earn the deep trust of the Order of Dawn"
+    },
+    faith_schism_letter: {
+      id: "faith_schism_letter",
+      name: "Letter of Schism",
+      era: "faith",
+      order: 2,
+      category: "correspondence",
+      description: "A letter between two priests, debating a great divide.",
+      loreText: "Brother, I cannot follow the new teachings. They speak of the Light as comfort, but comfort was never our purpose. We were meant to GUARD. The See has forgotten. The Order must remember, even if we must hide to do so.",
+      icon: "✉️",
+      discoveryMethod: "quest",
+      questId: "doubt_and_faith",
+      hint: "Brother Varek struggles with questions of faith"
+    },
+    faith_forbidden_text: {
+      id: "faith_forbidden_text",
+      name: "Forbidden Text Fragment",
+      era: "faith",
+      order: 3,
+      category: "religious",
+      description: "A page from a text the church ordered destroyed.",
+      loreText: "The Light and the Dark are not opposites. They are... [text damaged] ...and the Ancients knew this. The seal requires both to... [text damaged] ...which is why the corruption cannot simply be destroyed. It must be...",
+      icon: "🚫",
+      discoveryMethod: "hotspot",
+      location: "dawnmere",
+      hint: "Hidden in the old shrine, where Varek tends the flame"
+    },
+
+    // -------------------------------------------------
+    // THE GOLDEN AGE (3 fragments)
+    // -------------------------------------------------
+    golden_trade_manifest: {
+      id: "golden_trade_manifest",
+      name: "Suspicious Trade Manifest",
+      era: "golden_age",
+      order: 1,
+      category: "official_document",
+      description: "A trade record with unusual entries.",
+      loreText: "Most entries are normal—grain, cloth, iron. But hidden among them: 'Containment materials - Lurenium depths.' Every year, the same entry. Someone was maintaining something beneath the capital, even during peacetime.",
+      icon: "📋",
+      discoveryMethod: "hotspot",
+      location: "haari_fields",
+      hint: "Old merchant records sometimes end up in strange places"
+    },
+    golden_royal_diary: {
+      id: "golden_royal_diary",
+      name: "Royal Diary Page",
+      era: "golden_age",
+      order: 2,
+      category: "personal_item",
+      description: "A page from a long-dead queen's diary.",
+      loreText: "My husband speaks in his sleep. Names I do not know. Places beneath the castle. He carries a burden he cannot share, not even with me. I fear what our sons will inherit is not a kingdom, but a prison sentence.",
+      icon: "📔",
+      discoveryMethod: "quest",
+      questId: null,
+      hint: "Lost to time, waiting to be found"
+    },
+    golden_architects_note: {
+      id: "golden_architects_note",
+      name: "Architect's Hidden Note",
+      era: "golden_age",
+      order: 3,
+      category: "correspondence",
+      description: "A note hidden in the walls by a castle architect.",
+      loreText: "I have built the passage as requested. No one will find it unless they know to look. But I must ask: what requires a secret path to the depths? And why must it be hidden even from the royal guard?",
+      icon: "🏗️",
+      discoveryMethod: "hotspot",
+      location: "lurenium",
+      hint: "Builders leave their secrets in the stones"
+    },
+
+    // -------------------------------------------------
+    // KING DRAN'S REIGN (4 fragments)
+    // -------------------------------------------------
+    dran_private_letter: {
+      id: "dran_private_letter",
+      name: "King Dran's Private Letter",
+      era: "king_dran",
+      order: 1,
+      category: "correspondence",
+      description: "A letter King Dran never sent.",
+      loreText: "My sons, if you read this, I have failed to tell you in person. The crown is not power—it is a chain. Beneath Lurenium lies our true duty. Hermeau, you are clever. Layne, you are kind. You will need both traits for what comes.",
+      icon: "💌",
+      discoveryMethod: "quest",
+      questId: "memories_of_renque",
+      hint: "Old Jorel remembers more than he first lets on"
+    },
+    dran_inspection_report: {
+      id: "dran_inspection_report",
+      name: "Seal Inspection Report",
+      era: "king_dran",
+      order: 2,
+      category: "official_document",
+      description: "A classified report on something called 'the Seal.'",
+      loreText: "Year 47 of Dran's reign. Seal integrity: stable. Corruption levels: minimal. Recommendation: continue current containment. Note: Prince Hermeau has been asking questions. Advise increased security on archive access.",
+      icon: "📊",
+      discoveryMethod: "hotspot",
+      location: "lurenium",
+      hint: "Deep in the restricted archives"
+    },
+    dran_hermeau_journal: {
+      id: "dran_hermeau_journal",
+      name: "Young Hermeau's Journal",
+      era: "king_dran",
+      order: 3,
+      category: "personal_item",
+      description: "A journal kept by Hermeau as a young prince.",
+      loreText: "Father treats Layne as the heir, though I am firstborn. He says I am 'too ambitious.' I have found references to something beneath the castle. If father won't share the family secrets, I will find them myself.",
+      icon: "📓",
+      discoveryMethod: "hotspot",
+      location: "dawnmere",
+      hint: "Discarded belongings sometimes wash far from their origin"
+    },
+    dran_layne_confession: {
+      id: "dran_layne_confession",
+      name: "Layne's Confession",
+      era: "king_dran",
+      order: 4,
+      category: "correspondence",
+      description: "A letter from Prince Layne to a trusted friend.",
+      loreText: "I know what Hermeau found. I know what he plans. Father is dying, and my brother's ambition has twisted into something I do not recognize. He speaks of 'freeing' us from our 'chains.' He does not understand—the chains protect everyone.",
+      icon: "😔",
+      discoveryMethod: "reputation",
+      faction: "haari_fields",
+      threshold: 400,
+      hint: "Those who tend the fields sometimes find buried truths"
+    },
+
+    // -------------------------------------------------
+    // THE WAR (5 fragments)
+    // -------------------------------------------------
+    war_soldiers_letter: {
+      id: "war_soldiers_letter",
+      name: "Soldier's Unsent Letter",
+      era: "the_war",
+      order: 1,
+      category: "correspondence",
+      description: "A letter found on a fallen soldier, never delivered.",
+      loreText: "My love, they tell us we fight the corruption, but I have seen things. The corruption comes FROM our camp, not toward it. Prince Hermeau's personal guard—their eyes are wrong. Something is very wrong. If I don't return, know that I",
+      icon: "⚔️",
+      discoveryMethod: "hotspot",
+      location: "haari_fields",
+      hint: "The fields were battlegrounds once"
+    },
+    war_commanders_confession: {
+      id: "war_commanders_confession",
+      name: "Commander's Confession",
+      era: "the_war",
+      order: 2,
+      category: "correspondence",
+      description: "A confession written by a military commander.",
+      loreText: "I followed orders. I tell myself that. But I saw Hermeau open the seal. I saw what came out. I saw him SMILE. And then he told us to blame the enemy. There was no enemy. There was only him. God forgive me for my silence.",
+      icon: "🎖️",
+      discoveryMethod: "quest",
+      questId: "what_stalks_the_fields",
+      hint: "Rask knows the corruption is spreading from somewhere"
+    },
+    war_healers_record: {
+      id: "war_healers_record",
+      name: "Healer's Medical Record",
+      era: "the_war",
+      order: 3,
+      category: "official_document",
+      description: "Medical records from a war healer.",
+      loreText: "The corruption wounds are unlike anything in our texts. They do not come from outside the body—they emerge from within. As if something was placed inside these soldiers. Several of Hermeau's elite show early signs. They do not seek treatment. They seem... pleased.",
+      icon: "🏥",
+      discoveryMethod: "reputation",
+      faction: "order_of_dawn",
+      threshold: 450,
+      hint: "The Order kept records of the war's true horrors"
+    },
+    war_assassination_truth: {
+      id: "war_assassination_truth",
+      name: "Witness Account",
+      era: "the_war",
+      order: 4,
+      category: "personal_item",
+      description: "A hidden account of King Dran's death.",
+      loreText: "I served King Dran for thirty years. He was not killed by assassins. I saw Prince Hermeau enter the chamber. I heard the argument. 'You would doom us all to be jailers forever,' Hermeau said. Then silence. Then Hermeau emerged alone, wearing the crown.",
+      icon: "👁️",
+      discoveryMethod: "hotspot",
+      location: "lurenium",
+      hint: "Someone in the castle saw everything"
+    },
+    war_laynes_evidence: {
+      id: "war_laynes_evidence",
+      name: "Layne's Hidden Evidence",
+      era: "the_war",
+      order: 5,
+      category: "official_document",
+      description: "Documents Layne hid before his exile.",
+      loreText: "Whoever finds this: my brother Hermeau murdered our father. He broke the ancient seal deliberately. The corruption is his weapon, not his enemy. I am being exiled for 'cowardice,' but the truth is I refused to help him. Find the other witnesses. Expose him. Save Verandum.",
+      icon: "📦",
+      discoveryMethod: "quest",
+      questId: null,
+      hint: "Hidden before the exile, waiting for someone worthy"
+    },
+
+    // -------------------------------------------------
+    // THE EXILE (4 fragments)
+    // -------------------------------------------------
+    exile_rewritten_history: {
+      id: "exile_rewritten_history",
+      name: "Original vs. Revised History",
+      era: "exile",
+      order: 1,
+      category: "official_document",
+      description: "Two versions of the same historical record.",
+      loreText: "The original reads: 'Prince Layne opposed his brother's use of forbidden arts.' The revision reads: 'Prince Layne fled in cowardice when the enemy attacked.' Someone kept both versions. Someone wanted the truth preserved.",
+      icon: "📚",
+      discoveryMethod: "hotspot",
+      location: "dawnmere",
+      hint: "The village has a small collection of old books"
+    },
+    exile_resistance_code: {
+      id: "exile_resistance_code",
+      name: "Resistance Codebook",
+      era: "exile",
+      order: 2,
+      category: "official_document",
+      description: "A codebook used by those who resist Hermeau.",
+      loreText: "We communicate in the old language—the one Hermeau banned from schools. Every word we preserve is an act of rebellion. Every child we teach is a soldier for truth. The king fears knowledge more than swords. That tells you everything.",
+      icon: "🔐",
+      discoveryMethod: "quest",
+      questId: null,
+      hint: "Those who resist leave messages for those who seek"
+    },
+    exile_spread_of_corruption: {
+      id: "exile_spread_of_corruption",
+      name: "Corruption Spread Map",
+      era: "exile",
+      order: 3,
+      category: "official_document",
+      description: "A map tracking the corruption's spread over twenty years.",
+      loreText: "The pattern is clear when you see it mapped. The corruption spreads from Lurenium outward. Not randomly—deliberately. As if someone is... releasing it in stages. The dates correspond to political events: a rebellion here, an execution there. Hermeau uses it as a weapon.",
+      icon: "🗺️",
+      discoveryMethod: "quest",
+      questId: "corruption_rises",
+      hint: "Dave's investigation reveals a larger pattern"
+    },
+    exile_sealed_letter_layne: {
+      id: "exile_sealed_letter_layne",
+      name: "Layne's Sealed Letter",
+      era: "exile",
+      order: 4,
+      category: "correspondence",
+      description: "A letter sealed with Layne's personal sigil.",
+      loreText: "To whoever breaks this seal: I am alive. I am gathering allies. The truth cannot stay buried forever. If you have found the other evidence, you know what my brother truly is. Find me. The resistance needs people who can see through lies. We need YOU.",
+      icon: "🔏",
+      discoveryMethod: "reputation",
+      faction: "haari_fields",
+      threshold: 500,
+      hint: "Become a true friend of the fields"
     }
   },
 

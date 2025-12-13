@@ -43,11 +43,38 @@ class AccountProgressionConfig {
 
   getAllUpgrades() {
     return [
+      ...this.getStarterUpgrades(),
       ...this.getLearningUpgrades(),
       ...this.getResourceUpgrades(),
       ...this.getGameplayUpgrades(),
       ...this.getLanguageUpgrades(),
       ...this.getQolUpgrades()
+    ];
+  }
+
+  // ============================================
+  // STARTER UPGRADES (Resource-based, no gold)
+  // ============================================
+
+  getStarterUpgrades() {
+    return [
+      {
+        id: 'gatherers_blessing',
+        name: "Gatherer's Blessing",
+        description: '+5% XP and +10% gold from all sources. A blessing for those who work the land.',
+        cost: {
+          gold: 0,
+          items: {
+            copper_chunk: 5,
+            pine_log: 5,
+            meadow_leaf: 5
+          }
+        },
+        effect: { xpMultiplier: 1.05, goldMultiplier: 1.10 },
+        category: 'starter',
+        tier: 1,
+        oneTime: true
+      }
     ];
   }
 
@@ -310,6 +337,7 @@ class AccountProgressionConfig {
       notes: this.notes,
       totalUpgrades: this.getAllUpgrades().length,
       categories: {
+        starter: this.getStarterUpgrades().length,
         learning: this.getLearningUpgrades().length,
         resources: this.getResourceUpgrades().length,
         gameplay: this.getGameplayUpgrades().length,

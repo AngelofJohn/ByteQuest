@@ -134,7 +134,11 @@ class AccountProgressionUI {
   renderUpgradeCard(upgrade, gold, purchased) {
     const isPurchased = purchased.some(p => p.id === upgrade.id);
     const purchaseCount = this.manager.getUpgradeCount(upgrade.id);
-    const canAfford = gold >= (upgrade.cost.gold || 0);
+    const goldCost = upgrade.cost.gold || 0;
+    const canAffordGold = gold >= goldCost;
+    const hasItemCost = upgrade.cost.items && Object.keys(upgrade.cost.items).length > 0;
+    const itemCostStatus = hasItemCost ? this.checkItemCosts(upgrade.cost.items) : { canAfford: true, missing: [] };
+    const canAfford = canAffordGold && itemCostStatus.canAfford;
     const canPurchase = this.canPurchaseUpgrade(upgrade);
     const isMaxed = upgrade.maxStacks && purchaseCount >= upgrade.maxStacks;
     const isOneTimePurchased = upgrade.oneTime && isPurchased;
@@ -143,6 +147,31 @@ class AccountProgressionUI {
     if (isOneTimePurchased || isMaxed) statusClass = 'owned';
     else if (!canPurchase) statusClass = 'locked';
     else if (!canAfford) statusClass = 'unaffordable';
+
+    // Build cost display
+    let costHtml = '';
+    if (goldCost > 0) {
+      costHtml += `
+        <div class="upgrade-cost">
+          <span class="cost-icon">💰</span>
+          <span class="cost-amount ${canAffordGold ? 'affordable' : 'unaffordable'}">${goldCost}</span>
+        </div>
+      `;
+    }
+    if (hasItemCost) {
+      costHtml += this.renderItemCosts(upgrade.cost.items);
+    }
+    if (!goldCost && !hasItemCost) {
+      costHtml = '<div class="upgrade-cost"><span class="cost-amount affordable">Free</span></div>';
+    }
+
+    // Determine button text
+    let buttonText = 'Purchase';
+    if (isOneTimePurchased) buttonText = '✓ Owned';
+    else if (isMaxed) buttonText = 'Maxed';
+    else if (!canPurchase) buttonText = 'Locked';
+    else if (!canAffordGold && goldCost > 0) buttonText = 'Need gold';
+    else if (!itemCostStatus.canAfford) buttonText = 'Need items';
 
     return `
       <div class="upgrade-card ${statusClass}">
@@ -154,10 +183,7 @@ class AccountProgressionUI {
         <h4 class="upgrade-title">${upgrade.name}</h4>
         <p class="upgrade-desc">${upgrade.description}</p>
 
-        <div class="upgrade-cost">
-          <span class="cost-icon">💰</span>
-          <span class="cost-amount ${canAfford ? 'affordable' : 'unaffordable'}">${upgrade.cost.gold}</span>
-        </div>
+        ${costHtml}
 
         ${upgrade.requires ? `
           <div class="upgrade-requires">
@@ -176,14 +202,70 @@ class AccountProgressionUI {
           onclick="accountShop.purchaseUpgrade('${upgrade.id}')"
           ${!canPurchase || !canAfford || isOneTimePurchased || isMaxed ? 'disabled' : ''}
         >
-          ${isOneTimePurchased ? '✓ Owned' :
-            isMaxed ? 'Maxed' :
-            !canPurchase ? 'Locked' :
-            !canAfford ? 'Not enough gold' :
-            'Purchase'}
+          ${buttonText}
         </button>
       </div>
     `;
+  }
+
+  /**
+   * Check if player has required items
+   */
+  checkItemCosts(itemCosts) {
+    const missing = [];
+    let canAfford = true;
+
+    for (const [itemId, needed] of Object.entries(itemCosts)) {
+      let have = 0;
+      if (typeof itemManager !== 'undefined' && itemManager) {
+        have = itemManager.getItemCount(itemId);
+      } else if (typeof GameState !== 'undefined' && GameState.player?.inventory) {
+        const invItem = GameState.player.inventory.find(i => i.id === itemId);
+        have = invItem ? invItem.count : 0;
+      }
+
+      if (have < needed) {
+        canAfford = false;
+        missing.push({ itemId, need: needed, have });
+      }
+    }
+
+    return { canAfford, missing };
+  }
+
+  /**
+   * Render item cost display
+   */
+  renderItemCosts(itemCosts) {
+    const items = Object.entries(itemCosts).map(([itemId, needed]) => {
+      let itemDef = null;
+      let have = 0;
+
+      if (typeof itemManager !== 'undefined' && itemManager) {
+        itemDef = itemManager.getDefinition(itemId);
+        have = itemManager.getItemCount(itemId);
+      } else if (typeof GAME_DATA !== 'undefined' && GAME_DATA.items) {
+        itemDef = GAME_DATA.items[itemId];
+        if (typeof GameState !== 'undefined' && GameState.player?.inventory) {
+          const invItem = GameState.player.inventory.find(i => i.id === itemId);
+          have = invItem ? invItem.count : 0;
+        }
+      }
+
+      const canAffordThis = have >= needed;
+      const icon = itemDef?.icon || '📦';
+      const name = itemDef?.name || itemId;
+
+      return `
+        <div class="item-cost ${canAffordThis ? 'affordable' : 'unaffordable'}">
+          <span class="item-icon">${icon}</span>
+          <span class="item-amount">${have}/${needed}</span>
+          <span class="item-name">${name}</span>
+        </div>
+      `;
+    }).join('');
+
+    return `<div class="upgrade-item-costs">${items}</div>`;
   }
 
   // ============================================

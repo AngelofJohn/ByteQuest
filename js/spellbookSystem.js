@@ -650,7 +650,20 @@ const SPELLBOOK_CATEGORIES = [
   { id: "verbs", label: "Verbs", icon: "⚡" },
   { id: "grammar", label: "Grammar", icon: "📚" },
   { id: "reference", label: "Reference", icon: "📋" },
-  { id: "lore", label: "Lore", icon: "📜" }
+  { id: "lore", label: "Lore", icon: "📜" },
+  { id: "artifacts", label: "Artifacts", icon: "🏺" }
+];
+
+// Era display info for artifacts
+const ARTIFACT_ERAS = [
+  { id: "ancients", label: "The Ancients", icon: "🏛️", order: 1 },
+  { id: "silence", label: "The Silence", icon: "🌑", order: 2 },
+  { id: "founding", label: "The Founding", icon: "👑", order: 3 },
+  { id: "faith", label: "The Faith", icon: "✝️", order: 4 },
+  { id: "golden_age", label: "The Golden Age", icon: "⭐", order: 5 },
+  { id: "king_dran", label: "King Dran's Reign", icon: "🏰", order: 6 },
+  { id: "the_war", label: "The War", icon: "⚔️", order: 7 },
+  { id: "exile", label: "The Exile", icon: "🚪", order: 8 }
 ];
 
 // =====================================================
@@ -661,13 +674,20 @@ class SpellbookManager {
   constructor(gameState) {
     this.state = gameState;
     this.currentPage = null;
-    
+    this.currentView = null; // 'page' or 'artifacts'
+
     // Initialize spellbook state if not present
     if (!this.state.player.spellbook) {
       this.state.player.spellbook = {
         unlockedPages: ["pronouns"], // Pronouns always available
+        unlockedArtifacts: [],       // Artifact IDs the player has found
         lastViewed: null
       };
+    }
+
+    // Ensure artifacts array exists for older saves
+    if (!this.state.player.spellbook.unlockedArtifacts) {
+      this.state.player.spellbook.unlockedArtifacts = [];
     }
   }
 
@@ -736,6 +756,75 @@ class SpellbookManager {
   }
 
   // ===================================================
+  // Artifact Management
+  // ===================================================
+
+  /**
+   * Check if an artifact is unlocked
+   */
+  isArtifactUnlocked(artifactId) {
+    return this.state.player.spellbook.unlockedArtifacts.includes(artifactId);
+  }
+
+  /**
+   * Unlock an artifact
+   */
+  unlockArtifact(artifactId) {
+    if (!GAME_DATA.artifacts || !GAME_DATA.artifacts[artifactId]) {
+      console.warn(`Unknown artifact: ${artifactId}`);
+      return false;
+    }
+
+    if (!this.state.player.spellbook.unlockedArtifacts.includes(artifactId)) {
+      this.state.player.spellbook.unlockedArtifacts.push(artifactId);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Get all artifacts for a specific era
+   */
+  getArtifactsForEra(eraId) {
+    if (!GAME_DATA.artifacts) return [];
+    return Object.values(GAME_DATA.artifacts)
+      .filter(a => a.era === eraId)
+      .sort((a, b) => a.order - b.order);
+  }
+
+  /**
+   * Get unlocked artifacts for a specific era
+   */
+  getUnlockedArtifactsForEra(eraId) {
+    return this.getArtifactsForEra(eraId)
+      .filter(a => this.isArtifactUnlocked(a.id));
+  }
+
+  /**
+   * Check if all artifacts for an era are collected
+   */
+  isEraComplete(eraId) {
+    const total = this.getArtifactsForEra(eraId).length;
+    const unlocked = this.getUnlockedArtifactsForEra(eraId).length;
+    return total > 0 && unlocked >= total;
+  }
+
+  /**
+   * Get total artifact count
+   */
+  getTotalArtifactCount() {
+    if (!GAME_DATA.artifacts) return 0;
+    return Object.keys(GAME_DATA.artifacts).length;
+  }
+
+  /**
+   * Get unlocked artifact count
+   */
+  getUnlockedArtifactCount() {
+    return this.state.player.spellbook.unlockedArtifacts.length;
+  }
+
+  // ===================================================
   // UI Rendering
   // ===================================================
 
@@ -783,24 +872,54 @@ class SpellbookManager {
   renderTableOfContents() {
     const toc = document.querySelector('.spellbook-toc');
     if (!toc) return;
-    
+
     let html = '';
-    
+
     SPELLBOOK_CATEGORIES.forEach(category => {
+      // Special handling for artifacts category
+      if (category.id === 'artifacts') {
+        html += `
+          <div class="toc-section">
+            <div class="toc-section-title">${category.icon} ${category.label}</div>
+        `;
+
+        // Show each era as a clickable item
+        ARTIFACT_ERAS.forEach(era => {
+          const eraArtifacts = this.getArtifactsForEra(era.id);
+          const eraUnlocked = this.getUnlockedArtifactsForEra(era.id);
+          const isComplete = this.isEraComplete(era.id);
+          const hasAny = eraUnlocked.length > 0;
+          const isActive = this.currentView === 'artifacts' && this.currentPage === era.id;
+
+          html += `
+            <div class="toc-item ${hasAny ? '' : 'locked'} ${isActive ? 'active' : ''}"
+                 data-artifact-era="${era.id}">
+              <span class="toc-item-icon">${hasAny ? era.icon : '🔒'}</span>
+              <span class="toc-item-label">${hasAny ? era.label : '???'}</span>
+              <span class="toc-item-status">${isComplete ? '✓' : `${eraUnlocked.length}/${eraArtifacts.length}`}</span>
+            </div>
+          `;
+        });
+
+        html += '</div>';
+        return;
+      }
+
+      // Normal category handling
       const pages = this.getPagesInCategory(category.id);
       if (pages.length === 0) return;
-      
+
       html += `
         <div class="toc-section">
           <div class="toc-section-title">${category.icon} ${category.label}</div>
       `;
-      
+
       pages.forEach(page => {
         const isUnlocked = this.isPageUnlocked(page.id);
-        const isActive = this.currentPage === page.id;
-        
+        const isActive = this.currentView === 'page' && this.currentPage === page.id;
+
         html += `
-          <div class="toc-item ${isUnlocked ? '' : 'locked'} ${isActive ? 'active' : ''}" 
+          <div class="toc-item ${isUnlocked ? '' : 'locked'} ${isActive ? 'active' : ''}"
                data-page="${page.id}">
             <span class="toc-item-icon">${isUnlocked ? page.icon : '🔒'}</span>
             <span class="toc-item-label">${isUnlocked ? page.title : '???'}</span>
@@ -808,14 +927,14 @@ class SpellbookManager {
           </div>
         `;
       });
-      
+
       html += '</div>';
     });
-    
+
     toc.innerHTML = html;
-    
-    // Add click handlers
-    toc.querySelectorAll('.toc-item').forEach(item => {
+
+    // Add click handlers for regular pages
+    toc.querySelectorAll('.toc-item[data-page]').forEach(item => {
       item.addEventListener('click', () => {
         const pageId = item.dataset.page;
         if (this.isPageUnlocked(pageId)) {
@@ -823,6 +942,14 @@ class SpellbookManager {
         } else {
           this.showLockedPage(pageId);
         }
+      });
+    });
+
+    // Add click handlers for artifact eras
+    toc.querySelectorAll('.toc-item[data-artifact-era]').forEach(item => {
+      item.addEventListener('click', () => {
+        const eraId = item.dataset.artifactEra;
+        this.showArtifactEra(eraId);
       });
     });
   }
@@ -862,6 +989,7 @@ class SpellbookManager {
     const page = SPELLBOOK_PAGES[pageId];
     if (!page || !this.isPageUnlocked(pageId)) return;
 
+    this.currentView = 'page';
     this.currentPage = pageId;
     this.state.player.spellbook.lastViewed = pageId;
     this.updateTocActive();
@@ -907,13 +1035,14 @@ class SpellbookManager {
   showLockedPage(pageId) {
     const page = SPELLBOOK_PAGES[pageId];
     if (!page) return;
-    
+
+    this.currentView = 'page';
     this.currentPage = null;
     this.updateTocActive();
-    
+
     const content = document.querySelector('.spellbook-content');
     if (!content) return;
-    
+
     content.innerHTML = `
       <div class="locked-page">
         <div class="locked-icon">🔒</div>
@@ -924,11 +1053,124 @@ class SpellbookManager {
   }
 
   /**
+   * Show artifacts for a specific era
+   */
+  showArtifactEra(eraId) {
+    const era = ARTIFACT_ERAS.find(e => e.id === eraId);
+    if (!era) return;
+
+    this.currentView = 'artifacts';
+    this.currentPage = eraId;
+    this.updateTocActive();
+
+    const content = document.querySelector('.spellbook-content');
+    if (!content) return;
+
+    const artifacts = this.getArtifactsForEra(eraId);
+    const unlockedArtifacts = this.getUnlockedArtifactsForEra(eraId);
+    const isComplete = this.isEraComplete(eraId);
+
+    let html = `
+      <div class="spellbook-page active artifact-page">
+        <div class="page-title">${era.icon} ${era.label}</div>
+        <div class="page-subtitle">Artifacts Collected: ${unlockedArtifacts.length} / ${artifacts.length}</div>
+    `;
+
+    // Show completion status
+    if (isComplete) {
+      html += `
+        <div class="era-complete-banner">
+          <span class="complete-icon">✨</span>
+          <span class="complete-text">Era Complete - The truth has been revealed</span>
+        </div>
+      `;
+    }
+
+    // Show artifact grid
+    html += `<div class="artifact-grid">`;
+
+    artifacts.forEach(artifact => {
+      const isUnlocked = this.isArtifactUnlocked(artifact.id);
+
+      if (isUnlocked) {
+        html += `
+          <div class="artifact-card unlocked" data-artifact="${artifact.id}">
+            <div class="artifact-icon">${artifact.icon}</div>
+            <div class="artifact-name">${artifact.name}</div>
+            <div class="artifact-category">${artifact.category.replace(/_/g, ' ')}</div>
+          </div>
+        `;
+      } else {
+        html += `
+          <div class="artifact-card locked">
+            <div class="artifact-icon">❓</div>
+            <div class="artifact-name">???</div>
+            <div class="artifact-hint">${artifact.hint}</div>
+          </div>
+        `;
+      }
+    });
+
+    html += `</div>`;
+
+    // Show selected artifact detail area
+    html += `<div class="artifact-detail" id="artifact-detail"></div>`;
+
+    html += '</div>';
+    content.innerHTML = html;
+
+    // Add click handlers for artifact cards
+    content.querySelectorAll('.artifact-card.unlocked').forEach(card => {
+      card.addEventListener('click', () => {
+        const artifactId = card.dataset.artifact;
+        this.showArtifactDetail(artifactId);
+        // Update active state
+        content.querySelectorAll('.artifact-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+      });
+    });
+
+    // Auto-show first unlocked artifact if any
+    if (unlockedArtifacts.length > 0) {
+      this.showArtifactDetail(unlockedArtifacts[0].id);
+      content.querySelector(`.artifact-card[data-artifact="${unlockedArtifacts[0].id}"]`)?.classList.add('selected');
+    }
+  }
+
+  /**
+   * Show detail for a specific artifact
+   */
+  showArtifactDetail(artifactId) {
+    const artifact = GAME_DATA.artifacts?.[artifactId];
+    if (!artifact || !this.isArtifactUnlocked(artifactId)) return;
+
+    const detailDiv = document.getElementById('artifact-detail');
+    if (!detailDiv) return;
+
+    detailDiv.innerHTML = `
+      <div class="artifact-detail-content">
+        <div class="artifact-detail-header">
+          <span class="artifact-detail-icon">${artifact.icon}</span>
+          <div class="artifact-detail-info">
+            <div class="artifact-detail-name">${artifact.name}</div>
+            <div class="artifact-detail-desc">${artifact.description}</div>
+          </div>
+        </div>
+        <div class="artifact-lore-text">
+          <div class="lore-quote">"${artifact.loreText}"</div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
    * Update TOC active state
    */
   updateTocActive() {
     document.querySelectorAll('.toc-item').forEach(item => {
-      item.classList.toggle('active', item.dataset.page === this.currentPage);
+      const isPageMatch = item.dataset.page === this.currentPage && this.currentView === 'page';
+      const isEraMatch = item.dataset.artifactEra === this.currentPage && this.currentView === 'artifacts';
+      item.classList.toggle('active', isPageMatch || isEraMatch);
     });
   }
 
@@ -2465,15 +2707,54 @@ function unlockSpellbookPages(pageIds) {
   return [];
 }
 
+function unlockArtifact(artifactId) {
+  if (spellbookManager) {
+    const unlocked = spellbookManager.unlockArtifact(artifactId);
+    if (unlocked) {
+      const artifact = GAME_DATA.artifacts?.[artifactId];
+      if (artifact && typeof showNotification === 'function') {
+        showNotification(`🏺 Artifact Found: ${artifact.name}`, 'success');
+      }
+
+      // Check if era is now complete
+      if (artifact) {
+        const era = ARTIFACT_ERAS.find(e => e.id === artifact.era);
+        if (era && spellbookManager.isEraComplete(artifact.era)) {
+          if (typeof showNotification === 'function') {
+            showNotification(`✨ Era Complete: ${era.label}`, 'success');
+          }
+        }
+      }
+
+      // Check for artifact-related achievements
+      if (typeof checkAchievements === 'function') {
+        checkAchievements();
+      }
+    }
+    return unlocked;
+  }
+  return false;
+}
+
+function isArtifactUnlocked(artifactId) {
+  if (spellbookManager) {
+    return spellbookManager.isArtifactUnlocked(artifactId);
+  }
+  return false;
+}
+
 // Export for module systems
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     SPELLBOOK_PAGES,
     SPELLBOOK_CATEGORIES,
+    ARTIFACT_ERAS,
     SpellbookManager,
     initSpellbook,
     showSpellbook,
     hideSpellbook,
-    unlockSpellbookPages
+    unlockSpellbookPages,
+    unlockArtifact,
+    isArtifactUnlocked
   };
 }

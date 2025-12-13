@@ -12,6 +12,8 @@ This folder contains all legal documents required for ByteQuest operation.
 | [Privacy Policy](PRIVACY_POLICY.md) | Data collection and usage practices | Template Ready |
 | [Cookie Policy](COOKIE_POLICY.md) | Cookie usage disclosure | Template Ready |
 | [EULA](EULA.md) | Software license agreement | Template Ready |
+| [GDPR Compliance](GDPR_COMPLIANCE.md) | EU data protection compliance | Template Ready |
+| [Dialect Disclaimer](DIALECT_DISCLAIMER.md) | Language variant neutrality statement | Template Ready |
 
 ---
 
