@@ -433,6 +433,339 @@ const REORDER_SENTENCES = {
   ]
 };
 
+// =====================================================
+// FILL-IN-THE-BLANK SENTENCES
+// Contextual sentences with missing words
+// =====================================================
+
+const FILL_BLANK_SENTENCES = {
+  // Lesson 8: Greetings
+  greetings: [
+    {
+      sentence: "___, comment allez-vous?",
+      english: "Hello, how are you?",
+      answer: "Bonjour",
+      distractors: ["Merci", "Au revoir", "Non"]
+    },
+    {
+      sentence: "Merci beaucoup! — De ___.",
+      english: "Thank you very much! — You're welcome.",
+      answer: "rien",
+      distractors: ["bonjour", "oui", "non"]
+    },
+    {
+      sentence: "___, je voudrais un café.",
+      english: "Please, I would like a coffee.",
+      answer: "S'il vous plaît",
+      distractors: ["Merci", "Bonjour", "Au revoir"]
+    },
+    {
+      sentence: "À demain! — ___ !",
+      english: "See you tomorrow! — Goodbye!",
+      answer: "Au revoir",
+      distractors: ["Bonjour", "Merci", "Oui"]
+    }
+  ],
+
+  // Lesson 9: Articles (le/la)
+  articles: [
+    {
+      sentence: "___ chat dort sur le lit.",
+      english: "The cat sleeps on the bed.",
+      answer: "Le",
+      distractors: ["La", "Les", "Un"]
+    },
+    {
+      sentence: "___ maison est grande.",
+      english: "The house is big.",
+      answer: "La",
+      distractors: ["Le", "Les", "Une"]
+    },
+    {
+      sentence: "Je lis ___ livre.",
+      english: "I read the book.",
+      answer: "le",
+      distractors: ["la", "les", "un"]
+    },
+    {
+      sentence: "___ soleil brille.",
+      english: "The sun shines.",
+      answer: "Le",
+      distractors: ["La", "Les", "Un"]
+    },
+    {
+      sentence: "Fermez ___ porte.",
+      english: "Close the door.",
+      answer: "la",
+      distractors: ["le", "les", "une"]
+    }
+  ],
+
+  // Lesson 10: Family
+  family: [
+    {
+      sentence: "Ma ___ s'appelle Marie.",
+      english: "My mother is named Marie.",
+      answer: "mère",
+      distractors: ["père", "frère", "sœur"]
+    },
+    {
+      sentence: "Mon ___ travaille à Paris.",
+      english: "My father works in Paris.",
+      answer: "père",
+      distractors: ["mère", "sœur", "fille"]
+    },
+    {
+      sentence: "J'ai deux ___ et une sœur.",
+      english: "I have two brothers and one sister.",
+      answer: "frères",
+      distractors: ["sœurs", "filles", "fils"]
+    },
+    {
+      sentence: "Voici ma ___. Elle a dix ans.",
+      english: "Here is my daughter. She is ten years old.",
+      answer: "fille",
+      distractors: ["fils", "mère", "sœur"]
+    }
+  ],
+
+  // Lesson 14: Numbers
+  numbers: [
+    {
+      sentence: "J'ai ___ chats à la maison.",
+      english: "I have three cats at home.",
+      answer: "trois",
+      distractors: ["deux", "quatre", "cinq"]
+    },
+    {
+      sentence: "Il y a ___ personnes dans la salle.",
+      english: "There are seven people in the room.",
+      answer: "sept",
+      distractors: ["six", "huit", "neuf"]
+    },
+    {
+      sentence: "Le train part à ___ heures.",
+      english: "The train leaves at five o'clock.",
+      answer: "cinq",
+      distractors: ["quatre", "six", "sept"]
+    },
+    {
+      sentence: "Elle a ___ ans aujourd'hui.",
+      english: "She is ten years old today.",
+      answer: "dix",
+      distractors: ["neuf", "huit", "sept"]
+    }
+  ],
+
+  // Lesson 15: Colors
+  colors: [
+    {
+      sentence: "Le ciel est ___.",
+      english: "The sky is blue.",
+      answer: "bleu",
+      distractors: ["vert", "rouge", "noir"]
+    },
+    {
+      sentence: "La pomme est ___.",
+      english: "The apple is red.",
+      answer: "rouge",
+      distractors: ["vert", "jaune", "bleu"]
+    },
+    {
+      sentence: "L'herbe est ___.",
+      english: "The grass is green.",
+      answer: "verte",
+      distractors: ["bleue", "rouge", "jaune"]
+    },
+    {
+      sentence: "La nuit, tout est ___.",
+      english: "At night, everything is black.",
+      answer: "noir",
+      distractors: ["blanc", "gris", "bleu"]
+    },
+    {
+      sentence: "La neige est ___.",
+      english: "The snow is white.",
+      answer: "blanche",
+      distractors: ["noire", "grise", "bleue"]
+    }
+  ],
+
+  // Lesson 16: Days
+  days: [
+    {
+      sentence: "Aujourd'hui, c'est ___.",
+      english: "Today is Monday.",
+      answer: "lundi",
+      distractors: ["mardi", "mercredi", "dimanche"]
+    },
+    {
+      sentence: "Le week-end commence ___.",
+      english: "The weekend starts Saturday.",
+      answer: "samedi",
+      distractors: ["vendredi", "dimanche", "lundi"]
+    },
+    {
+      sentence: "___ est le premier jour de la semaine.",
+      english: "Monday is the first day of the week.",
+      answer: "Lundi",
+      distractors: ["Mardi", "Dimanche", "Samedi"]
+    }
+  ],
+
+  // Lesson 17: Verbs
+  verbs: [
+    {
+      sentence: "Je veux ___ un livre.",
+      english: "I want to see a book.",
+      answer: "voir",
+      distractors: ["avoir", "être", "faire"]
+    },
+    {
+      sentence: "Nous allons ___ au restaurant.",
+      english: "We are going to go to the restaurant.",
+      answer: "aller",
+      distractors: ["avoir", "être", "voir"]
+    },
+    {
+      sentence: "Il faut ___ attention.",
+      english: "You must pay attention. (lit: to have attention)",
+      answer: "faire",
+      distractors: ["avoir", "être", "voir"]
+    }
+  ],
+
+  // Lesson 18: Food
+  food: [
+    {
+      sentence: "Je voudrais un ___, s'il vous plaît.",
+      english: "I would like a coffee, please.",
+      answer: "café",
+      distractors: ["chocolat", "salade", "dessert"]
+    },
+    {
+      sentence: "Le ___ est délicieux.",
+      english: "The chocolate is delicious.",
+      answer: "chocolat",
+      distractors: ["café", "salade", "soupe"]
+    },
+    {
+      sentence: "Je mange une ___ pour le petit-déjeuner.",
+      english: "I eat a banana for breakfast.",
+      answer: "banane",
+      distractors: ["salade", "soupe", "omelette"]
+    },
+    {
+      sentence: "La ___ est chaude.",
+      english: "The soup is hot.",
+      answer: "soupe",
+      distractors: ["salade", "banane", "crêpe"]
+    }
+  ],
+
+  // Lesson 19: Body Parts
+  body: [
+    {
+      sentence: "J'ai mal à la ___.",
+      english: "My head hurts.",
+      answer: "tête",
+      distractors: ["main", "jambe", "bouche"]
+    },
+    {
+      sentence: "Il lève la ___.",
+      english: "He raises his hand.",
+      answer: "main",
+      distractors: ["tête", "jambe", "bras"]
+    },
+    {
+      sentence: "Elle a de beaux ___.",
+      english: "She has beautiful eyes.",
+      answer: "yeux",
+      distractors: ["bras", "pieds", "mains"]
+    }
+  ],
+
+  // Lesson 20: Weather
+  weather: [
+    {
+      sentence: "Le ___ brille aujourd'hui.",
+      english: "The sun shines today.",
+      answer: "soleil",
+      distractors: ["vent", "nuage", "brouillard"]
+    },
+    {
+      sentence: "Il y a beaucoup de ___.",
+      english: "There is a lot of wind.",
+      answer: "vent",
+      distractors: ["soleil", "pluie", "neige"]
+    },
+    {
+      sentence: "La ___ tombe depuis ce matin.",
+      english: "The rain has been falling since this morning.",
+      answer: "pluie",
+      distractors: ["neige", "tempête", "vent"]
+    },
+    {
+      sentence: "Attention! Une ___ arrive.",
+      english: "Attention! A storm is coming.",
+      answer: "tempête",
+      distractors: ["pluie", "neige", "soleil"]
+    }
+  ],
+
+  // Cognate patterns (mixed lessons 1-7, 11-13)
+  cognates: [
+    {
+      sentence: "C'est une situation ___.",
+      english: "It's a dangerous situation.",
+      answer: "dangereuse",
+      distractors: ["délicieuse", "curieuse", "sérieuse"]
+    },
+    {
+      sentence: "L'___ visite le château.",
+      english: "The actor visits the castle.",
+      answer: "acteur",
+      distractors: ["auteur", "docteur", "directeur"]
+    },
+    {
+      sentence: "La ___ de ce produit est excellente.",
+      english: "The quality of this product is excellent.",
+      answer: "qualité",
+      distractors: ["quantité", "liberté", "beauté"]
+    },
+    {
+      sentence: "C'est ___!",
+      english: "It's impossible!",
+      answer: "impossible",
+      distractors: ["possible", "terrible", "horrible"]
+    },
+    {
+      sentence: "Le spectacle était ___.",
+      english: "The show was fantastic.",
+      answer: "fantastique",
+      distractors: ["magique", "classique", "romantique"]
+    }
+  ]
+};
+
+// Generate a fill-in-the-blank question
+function generateFillBlankQuestion(category) {
+  const sentences = FILL_BLANK_SENTENCES[category] || FILL_BLANK_SENTENCES.greetings;
+  const item = sentences[Math.floor(Math.random() * sentences.length)];
+
+  // Combine answer with distractors and shuffle
+  const allOptions = [item.answer, ...item.distractors].sort(() => Math.random() - 0.5);
+
+  return {
+    type: QuestionTypes.FILL_BLANK,
+    prompt: item.sentence,
+    english: item.english,
+    correctAnswer: item.answer,
+    options: allOptions,
+    hint: `The English is: "${item.english}"`
+  };
+}
+
 // Generate a sentence reorder question
 function generateReorderQuestion(category) {
   const sentences = REORDER_SENTENCES[category] || REORDER_SENTENCES.greetings;
@@ -498,7 +831,514 @@ function generateQuestions(category, subcategory, count = 5, difficulty = 'begin
   return questions;
 }
 
+// =====================================================
+// COGNATE-FIRST LESSON STRUCTURE
+// Lessons organized by difficulty, starting with cognates
+// =====================================================
+
+const LESSONS = {
+  // Lesson 1: Perfect Cognates - Identical words
+  // "You already know French!"
+  lesson_1: {
+    id: "lesson_1",
+    title: "You Already Know French",
+    description: "These French words are identical to English!",
+    pattern: "identical",
+    patternExplanation: "Many French and English words are exactly the same. You already know hundreds of French words!",
+    words: [
+      { french: "table", english: "table", audio: null },
+      { french: "animal", english: "animal", audio: null },
+      { french: "fruit", english: "fruit", audio: null },
+      { french: "orange", english: "orange", audio: null },
+      { french: "train", english: "train", audio: null },
+      { french: "taxi", english: "taxi", audio: null },
+      { french: "hotel", english: "hotel", audio: null },
+      { french: "restaurant", english: "restaurant", audio: null },
+      { french: "menu", english: "menu", audio: null },
+      { french: "rose", english: "rose", audio: null },
+      { french: "piano", english: "piano", audio: null },
+      { french: "radio", english: "radio", audio: null }
+    ]
+  },
+
+  // Lesson 2: -tion Pattern
+  // All -tion words are the same!
+  lesson_2: {
+    id: "lesson_2",
+    title: "The -tion Rule",
+    description: "Every English '-tion' word is the same in French!",
+    pattern: "-tion → -tion",
+    patternExplanation: "Words ending in '-tion' are identical in French and English. This one pattern gives you thousands of words!",
+    words: [
+      { french: "nation", english: "nation", audio: null },
+      { french: "situation", english: "situation", audio: null },
+      { french: "information", english: "information", audio: null },
+      { french: "attention", english: "attention", audio: null },
+      { french: "question", english: "question", audio: null },
+      { french: "solution", english: "solution", audio: null },
+      { french: "action", english: "action", audio: null },
+      { french: "condition", english: "condition", audio: null },
+      { french: "position", english: "position", audio: null },
+      { french: "tradition", english: "tradition", audio: null },
+      { french: "conversation", english: "conversation", audio: null },
+      { french: "destination", english: "destination", audio: null }
+    ]
+  },
+
+  // Lesson 3: -ment Pattern
+  lesson_3: {
+    id: "lesson_3",
+    title: "The -ment Rule",
+    description: "French '-ment' often matches English '-ment' or '-ly'",
+    pattern: "-ment → -ment",
+    patternExplanation: "Many '-ment' words work the same way in both languages.",
+    words: [
+      { french: "moment", english: "moment", audio: null },
+      { french: "appartement", english: "apartment", audio: null },
+      { french: "gouvernement", english: "government", audio: null },
+      { french: "document", english: "document", audio: null },
+      { french: "monument", english: "monument", audio: null },
+      { french: "instrument", english: "instrument", audio: null },
+      { french: "argument", english: "argument", audio: null },
+      { french: "sentiment", english: "sentiment", audio: null },
+      { french: "département", english: "department", audio: null },
+      { french: "compliment", english: "compliment", audio: null }
+    ]
+  },
+
+  // Lesson 4: -able/-ible Pattern
+  lesson_4: {
+    id: "lesson_4",
+    title: "The -able/-ible Rule",
+    description: "These endings work the same in French!",
+    pattern: "-able/-ible → -able/-ible",
+    patternExplanation: "Words ending in '-able' or '-ible' are nearly identical in both languages.",
+    words: [
+      { french: "possible", english: "possible", audio: null },
+      { french: "impossible", english: "impossible", audio: null },
+      { french: "visible", english: "visible", audio: null },
+      { french: "invisible", english: "invisible", audio: null },
+      { french: "capable", english: "capable", audio: null },
+      { french: "probable", english: "probable", audio: null },
+      { french: "terrible", english: "terrible", audio: null },
+      { french: "horrible", english: "horrible", audio: null },
+      { french: "adorable", english: "adorable", audio: null },
+      { french: "comfortable", english: "comfortable", audio: null },
+      { french: "acceptable", english: "acceptable", audio: null },
+      { french: "flexible", english: "flexible", audio: null }
+    ]
+  },
+
+  // Lesson 5: Near Cognates - Close but not identical
+  lesson_5: {
+    id: "lesson_5",
+    title: "Close Cousins",
+    description: "These words look almost the same with small differences",
+    pattern: "near-cognate",
+    patternExplanation: "Some French words are very close to English with minor spelling changes. You can usually guess them!",
+    words: [
+      { french: "famille", english: "family", audio: null },
+      { french: "musique", english: "music", audio: null },
+      { french: "populaire", english: "popular", audio: null },
+      { french: "différent", english: "different", audio: null },
+      { french: "important", english: "important", audio: null },
+      { french: "intelligent", english: "intelligent", audio: null },
+      { french: "président", english: "president", audio: null },
+      { french: "université", english: "university", audio: null },
+      { french: "nécessaire", english: "necessary", audio: null },
+      { french: "difficile", english: "difficult", audio: null },
+      { french: "exemple", english: "example", audio: null },
+      { french: "problème", english: "problem", audio: null }
+    ]
+  },
+
+  // Lesson 6: -ique → -ic Pattern
+  lesson_6: {
+    id: "lesson_6",
+    title: "The -ique Rule",
+    description: "French '-ique' = English '-ic'",
+    pattern: "-ique → -ic",
+    patternExplanation: "When you see '-ique' in French, it's usually '-ic' in English.",
+    words: [
+      { french: "magique", english: "magic", audio: null },
+      { french: "fantastique", english: "fantastic", audio: null },
+      { french: "classique", english: "classic", audio: null },
+      { french: "électrique", english: "electric", audio: null },
+      { french: "automatique", english: "automatic", audio: null },
+      { french: "romantique", english: "romantic", audio: null },
+      { french: "publique", english: "public", audio: null },
+      { french: "historique", english: "historic", audio: null },
+      { french: "pratique", english: "practical", audio: null },
+      { french: "économique", english: "economic", audio: null },
+      { french: "scientifique", english: "scientific", audio: null },
+      { french: "politique", english: "political", audio: null }
+    ]
+  },
+
+  // Lesson 7: Sound-Alikes
+  lesson_7: {
+    id: "lesson_7",
+    title: "Sound-Alikes",
+    description: "These look different but sound similar",
+    pattern: "sound-alike",
+    patternExplanation: "French spelling can look strange, but say these out loud - they sound like English!",
+    words: [
+      { french: "téléphone", english: "telephone", audio: null },
+      { french: "hôpital", english: "hospital", audio: null },
+      { french: "forêt", english: "forest", audio: null },
+      { french: "île", english: "isle/island", audio: null },
+      { french: "château", english: "castle", audio: null },
+      { french: "théâtre", english: "theater", audio: null },
+      { french: "hôtel", english: "hotel", audio: null },
+      { french: "âge", english: "age", audio: null },
+      { french: "côte", english: "coast", audio: null },
+      { french: "rôle", english: "role", audio: null }
+    ]
+  },
+
+  // Lesson 8: Basic Greetings (First non-cognates, but high frequency)
+  lesson_8: {
+    id: "lesson_8",
+    title: "Essential Greetings",
+    description: "The most important words to know",
+    pattern: "none",
+    patternExplanation: "These aren't cognates, but they're so common you'll learn them quickly through repetition.",
+    words: [
+      { french: "bonjour", english: "hello/good day", audio: null, hint: "bon (good) + jour (day)" },
+      { french: "bonsoir", english: "good evening", audio: null, hint: "bon (good) + soir (evening)" },
+      { french: "salut", english: "hi (casual)", audio: null, hint: "Like 'salute' but casual" },
+      { french: "au revoir", english: "goodbye", audio: null, hint: "Until seeing again" },
+      { french: "merci", english: "thank you", audio: null, hint: "Related to 'mercy'" },
+      { french: "oui", english: "yes", audio: null, hint: "Sounds like 'we'" },
+      { french: "non", english: "no", audio: null, hint: "Same as English 'non-'" },
+      { french: "s'il vous plaît", english: "please", audio: null, hint: "If it pleases you" },
+      { french: "de rien", english: "you're welcome", audio: null, hint: "Of nothing (it's nothing)" },
+      { french: "excusez-moi", english: "excuse me", audio: null, hint: "Excuse me (formal)" }
+    ]
+  },
+
+  // Lesson 9: Common Nouns with Articles
+  lesson_9: {
+    id: "lesson_9",
+    title: "Le and La",
+    description: "French nouns have gender - le (masculine) and la (feminine)",
+    pattern: "articles",
+    patternExplanation: "Every French noun is either masculine (le) or feminine (la). Don't worry about memorizing - you'll get a feel for it!",
+    words: [
+      { french: "le livre", english: "the book", audio: null, hint: "Think 'library'" },
+      { french: "la maison", english: "the house", audio: null, hint: "Think 'mansion'" },
+      { french: "le pain", english: "the bread", audio: null, hint: "Staple food" },
+      { french: "la pomme", english: "the apple", audio: null, hint: "Red or green fruit" },
+      { french: "le soleil", english: "the sun", audio: null, hint: "Think 'solar'" },
+      { french: "la lune", english: "the moon", audio: null, hint: "Think 'lunar'" },
+      { french: "le chat", english: "the cat", audio: null, hint: "Says 'meow'" },
+      { french: "la porte", english: "the door", audio: null, hint: "Think 'portal'" },
+      { french: "le jardin", english: "the garden", audio: null, hint: "Where plants grow" },
+      { french: "la fenêtre", english: "the window", audio: null, hint: "Glass opening in wall" }
+    ]
+  },
+
+  // Lesson 10: Family (Non-cognates introduced after foundation)
+  lesson_10: {
+    id: "lesson_10",
+    title: "Family",
+    description: "Words for family members",
+    pattern: "none",
+    patternExplanation: "Now that you know the patterns, these family words will stick better.",
+    words: [
+      { french: "la mère", english: "the mother", audio: null, hint: "Think 'maternal'" },
+      { french: "le père", english: "the father", audio: null, hint: "Think 'paternal'" },
+      { french: "la sœur", english: "the sister", audio: null, hint: "Think 'sorority'" },
+      { french: "le frère", english: "the brother", audio: null, hint: "Think 'fraternal'" },
+      { french: "la fille", english: "the daughter", audio: null, hint: "Also means 'girl'" },
+      { french: "le fils", english: "the son", audio: null, hint: "The 's' is silent" },
+      { french: "la grand-mère", english: "the grandmother", audio: null, hint: "grand + mother" },
+      { french: "le grand-père", english: "the grandfather", audio: null, hint: "grand + father" },
+      { french: "les parents", english: "the parents", audio: null, hint: "Think 'parental'" },
+      { french: "les enfants", english: "the children", audio: null, hint: "Think 'infant'" }
+    ]
+  },
+
+  // Lesson 11: -eur → -or Pattern
+  lesson_11: {
+    id: "lesson_11",
+    title: "The -eur Rule",
+    description: "French '-eur' = English '-or'",
+    pattern: "-eur → -or",
+    patternExplanation: "Words ending in '-eur' in French often end in '-or' in English.",
+    words: [
+      { french: "acteur", english: "actor", audio: null },
+      { french: "docteur", english: "doctor", audio: null },
+      { french: "directeur", english: "director", audio: null },
+      { french: "professeur", english: "professor", audio: null },
+      { french: "auteur", english: "author", audio: null },
+      { french: "empereur", english: "emperor", audio: null },
+      { french: "visiteur", english: "visitor", audio: null },
+      { french: "gouverneur", english: "governor", audio: null },
+      { french: "conducteur", english: "conductor", audio: null },
+      { french: "inventeur", english: "inventor", audio: null }
+    ]
+  },
+
+  // Lesson 12: -té → -ty Pattern
+  lesson_12: {
+    id: "lesson_12",
+    title: "The -té Rule",
+    description: "French '-té' = English '-ty'",
+    pattern: "-té → -ty",
+    patternExplanation: "Words ending in '-té' in French end in '-ty' in English.",
+    words: [
+      { french: "liberté", english: "liberty", audio: null },
+      { french: "qualité", english: "quality", audio: null },
+      { french: "quantité", english: "quantity", audio: null },
+      { french: "société", english: "society", audio: null },
+      { french: "université", english: "university", audio: null },
+      { french: "cité", english: "city", audio: null },
+      { french: "beauté", english: "beauty", audio: null },
+      { french: "réalité", english: "reality", audio: null },
+      { french: "identité", english: "identity", audio: null },
+      { french: "possibilité", english: "possibility", audio: null }
+    ]
+  },
+
+  // Lesson 13: -eux/-euse → -ous Pattern
+  lesson_13: {
+    id: "lesson_13",
+    title: "The -eux Rule",
+    description: "French '-eux' often = English '-ous'",
+    pattern: "-eux → -ous",
+    patternExplanation: "Adjectives ending in '-eux' (masculine) or '-euse' (feminine) often match '-ous' in English.",
+    words: [
+      { french: "dangereux", english: "dangerous", audio: null },
+      { french: "délicieux", english: "delicious", audio: null },
+      { french: "furieux", english: "furious", audio: null },
+      { french: "curieux", english: "curious", audio: null },
+      { french: "sérieux", english: "serious", audio: null },
+      { french: "mystérieux", english: "mysterious", audio: null },
+      { french: "précieux", english: "precious", audio: null },
+      { french: "ambitieux", english: "ambitious", audio: null },
+      { french: "nerveux", english: "nervous", audio: null },
+      { french: "généreux", english: "generous", audio: null }
+    ]
+  },
+
+  // Lesson 14: Numbers 0-10
+  lesson_14: {
+    id: "lesson_14",
+    title: "Numbers 0-10",
+    description: "Count from zero to ten",
+    pattern: "none",
+    patternExplanation: "Numbers are essential! These are used constantly in daily life.",
+    words: [
+      { french: "zéro", english: "zero", audio: null, hint: "Same as English" },
+      { french: "un", english: "one", audio: null, hint: "Think 'uni-' (one)" },
+      { french: "deux", english: "two", audio: null, hint: "Think 'duo' or 'dual'" },
+      { french: "trois", english: "three", audio: null, hint: "Think 'trio'" },
+      { french: "quatre", english: "four", audio: null, hint: "Think 'quarter' (4 parts)" },
+      { french: "cinq", english: "five", audio: null, hint: "Silent 'q'" },
+      { french: "six", english: "six", audio: null, hint: "Same as English" },
+      { french: "sept", english: "seven", audio: null, hint: "Think 'September' (was 7th month)" },
+      { french: "huit", english: "eight", audio: null, hint: "Think 'octo-' became 'huit'" },
+      { french: "neuf", english: "nine", audio: null, hint: "Think 'novem-' (nine)" },
+      { french: "dix", english: "ten", audio: null, hint: "Think 'decimal' (base 10)" }
+    ]
+  },
+
+  // Lesson 15: Colors
+  lesson_15: {
+    id: "lesson_15",
+    title: "Colors",
+    description: "The colors of the rainbow",
+    pattern: "mixed",
+    patternExplanation: "Some colors are cognates, others you'll need to memorize.",
+    words: [
+      { french: "rouge", english: "red", audio: null, hint: "Think 'rouge' makeup" },
+      { french: "bleu", english: "blue", audio: null, hint: "Sounds similar to 'blue'" },
+      { french: "vert", english: "green", audio: null, hint: "Think 'verdant'" },
+      { french: "jaune", english: "yellow", audio: null, hint: "Sounds like 'jawn'" },
+      { french: "orange", english: "orange", audio: null, hint: "Same as English!" },
+      { french: "violet", english: "purple/violet", audio: null, hint: "Same as English violet" },
+      { french: "rose", english: "pink", audio: null, hint: "Color of roses" },
+      { french: "noir", english: "black", audio: null, hint: "Think 'film noir'" },
+      { french: "blanc", english: "white", audio: null, hint: "Think 'blank' (white space)" },
+      { french: "gris", english: "gray", audio: null, hint: "Think 'grizzled'" }
+    ]
+  },
+
+  // Lesson 16: Days of the Week
+  lesson_16: {
+    id: "lesson_16",
+    title: "Days of the Week",
+    description: "From Monday to Sunday",
+    pattern: "none",
+    patternExplanation: "French days come from Roman gods and planets, just like English!",
+    words: [
+      { french: "lundi", english: "Monday", audio: null, hint: "Moon day (lunar)" },
+      { french: "mardi", english: "Tuesday", audio: null, hint: "Mars day" },
+      { french: "mercredi", english: "Wednesday", audio: null, hint: "Mercury day" },
+      { french: "jeudi", english: "Thursday", audio: null, hint: "Jupiter day (Jove)" },
+      { french: "vendredi", english: "Friday", audio: null, hint: "Venus day" },
+      { french: "samedi", english: "Saturday", audio: null, hint: "Saturn day (Sabbath)" },
+      { french: "dimanche", english: "Sunday", audio: null, hint: "Lord's day (dies dominica)" }
+    ]
+  },
+
+  // Lesson 17: Common Verbs (Infinitives)
+  lesson_17: {
+    id: "lesson_17",
+    title: "Essential Verbs",
+    description: "The most common action words",
+    pattern: "mixed",
+    patternExplanation: "Many French verbs are cognates! Look for familiar roots.",
+    words: [
+      { french: "être", english: "to be", audio: null, hint: "Essential verb" },
+      { french: "avoir", english: "to have", audio: null, hint: "Essential verb" },
+      { french: "faire", english: "to do/make", audio: null, hint: "Think 'affair'" },
+      { french: "aller", english: "to go", audio: null, hint: "Think 'alley'" },
+      { french: "voir", english: "to see", audio: null, hint: "Think 'vision'" },
+      { french: "arriver", english: "to arrive", audio: null, hint: "Same as English" },
+      { french: "continuer", english: "to continue", audio: null, hint: "Same as English" },
+      { french: "décider", english: "to decide", audio: null, hint: "Same as English" },
+      { french: "préférer", english: "to prefer", audio: null, hint: "Same as English" },
+      { french: "changer", english: "to change", audio: null, hint: "Same as English" }
+    ]
+  },
+
+  // Lesson 18: Food (Cognates)
+  lesson_18: {
+    id: "lesson_18",
+    title: "Food Words",
+    description: "Delicious cognates from the kitchen",
+    pattern: "mixed",
+    patternExplanation: "French cuisine gave English many food words!",
+    words: [
+      { french: "café", english: "coffee", audio: null, hint: "Same word!" },
+      { french: "chocolat", english: "chocolate", audio: null, hint: "Almost identical" },
+      { french: "banane", english: "banana", audio: null, hint: "Almost identical" },
+      { french: "salade", english: "salad", audio: null, hint: "Almost identical" },
+      { french: "soupe", english: "soup", audio: null, hint: "Almost identical" },
+      { french: "omelette", english: "omelette", audio: null, hint: "Same word!" },
+      { french: "baguette", english: "baguette", audio: null, hint: "French bread!" },
+      { french: "croissant", english: "croissant", audio: null, hint: "Crescent-shaped" },
+      { french: "crêpe", english: "crepe", audio: null, hint: "Thin pancake" },
+      { french: "dessert", english: "dessert", audio: null, hint: "Same word!" }
+    ]
+  },
+
+  // Lesson 19: Body Parts
+  lesson_19: {
+    id: "lesson_19",
+    title: "Body Parts",
+    description: "Parts of the human body",
+    pattern: "mixed",
+    patternExplanation: "Many body parts have Latin roots shared with English medical terms.",
+    words: [
+      { french: "la tête", english: "the head", audio: null, hint: "Think 'tête-à-tête'" },
+      { french: "le bras", english: "the arm", audio: null, hint: "Think 'brace'" },
+      { french: "la main", english: "the hand", audio: null, hint: "Think 'manual'" },
+      { french: "le pied", english: "the foot", audio: null, hint: "Think 'pedestrian'" },
+      { french: "la jambe", english: "the leg", audio: null, hint: "Think 'jamb' (door leg)" },
+      { french: "le cœur", english: "the heart", audio: null, hint: "Think 'courage' (heart)" },
+      { french: "les yeux", english: "the eyes", audio: null, hint: "Think 'ocular'" },
+      { french: "le nez", english: "the nose", audio: null, hint: "Think 'nasal'" },
+      { french: "la bouche", english: "the mouth", audio: null, hint: "Where food goes" },
+      { french: "l'oreille", english: "the ear", audio: null, hint: "Think 'aural'" }
+    ]
+  },
+
+  // Lesson 20: Weather
+  lesson_20: {
+    id: "lesson_20",
+    title: "Weather",
+    description: "Talking about the weather",
+    pattern: "mixed",
+    patternExplanation: "Weather is a common conversation topic. Many terms are near-cognates.",
+    words: [
+      { french: "le soleil", english: "the sun", audio: null, hint: "Think 'solar'" },
+      { french: "la pluie", english: "the rain", audio: null, hint: "Think 'pluvial'" },
+      { french: "le vent", english: "the wind", audio: null, hint: "Think 'vent', 'ventilate'" },
+      { french: "la neige", english: "the snow", audio: null, hint: "White and cold" },
+      { french: "le nuage", english: "the cloud", audio: null, hint: "In the sky" },
+      { french: "la tempête", english: "the storm", audio: null, hint: "Think 'tempest'" },
+      { french: "le brouillard", english: "the fog", audio: null, hint: "Hard to see through" },
+      { french: "la température", english: "the temperature", audio: null, hint: "Same as English" },
+      { french: "il fait chaud", english: "it's hot", audio: null, hint: "'Chaud' sounds like hot" },
+      { french: "il fait froid", english: "it's cold", audio: null, hint: "Think 'frigid'" }
+    ]
+  }
+};
+
+// Get lesson by ID
+function getLesson(lessonId) {
+  return LESSONS[lessonId] || null;
+}
+
+// Get all lessons in order
+function getAllLessons() {
+  return Object.values(LESSONS).sort((a, b) => {
+    const numA = parseInt(a.id.split('_')[1]);
+    const numB = parseInt(b.id.split('_')[1]);
+    return numA - numB;
+  });
+}
+
+// Generate questions from a lesson
+function generateLessonQuestions(lessonId, count = 5) {
+  const lesson = getLesson(lessonId);
+  if (!lesson) return [];
+
+  const questions = [];
+  const shuffled = [...lesson.words].sort(() => Math.random() - 0.5);
+
+  for (let i = 0; i < Math.min(count, shuffled.length); i++) {
+    const word = shuffled[i];
+    const questionType = Math.random() > 0.5 ?
+      QuestionTypes.TRANSLATE_TO_ENGLISH :
+      QuestionTypes.TRANSLATE_TO_FRENCH;
+
+    // Generate wrong answers from same lesson
+    const wrongAnswers = lesson.words
+      .filter(w => w.french !== word.french)
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 3)
+      .map(w => questionType === QuestionTypes.TRANSLATE_TO_ENGLISH ? w.english : w.french);
+
+    const correctAnswer = questionType === QuestionTypes.TRANSLATE_TO_ENGLISH ?
+      word.english : word.french;
+
+    const allAnswers = [...wrongAnswers, correctAnswer].sort(() => Math.random() - 0.5);
+
+    questions.push({
+      type: questionType,
+      prompt: questionType === QuestionTypes.TRANSLATE_TO_ENGLISH ?
+        'What does this mean?' :
+        'How do you say this in French?',
+      word: questionType === QuestionTypes.TRANSLATE_TO_ENGLISH ? word.french : word.english,
+      correctAnswer: correctAnswer,
+      options: allAnswers,
+      hint: word.hint || null,
+      lessonId: lessonId,
+      pattern: lesson.pattern,
+      isNewWord: true // Flag for first encounter
+    });
+  }
+
+  return questions;
+}
+
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { VOCABULARY, QuestionTypes, REORDER_SENTENCES, generateQuestions, generateReorderQuestion };
+  module.exports = {
+    VOCABULARY,
+    LESSONS,
+    QuestionTypes,
+    REORDER_SENTENCES,
+    FILL_BLANK_SENTENCES,
+    generateQuestions,
+    generateReorderQuestion,
+    generateFillBlankQuestion,
+    getLesson,
+    getAllLessons,
+    generateLessonQuestions
+  };
 }

@@ -268,17 +268,100 @@ class ResourceMinigame {
 
   end() {
     this.isActive = false;
-    this.grantResources();
+    // Note: showResults() calls grantResources() internally for proper breakdown display
     this.showResults();
   }
 
   grantResources() {
     if (this.resources > 0 && typeof itemManager !== 'undefined') {
       const output = this.getResourceOutput();
-      for (let i = 0; i < this.resources; i++) {
-        itemManager.addItem(output.id, 1);
+
+      // Calculate final yield with bonuses using BonusCalculator
+      if (typeof BonusCalculator !== 'undefined') {
+        this.yieldBreakdown = BonusCalculator.calculateGathering(this.resources, this.resourceType, {});
+        const finalYield = this.yieldBreakdown.total;
+        for (let i = 0; i < finalYield; i++) {
+          itemManager.addItem(output.id, 1);
+        }
+      } else {
+        // Fallback without breakdown
+        this.yieldBreakdown = null;
+        for (let i = 0; i < this.resources; i++) {
+          itemManager.addItem(output.id, 1);
+        }
+      }
+
+      // Grant gathering skill XP
+      this.grantSkillXP();
+    }
+  }
+
+  /**
+   * Grant XP to the gathering skill
+   */
+  grantSkillXP() {
+    if (typeof GameState === 'undefined' || !GameState.player) return;
+
+    // Initialize skills if needed
+    if (!GameState.player.skills) {
+      GameState.player.skills = {};
+    }
+    if (!GameState.player.skills[this.resourceType]) {
+      GameState.player.skills[this.resourceType] = { level: 1, xp: 0 };
+    }
+
+    const skill = GameState.player.skills[this.resourceType];
+    const MAX_LEVEL = 50;
+
+    // Already maxed
+    if (skill.level >= MAX_LEVEL) return;
+
+    // XP based on resources gathered and tier
+    const baseXP = 10 + (this.resources * 5) + (this.tier * 10);
+    skill.xp += baseXP;
+
+    // Check for level up
+    const xpNeeded = skill.level * 100;
+    if (skill.xp >= xpNeeded) {
+      skill.xp -= xpNeeded;
+      skill.level = Math.min(skill.level + 1, MAX_LEVEL);
+
+      if (typeof showNotification !== 'undefined') {
+        const skillName = this.resourceType.charAt(0).toUpperCase() + this.resourceType.slice(1);
+        showNotification(`${skillName} leveled up to ${skill.level}!`, 'success');
       }
     }
+  }
+
+  /**
+   * Get formatted breakdown HTML for results screen
+   */
+  getYieldBreakdownHTML() {
+    if (!this.yieldBreakdown || this.yieldBreakdown.breakdown.length <= 1) {
+      return '';
+    }
+
+    let html = '<div class="yield-breakdown">';
+    html += '<div class="yield-breakdown-title">Yield Breakdown</div>';
+
+    this.yieldBreakdown.breakdown.forEach(item => {
+      const rowClass = item.type === 'base' ? 'breakdown-base' :
+                      item.type === 'multiplier' ? 'breakdown-multiplier' : 'breakdown-additive';
+      html += `<div class="yield-breakdown-row ${rowClass}">`;
+      html += `<span class="breakdown-label">${item.source}</span>`;
+      html += `<span class="breakdown-value">${item.formatted}</span>`;
+      html += '</div>';
+    });
+
+    if (this.yieldBreakdown.total !== this.yieldBreakdown.base) {
+      html += '<div class="yield-breakdown-total">';
+      html += '<span class="breakdown-label">Total</span>';
+      html += `<span class="breakdown-value">${this.yieldBreakdown.total}</span>`;
+      html += '</div>';
+    }
+
+    html += '</div>';
+    return html;
   }
 
   showResults() {
@@ -493,7 +576,12 @@ class MiningMinigame extends ResourceMinigame {
   }
 
   showResults() {
+    // Grant resources first so breakdown is available
+    this.grantResources();
+
     const output = this.getResourceOutput();
+    const finalYield = this.yieldBreakdown ? this.yieldBreakdown.total : this.resources;
+    const breakdownHTML = this.getYieldBreakdownHTML();
 
     const content = `
       <div class="minigame-results">
@@ -501,22 +589,22 @@ class MiningMinigame extends ResourceMinigame {
         <div class="results-stats">
           <div class="result-item">
             <span class="result-label">Ore Gathered:</span>
-            <span class="result-value">${this.resources} ${output.name}</span>
+            <span class="result-value">${finalYield} ${output.name}</span>
           </div>
           <div class="result-item">
             <span class="result-label">Questions Answered:</span>
             <span class="result-value">${this.score}</span>
           </div>
         </div>
+        ${breakdownHTML}
         <div class="results-resources">
-          ${output.icon.repeat(Math.min(this.resources, 20))}
+          ${output.icon.repeat(Math.min(finalYield, 20))}
         </div>
         <button class="btn primary-btn" onclick="resourceMinigameManager.closeMinigame()">Collect Resources</button>
       </div>
     `;
 
     this.updateModal(content);
-    this.grantResources();
   }
 
   end() {
@@ -721,7 +809,12 @@ class WoodcuttingMinigame extends ResourceMinigame {
   }
 
   showResults() {
+    // Grant resources first so breakdown is available
+    this.grantResources();
+
     const output = this.getResourceOutput();
+    const finalYield = this.yieldBreakdown ? this.yieldBreakdown.total : this.resources;
+    const breakdownHTML = this.getYieldBreakdownHTML();
 
     const content = `
       <div class="minigame-results">
@@ -729,7 +822,7 @@ class WoodcuttingMinigame extends ResourceMinigame {
         <div class="results-stats">
           <div class="result-item">
             <span class="result-label">Logs Gathered:</span>
-            <span class="result-value">${this.resources} ${output.name}</span>
+            <span class="result-value">${finalYield} ${output.name}</span>
           </div>
           <div class="result-item">
             <span class="result-label">Best Streak:</span>
@@ -740,15 +833,15 @@ class WoodcuttingMinigame extends ResourceMinigame {
             <span class="result-value">${this.score}/${this.totalQuestions}</span>
           </div>
         </div>
+        ${breakdownHTML}
         <div class="results-resources">
-          ${output.icon.repeat(Math.min(this.resources, 20))}
+          ${output.icon.repeat(Math.min(finalYield, 20))}
         </div>
         <button class="btn primary-btn" onclick="resourceMinigameManager.closeMinigame()">Collect Resources</button>
       </div>
     `;
 
     this.updateModal(content);
-    this.grantResources();
   }
 
   end() {
@@ -915,8 +1008,13 @@ class HuntingMinigame extends ResourceMinigame {
   }
 
   showResults() {
+    // Grant resources first so breakdown is available
+    this.grantResources();
+
     const output = this.getResourceOutput();
     const stars = this.getStars();
+    const finalYield = this.yieldBreakdown ? this.yieldBreakdown.total : this.resources;
+    const breakdownHTML = this.getYieldBreakdownHTML();
 
     const content = `
       <div class="minigame-results">
@@ -935,19 +1033,19 @@ class HuntingMinigame extends ResourceMinigame {
           </div>
           <div class="result-item">
             <span class="result-label">Hides Gathered:</span>
-            <span class="result-value">${this.resources} ${output.name}</span>
+            <span class="result-value">${finalYield} ${output.name}</span>
           </div>
           ${this.mistakes === 0 && stars === 3 ? '<div class="result-bonus">🎯 Perfect Hunt! +1 Rare Hide</div>' : ''}
         </div>
+        ${breakdownHTML}
         <div class="results-resources">
-          ${output.icon.repeat(Math.min(this.resources, 10))}
+          ${output.icon.repeat(Math.min(finalYield, 10))}
         </div>
         <button class="btn primary-btn" onclick="resourceMinigameManager.closeMinigame()">Collect Resources</button>
       </div>
     `;
 
     this.updateModal(content);
-    this.grantResources();
   }
 
   end() {
@@ -1177,7 +1275,12 @@ class HerbalismMinigame extends ResourceMinigame {
   }
 
   showResults() {
+    // Grant resources first so breakdown is available
+    this.grantResources();
+
     const output = this.getResourceOutput();
+    const finalYield = this.yieldBreakdown ? this.yieldBreakdown.total : this.resources;
+    const breakdownHTML = this.getYieldBreakdownHTML();
 
     const content = `
       <div class="minigame-results">
@@ -1185,7 +1288,7 @@ class HerbalismMinigame extends ResourceMinigame {
         <div class="results-stats">
           <div class="result-item">
             <span class="result-label">Herbs Gathered:</span>
-            <span class="result-value">${this.resources} ${output.name}</span>
+            <span class="result-value">${finalYield} ${output.name}</span>
           </div>
           <div class="result-item">
             <span class="result-label">Pairs Matched:</span>
@@ -1198,15 +1301,15 @@ class HerbalismMinigame extends ResourceMinigame {
           ${this.mistakes === 0 ? '<div class="result-bonus">🌟 Perfect! +2 bonus herbs</div>' :
             this.mistakes <= 2 ? '<div class="result-bonus">✨ Great job! +1 bonus herb</div>' : ''}
         </div>
+        ${breakdownHTML}
         <div class="results-resources">
-          ${output.icon.repeat(Math.min(this.resources, 20))}
+          ${output.icon.repeat(Math.min(finalYield, 20))}
         </div>
         <button class="btn primary-btn" onclick="resourceMinigameManager.closeMinigame()">Collect Resources</button>
       </div>
     `;
 
     this.updateModal(content);
-    this.grantResources();
   }
 
   end() {
@@ -1490,7 +1593,12 @@ class FishingMinigame extends ResourceMinigame {
   }
 
   showResults() {
+    // Grant resources first so breakdown is available
+    this.grantResources();
+
     const output = this.getResourceOutput();
+    const finalYield = this.yieldBreakdown ? this.yieldBreakdown.total : this.resources;
+    const breakdownHTML = this.getYieldBreakdownHTML();
 
     const content = `
       <div class="minigame-results">
@@ -1498,22 +1606,22 @@ class FishingMinigame extends ResourceMinigame {
         <div class="results-stats">
           <div class="result-item">
             <span class="result-label">Fish Caught:</span>
-            <span class="result-value">${this.resources} ${output.name}</span>
+            <span class="result-value">${finalYield} ${output.name}</span>
           </div>
           <div class="result-item">
             <span class="result-label">Attempts:</span>
             <span class="result-value">${this.maxAttempts}</span>
           </div>
         </div>
+        ${breakdownHTML}
         <div class="results-resources">
-          ${output.icon.repeat(Math.min(this.resources, 10))}
+          ${output.icon.repeat(Math.min(finalYield, 10))}
         </div>
         <button class="btn primary-btn" onclick="resourceMinigameManager.closeMinigame()">Collect Resources</button>
       </div>
     `;
 
     this.updateModal(content);
-    this.grantResources();
   }
 
   end() {
@@ -1729,6 +1837,12 @@ class WordScrambleMinigame extends ResourceMinigame {
   }
 
   showResults() {
+    // Grant resources first so breakdown is available
+    this.grantResources();
+
+    const finalYield = this.yieldBreakdown ? this.yieldBreakdown.total : this.resources;
+    const breakdownHTML = this.getYieldBreakdownHTML();
+
     const content = `
       <div class="minigame-results">
         <h3>🔤 Word Scramble Complete!</h3>
@@ -1739,19 +1853,19 @@ class WordScrambleMinigame extends ResourceMinigame {
           </div>
           <div class="result-item">
             <span class="result-label">Resources Earned:</span>
-            <span class="result-value">${this.resources}</span>
+            <span class="result-value">${finalYield}</span>
           </div>
           <div class="result-item">
             <span class="result-label">Hints Used:</span>
             <span class="result-value">${this.hintsUsed}</span>
           </div>
         </div>
+        ${breakdownHTML}
         <button class="btn primary-btn" onclick="resourceMinigameManager.closeMinigame()">Collect Resources</button>
       </div>
     `;
 
     this.updateModal(content);
-    this.grantResources();
   }
 
   end() {
@@ -1906,7 +2020,12 @@ class MemoryCardMinigame extends ResourceMinigame {
   }
 
   showResults() {
+    // Grant resources first so breakdown is available
+    this.grantResources();
+
     const perfectFlips = this.pairCount * 2;
+    const finalYield = this.yieldBreakdown ? this.yieldBreakdown.total : this.resources;
+    const breakdownHTML = this.getYieldBreakdownHTML();
 
     const content = `
       <div class="minigame-results">
@@ -1922,15 +2041,15 @@ class MemoryCardMinigame extends ResourceMinigame {
           </div>
           <div class="result-item">
             <span class="result-label">Resources Earned:</span>
-            <span class="result-value">${this.resources}</span>
+            <span class="result-value">${finalYield}</span>
           </div>
         </div>
+        ${breakdownHTML}
         <button class="btn primary-btn" onclick="resourceMinigameManager.closeMinigame()">Collect Resources</button>
       </div>
     `;
 
     this.updateModal(content);
-    this.grantResources();
   }
 
   end() {
@@ -2194,6 +2313,12 @@ class HangmanMinigame extends ResourceMinigame {
   }
 
   showResults() {
+    // Grant resources first so breakdown is available
+    this.grantResources();
+
+    const finalYield = this.yieldBreakdown ? this.yieldBreakdown.total : this.resources;
+    const breakdownHTML = this.getYieldBreakdownHTML();
+
     const content = `
       <div class="minigame-results">
         <h3>🏹 Hunt Complete!</h3>
@@ -2204,15 +2329,15 @@ class HangmanMinigame extends ResourceMinigame {
           </div>
           <div class="result-item">
             <span class="result-label">Pelts Earned:</span>
-            <span class="result-value">${this.resources}</span>
+            <span class="result-value">${finalYield}</span>
           </div>
         </div>
+        ${breakdownHTML}
         <button class="btn primary-btn" onclick="resourceMinigameManager.closeMinigame()">Collect Pelts</button>
       </div>
     `;
 
     this.updateModal(content);
-    this.grantResources();
   }
 
   end() {

@@ -101,39 +101,44 @@ function renderAccountStatus() {
 }
 
 // ============================================
-// DEBUG/TESTING HELPERS
+// DEBUG/TESTING HELPERS (only in dev mode)
 // ============================================
 
-function debugAccountProgression() {
-  console.log('=== Account Progression Debug ===');
-  console.log('Account ID:', accountProgression.accountId);
-  console.log('Current Gold:', accountProgression.getGold());
-  console.log('Purchased Upgrades:', accountProgression.getPurchasedUpgrades());
-  console.log('Active Effects:', accountProgression.getActiveEffects());
-}
+// Set to true to enable debug commands in console
+const BYTEQUEST_DEBUG = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
-async function testPurchaseUpgrade(upgradeId) {
-  try {
-    const result = await accountProgression.purchaseUpgrade(upgradeId);
-    console.log('✓', result.message);
-  } catch (error) {
-    console.error('✗ Cannot purchase:', error.message);
-  }
-}
+if (BYTEQUEST_DEBUG) {
+  window.debugAccountProgression = function() {
+    console.log('=== Account Progression Debug ===');
+    console.log('Account ID:', accountProgression.accountId);
+    console.log('Current Gold:', accountProgression.getGold());
+    console.log('Purchased Upgrades:', accountProgression.getPurchasedUpgrades());
+    console.log('Active Effects:', accountProgression.getActiveEffects());
+  };
 
-function testResetAccount() {
-  accountProgression.resetForTesting();
-  console.log('✓ Account upgrades reset for testing');
-}
+  window.testPurchaseUpgrade = async function(upgradeId) {
+    try {
+      const result = await accountProgression.purchaseUpgrade(upgradeId);
+      console.log('✓', result.message);
+    } catch (error) {
+      console.error('✗ Cannot purchase:', error.message);
+    }
+  };
 
-function testNewGame() {
-  const game = createNewGameWithAccountBonuses('TestPlayer');
-  console.log('New game with bonuses:', game);
-  return game;
-}
+  window.testResetAccount = function() {
+    accountProgression.resetForTesting();
+    console.log('✓ Account upgrades reset for testing');
+  };
 
-// Console commands reminder
-console.log('Account Debug Commands:');
-console.log('  debugAccountProgression()');
-console.log('  testPurchaseUpgrade(upgradeId)');
-console.log('  testResetAccount()');
+  window.testNewGame = function() {
+    const game = createNewGameWithAccountBonuses('TestPlayer');
+    console.log('New game with bonuses:', game);
+    return game;
+  };
+
+  // Console commands reminder (only in dev)
+  console.log('🔧 Debug mode enabled. Commands:');
+  console.log('  debugAccountProgression()');
+  console.log('  testPurchaseUpgrade(upgradeId)');
+  console.log('  testResetAccount()');
+}

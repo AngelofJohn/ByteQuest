@@ -72,7 +72,7 @@ const NPC_DATA = {
         "My family farmed near Renque once. That was before the war."
       ]
     },
-    quests: ["slime_farming", "daily_practice", "helping_hand"]
+    quests: ["slime_farming", "gathering_basics", "farm_defense", "daily_practice"]
   },
 
   merchant: {
@@ -88,7 +88,7 @@ const NPC_DATA = {
         "I heard strange rumors from the Haari Fields..."
       ]
     },
-    quests: ["road_to_haari"],
+    quests: ["road_to_haari", "haari_arrival", "merchant_thanks"],
     shop: {
       items: ["health_potion", "bread", "basic_helm"],
       currency: "gold"
@@ -108,8 +108,21 @@ const NPC_DATA = {
         }
       },
       {
-        // After road_to_haari complete, during haari_arrival - now in Haari
-        when: { quest: "road_to_haari" },
+        // After road_to_haari complete but before haari_arrival accepted - stay in Dawnmere
+        // Player needs to talk to merchant to accept the travel quest
+        when: { quest: "road_to_haari", questNotStarted: "haari_arrival" },
+        dialogue: {
+          greeting: "We made it through the journey prep! Now we're ready to travel to the Haari Fields together. What do you say?",
+          idle: [
+            "The road awaits! Let's set out for the Fields.",
+            "I've heard good things about the farmers there.",
+            "Are you ready to continue our journey?"
+          ]
+        }
+      },
+      {
+        // During haari_arrival quest - traveling/arrived at Haari
+        when: { questActive: "haari_arrival" },
         location: "haari_fields",
         dialogue: {
           greeting: "Ah, the fresh air of the fields! Much better than dusty roads.",
@@ -121,8 +134,8 @@ const NPC_DATA = {
         }
       },
       {
-        // After all travel quests complete - settled in Haari
-        when: { quest: "merchant_thanks" },
+        // After haari_arrival complete - settled in Haari
+        when: { quest: "haari_arrival" },
         location: "haari_fields",
         title: "Field Merchant",
         dialogue: {
@@ -142,7 +155,7 @@ const NPC_DATA = {
     title: "Baker",
     location: "dawnmere",
     disposition: "friendly",
-    tags: ["villager", "shop", "quest_giver"],
+    tags: ["villager", "quest_giver"],
     dialogue: {
       greeting: "Welcome! The bread is fresh, and so is the gossip!",
       quest_intro: "I'm preparing for the festival but there's so much to do!",
@@ -153,11 +166,7 @@ const NPC_DATA = {
         "The festival is the highlight of our year here."
       ]
     },
-    quests: ["bakers_dozen", "festival_feast"],
-    shop: {
-      items: ["bread"],
-      currency: "gold"
-    }
+    quests: ["bakers_dozen", "herb_delivery", "festival_feast"]
   },
 
   sage_aldric: {
@@ -236,16 +245,18 @@ const NPC_DATA = {
     location: "dawnmere",
     disposition: "devout",
     faction: "order_of_dawn",
-    tags: ["religious", "flavor", "lore"],
+    tags: ["religious", "flavor", "lore", "quest_giver"],
     dialogue: {
       greeting: "The Light welcomes all who seek its warmth, traveler.",
+      quest_intro: "I sense the mark of faith upon you. Have you come to choose your path?",
+      quest_complete: "Your path is set. May your Order guide you well.",
       idle: [
         "The shrine has stood here since before Dawnmere was settled.",
         "In the cities, they build grand temples. Here, we tend a simple flame.",
         "Hermeau claims to serve the Light, but true faith needs no crown."
       ]
     },
-    quests: ["tending_the_flame", "doubt_and_faith"]
+    quests: ["choose_your_path", "tending_the_flame", "doubt_and_faith"]
   },
 
   tommen: {
@@ -261,6 +272,30 @@ const NPC_DATA = {
         "Rega says I talk too much and work too little. He's probably right.",
         "I'm going to leave Dawnmere someday. See Lurenium, maybe even the desert!",
         "The words here are so different from back home. I keep mixing them up."
+      ]
+    }
+  },
+
+  // Faction Representative - Dawnmere Settlers
+  settlers_rep: {
+    name: "Bram",
+    title: "Settlers' Representative",
+    location: "dawnmere",
+    disposition: "proud",
+    faction: "dawnmere",
+    tags: ["villager", "faction_rep", "shop"],
+    shop: {
+      type: "faction",
+      faction: "dawnmere",
+      items: ["settlers_hat"],
+      currency: "gold"
+    },
+    dialogue: {
+      greeting: "Greetings, friend of Dawnmere! I keep track of who's helped our settlement.",
+      idle: [
+        "Every kindness to our people is remembered.",
+        "The settlers trust those who've proven themselves.",
+        "We reward our friends with special wares from the frontier."
       ]
     }
   },

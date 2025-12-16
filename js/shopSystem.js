@@ -46,29 +46,6 @@ const ShopTypeInfo = {
 // =====================================================
 
 const SHOP_DEFINITIONS = {
-  rega_shop: {
-    id: 'rega_shop',
-    name: "Rega's Supplies",
-    type: ShopType.GENERAL,
-    npcId: 'rega',
-    description: 'Basic supplies for travelers and settlers.',
-    icon: '🏪',
-    
-    // Static inventory
-    inventory: [
-      { itemId: 'health_potion', price: 25 },
-      { itemId: 'bread', price: 5 }
-    ],
-    
-    // Shop dialogue
-    dialogue: {
-      greeting: "Welcome! Take a look at what I have.",
-      purchase: "Pleasure doing business with you!",
-      cantAfford: "Hmm, looks like you're a bit short on gold.",
-      empty: "Sorry, I'm all out of that."
-    }
-  },
-  
   merchant_shop: {
     id: 'merchant_shop',
     name: "Traveling Merchant",
@@ -94,26 +71,6 @@ const SHOP_DEFINITIONS = {
     }
   },
   
-  baker_shop: {
-    id: 'baker_shop',
-    name: "Marta's Bakery",
-    type: ShopType.GENERAL,
-    npcId: 'baker',
-    description: 'Fresh bread and baked goods.',
-    icon: '🍞',
-
-    inventory: [
-      { itemId: 'bread', price: 3 }
-    ],
-
-    dialogue: {
-      greeting: "Welcome! The bread is fresh!",
-      purchase: "Enjoy!",
-      cantAfford: "Oh dear, not enough coin?",
-      empty: "The oven is cooling, come back later."
-    }
-  },
-
   // =====================================================
   // Account Upgrade Shops (Permanent Upgrades)
   // =====================================================
@@ -192,30 +149,35 @@ const SHOP_DEFINITIONS = {
       cantAfford: "Even blessings require sacrifice. Gather more resources.",
       alreadyOwned: "This blessing already flows through you."
     }
-  }
+  },
 
-  // Additional shops can be added here
-  // Example structure for future shops:
-  /*
-  blacksmith_shop: {
-    id: 'blacksmith_shop',
-    name: "Kolpa's Forge",
-    type: ShopType.EQUIPMENT,
-    npcId: 'kolpa',
-    description: 'Quality weapons and armor from the Miners Guild.',
-    icon: '⚒️',
+  // =====================================================
+  // Faction Shops (Reputation-Gated Items)
+  // =====================================================
+
+  dawnmere_faction_shop: {
+    id: 'dawnmere_faction_shop',
+    name: "Settlers' Supplies",
+    type: ShopType.SPECIALTY,
+    npcId: 'settlers_rep',
+    description: 'Exclusive wares for friends of Dawnmere.',
+    icon: '🏘️',
+    faction: 'dawnmere',
+
     inventory: [
-      { itemId: 'iron_sword', price: 100 },
-      { itemId: 'iron_helm', price: 75 }
+      { itemId: 'settlers_hat', price: 50, repRequired: 100 }  // Requires "Visitor" rank
     ],
+
     dialogue: {
-      greeting: "Need something sturdy? You've come to the right place.",
-      purchase: "Treat it well, and it'll treat you well.",
-      cantAfford: "Come back when you've got the coin.",
-      empty: "I'll need to forge more of those."
+      greeting: "Welcome, friend of the settlers! See anything you like?",
+      purchase: "A fine choice! Wear it with pride.",
+      cantAfford: "Save up a bit more coin, friend.",
+      notEnoughRep: "Hmm, I don't know you well enough yet. Help our people, and we'll talk.",
+      empty: "I'll have more supplies soon."
     }
   }
-  */
+
+  // Additional faction shops can be added here
 };
 
 // =====================================================

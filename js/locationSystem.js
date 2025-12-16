@@ -16,7 +16,7 @@ const LOCATION_DEFINITIONS = {
     color: '#a0785a',
     bgGradient: ['#1a3a5c', '#2a5a3c', '#3a6a4c'], // Sky to ground colors
     themes: ['community', 'beginnings'],
-    npcs: ['urma', 'rega', 'merchant', 'baker', 'sage_aldric', 'old_pieron', 'yris', 'brother_varek', 'tommen', 'widow_senna', 'old_jorel'],
+    npcs: ['urma', 'rega', 'merchant', 'baker', 'sage_aldric', 'old_pieron', 'yris', 'brother_varek', 'tommen', 'widow_senna', 'old_jorel', 'settlers_rep'],
     quests: ['welcome_to_dawnmere', 'meet_the_settlers', 'learning_basics']
   },
 
@@ -234,13 +234,14 @@ class LocationManager {
     if (!check.canTravel) {
       return { success: false, message: check.reason };
     }
-    
+
     const previousLocation = this.getCurrentLocationId();
     const newLocation = this.getLocation(locationId);
-    
-    // Update current location
+
+    // Update current location in both places for compatibility
     this.state.player.locations.current = locationId;
-    
+    this.state.currentLocation = locationId;  // Also update GameState.currentLocation
+
     return {
       success: true,
       message: `Traveled to ${newLocation.name}`,

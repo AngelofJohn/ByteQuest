@@ -121,6 +121,29 @@ const TITLE_DEFINITIONS = {
     color: '#ffd700'
   },
   
+  // Class titles (earned via achievements when choosing specialization)
+  sage: {
+    id: 'sage',
+    name: 'Sage',
+    description: 'Joined the Order of Knowledge',
+    source: 'class',
+    color: '#9b59b6'
+  },
+  protector: {
+    id: 'protector',
+    name: 'Protector',
+    description: 'Joined the Order of Protection',
+    source: 'class',
+    color: '#3498db'
+  },
+  pathfinder: {
+    id: 'pathfinder',
+    name: 'Pathfinder',
+    description: 'Joined the Order of Pilgrimage',
+    source: 'class',
+    color: '#27ae60'
+  },
+
   // Special titles
   founder: {
     id: 'founder',

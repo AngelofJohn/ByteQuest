@@ -395,7 +395,35 @@ class QuestManager {
       }
     }
 
+    // Discover travel destinations when accepting quest (so player can travel there)
+    this.discoverTravelDestinations(quest);
+
     return { success: true, message: `Quest accepted: ${quest.name}` };
+  }
+
+  /**
+   * Discover locations that are travel objectives in a quest
+   * Called when accepting a quest so player can travel to complete objectives
+   */
+  discoverTravelDestinations(quest) {
+    if (!quest.objectives) return;
+
+    for (const objective of quest.objectives) {
+      if (objective.type === 'travel' && objective.target) {
+        const locationId = objective.target;
+
+        if (typeof locationManager !== 'undefined' && locationManager) {
+          // Discover and unlock the destination
+          if (!locationManager.isDiscovered(locationId)) {
+            locationManager.discoverLocation(locationId);
+          }
+          // Unlock if player meets level requirement
+          if (!locationManager.isUnlocked(locationId) && locationManager.meetsLevelRequirement(locationId)) {
+            locationManager.unlockLocation(locationId);
+          }
+        }
+      }
+    }
   }
 
   /**

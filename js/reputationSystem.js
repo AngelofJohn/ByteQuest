@@ -147,15 +147,15 @@ const FACTION_DEFINITIONS = {
     }
   },
   
-  fredrois_fishers: {
-    id: 'fredrois_fishers',
-    name: 'Fredrois Fishers',
+  moorings_seafolk: {
+    id: 'moorings_seafolk',
+    name: 'Moorings Seafolk',
     type: FactionType.MINOR,
-    description: 'A fishing village along the coast, living simple lives tied to the sea.',
+    description: 'The people of The Moorings, a stilt village of weathered docks and faded glory. Once a bustling trade port, now they wait for ships that no longer come.',
     icon: '🐟',
     color: '#4a90a4',
-    locations: ['fredrois'],
-    themes: ['trade', 'simplicity'],
+    locations: ['the_moorings'],
+    themes: ['trade', 'patience', 'faded glory'],
     unlocks: {
       1: [],
       2: [],

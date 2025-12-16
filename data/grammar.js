@@ -281,6 +281,417 @@ const GRAMMAR = {
         ils: "vendent",
         elles: "vendent"
       }
+    },
+    // =====================================================
+    // Additional Common Verbs
+    // =====================================================
+    mettre: {
+      infinitive: "mettre",
+      english: "to put/place",
+      type: "irregular",
+      hint: "Irregular -re verb. Also means 'to put on' (clothes)",
+      present: {
+        je: "mets",
+        tu: "mets",
+        il: "met",
+        elle: "met",
+        on: "met",
+        nous: "mettons",
+        vous: "mettez",
+        ils: "mettent",
+        elles: "mettent"
+      }
+    },
+    partir: {
+      infinitive: "partir",
+      english: "to leave/depart",
+      type: "irregular",
+      hint: "Irregular -ir verb. Uses être in passé composé",
+      present: {
+        je: "pars",
+        tu: "pars",
+        il: "part",
+        elle: "part",
+        on: "part",
+        nous: "partons",
+        vous: "partez",
+        ils: "partent",
+        elles: "partent"
+      }
+    },
+    sortir: {
+      infinitive: "sortir",
+      english: "to go out/exit",
+      type: "irregular",
+      hint: "Like partir. Uses être (intransitive) or avoir (transitive)",
+      present: {
+        je: "sors",
+        tu: "sors",
+        il: "sort",
+        elle: "sort",
+        on: "sort",
+        nous: "sortons",
+        vous: "sortez",
+        ils: "sortent",
+        elles: "sortent"
+      }
+    },
+    dormir: {
+      infinitive: "dormir",
+      english: "to sleep",
+      type: "irregular",
+      hint: "Irregular -ir verb. Drops the 'm' in singular forms",
+      present: {
+        je: "dors",
+        tu: "dors",
+        il: "dort",
+        elle: "dort",
+        on: "dort",
+        nous: "dormons",
+        vous: "dormez",
+        ils: "dorment",
+        elles: "dorment"
+      }
+    },
+    lire: {
+      infinitive: "lire",
+      english: "to read",
+      type: "irregular",
+      hint: "Irregular -re verb with unique conjugation",
+      present: {
+        je: "lis",
+        tu: "lis",
+        il: "lit",
+        elle: "lit",
+        on: "lit",
+        nous: "lisons",
+        vous: "lisez",
+        ils: "lisent",
+        elles: "lisent"
+      }
+    },
+    ecrire: {
+      infinitive: "écrire",
+      english: "to write",
+      type: "irregular",
+      hint: "Irregular -re verb. Note the 'v' in plural forms",
+      present: {
+        je: "écris",
+        tu: "écris",
+        il: "écrit",
+        elle: "écrit",
+        on: "écrit",
+        nous: "écrivons",
+        vous: "écrivez",
+        ils: "écrivent",
+        elles: "écrivent"
+      }
+    },
+    boire: {
+      infinitive: "boire",
+      english: "to drink",
+      type: "irregular",
+      hint: "Very irregular! Stem changes in plural forms",
+      present: {
+        je: "bois",
+        tu: "bois",
+        il: "boit",
+        elle: "boit",
+        on: "boit",
+        nous: "buvons",
+        vous: "buvez",
+        ils: "boivent",
+        elles: "boivent"
+      }
+    },
+    acheter: {
+      infinitive: "acheter",
+      english: "to buy",
+      type: "regular-er",
+      hint: "Stem-changing -er verb. è in singular and 3rd plural",
+      present: {
+        je: "achète",
+        tu: "achètes",
+        il: "achète",
+        elle: "achète",
+        on: "achète",
+        nous: "achetons",
+        vous: "achetez",
+        ils: "achètent",
+        elles: "achètent"
+      }
+    },
+    donner: {
+      infinitive: "donner",
+      english: "to give",
+      type: "regular-er",
+      hint: "Regular -er verb",
+      present: {
+        je: "donne",
+        tu: "donnes",
+        il: "donne",
+        elle: "donne",
+        on: "donne",
+        nous: "donnons",
+        vous: "donnez",
+        ils: "donnent",
+        elles: "donnent"
+      }
+    },
+    recevoir: {
+      infinitive: "recevoir",
+      english: "to receive",
+      type: "irregular",
+      hint: "Irregular -oir verb. Stem changes: reç- / recev-",
+      present: {
+        je: "reçois",
+        tu: "reçois",
+        il: "reçoit",
+        elle: "reçoit",
+        on: "reçoit",
+        nous: "recevons",
+        vous: "recevez",
+        ils: "reçoivent",
+        elles: "reçoivent"
+      }
+    },
+    ouvrir: {
+      infinitive: "ouvrir",
+      english: "to open",
+      type: "irregular",
+      hint: "Conjugates like -er verbs despite being -ir",
+      present: {
+        je: "ouvre",
+        tu: "ouvres",
+        il: "ouvre",
+        elle: "ouvre",
+        on: "ouvre",
+        nous: "ouvrons",
+        vous: "ouvrez",
+        ils: "ouvrent",
+        elles: "ouvrent"
+      }
+    },
+    fermer: {
+      infinitive: "fermer",
+      english: "to close",
+      type: "regular-er",
+      hint: "Regular -er verb",
+      present: {
+        je: "ferme",
+        tu: "fermes",
+        il: "ferme",
+        elle: "ferme",
+        on: "ferme",
+        nous: "fermons",
+        vous: "fermez",
+        ils: "ferment",
+        elles: "ferment"
+      }
+    },
+    croire: {
+      infinitive: "croire",
+      english: "to believe",
+      type: "irregular",
+      hint: "Irregular -re verb. Stem: croi- / croy-",
+      present: {
+        je: "crois",
+        tu: "crois",
+        il: "croit",
+        elle: "croit",
+        on: "croit",
+        nous: "croyons",
+        vous: "croyez",
+        ils: "croient",
+        elles: "croient"
+      }
+    },
+    penser: {
+      infinitive: "penser",
+      english: "to think",
+      type: "regular-er",
+      hint: "Regular -er verb. Use 'penser à' (think about) or 'penser que' (think that)",
+      present: {
+        je: "pense",
+        tu: "penses",
+        il: "pense",
+        elle: "pense",
+        on: "pense",
+        nous: "pensons",
+        vous: "pensez",
+        ils: "pensent",
+        elles: "pensent"
+      }
+    },
+    dire: {
+      infinitive: "dire",
+      english: "to say/tell",
+      type: "irregular",
+      hint: "Irregular. Note 'vous dites' (not 'disez')",
+      present: {
+        je: "dis",
+        tu: "dis",
+        il: "dit",
+        elle: "dit",
+        on: "dit",
+        nous: "disons",
+        vous: "dites",
+        ils: "disent",
+        elles: "disent"
+      }
+    },
+    venir: {
+      infinitive: "venir",
+      english: "to come",
+      type: "irregular",
+      hint: "Irregular -ir. Uses être in passé composé. Stem: vien- / ven-",
+      present: {
+        je: "viens",
+        tu: "viens",
+        il: "vient",
+        elle: "vient",
+        on: "vient",
+        nous: "venons",
+        vous: "venez",
+        ils: "viennent",
+        elles: "viennent"
+      }
+    },
+    prendre: {
+      infinitive: "prendre",
+      english: "to take",
+      type: "irregular",
+      hint: "Irregular -re verb. Stem: prend- / pren-",
+      present: {
+        je: "prends",
+        tu: "prends",
+        il: "prend",
+        elle: "prend",
+        on: "prend",
+        nous: "prenons",
+        vous: "prenez",
+        ils: "prennent",
+        elles: "prennent"
+      }
+    },
+    voir: {
+      infinitive: "voir",
+      english: "to see",
+      type: "irregular",
+      hint: "Irregular -oir verb. Stem: voi- / voy-",
+      present: {
+        je: "vois",
+        tu: "vois",
+        il: "voit",
+        elle: "voit",
+        on: "voit",
+        nous: "voyons",
+        vous: "voyez",
+        ils: "voient",
+        elles: "voient"
+      }
+    },
+    pouvoir: {
+      infinitive: "pouvoir",
+      english: "can/to be able",
+      type: "irregular",
+      hint: "Very irregular modal verb. Stem: peu- / pouv- / puiss-",
+      present: {
+        je: "peux",
+        tu: "peux",
+        il: "peut",
+        elle: "peut",
+        on: "peut",
+        nous: "pouvons",
+        vous: "pouvez",
+        ils: "peuvent",
+        elles: "peuvent"
+      }
+    },
+    vouloir: {
+      infinitive: "vouloir",
+      english: "to want",
+      type: "irregular",
+      hint: "Irregular modal verb. Stem: veu- / voul- / veuill-",
+      present: {
+        je: "veux",
+        tu: "veux",
+        il: "veut",
+        elle: "veut",
+        on: "veut",
+        nous: "voulons",
+        vous: "voulez",
+        ils: "veulent",
+        elles: "veulent"
+      }
+    },
+    devoir: {
+      infinitive: "devoir",
+      english: "must/to have to",
+      type: "irregular",
+      hint: "Irregular modal verb. Stem: doi- / dev-",
+      present: {
+        je: "dois",
+        tu: "dois",
+        il: "doit",
+        elle: "doit",
+        on: "doit",
+        nous: "devons",
+        vous: "devez",
+        ils: "doivent",
+        elles: "doivent"
+      }
+    },
+    savoir: {
+      infinitive: "savoir",
+      english: "to know (facts)",
+      type: "irregular",
+      hint: "Irregular. Know facts/how to. vs connaître (know people/places)",
+      present: {
+        je: "sais",
+        tu: "sais",
+        il: "sait",
+        elle: "sait",
+        on: "sait",
+        nous: "savons",
+        vous: "savez",
+        ils: "savent",
+        elles: "savent"
+      }
+    },
+    connaitre: {
+      infinitive: "connaître",
+      english: "to know (people/places)",
+      type: "irregular",
+      hint: "Irregular. Know people/places. vs savoir (know facts)",
+      present: {
+        je: "connais",
+        tu: "connais",
+        il: "connaît",
+        elle: "connaît",
+        on: "connaît",
+        nous: "connaissons",
+        vous: "connaissez",
+        ils: "connaissent",
+        elles: "connaissent"
+      }
+    },
+    attendre: {
+      infinitive: "attendre",
+      english: "to wait (for)",
+      type: "regular-re",
+      hint: "Regular -re verb. No preposition needed: 'J'attends le bus'",
+      present: {
+        je: "attends",
+        tu: "attends",
+        il: "attend",
+        elle: "attend",
+        on: "attend",
+        nous: "attendons",
+        vous: "attendez",
+        ils: "attendent",
+        elles: "attendent"
+      }
     }
   },
 

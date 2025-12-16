@@ -181,6 +181,61 @@ class AccountProgressionConfig {
         tier: 2,
         stackable: true,
         maxStacks: 3
+      },
+      // ADDITIVE GATHERING BONUSES
+      {
+        id: 'gathering_bonus_1',
+        name: 'Bountiful Harvest I',
+        description: '+1 extra resource from all gathering',
+        cost: { gold: 300 },
+        effect: { gatheringBonus: 1 },
+        category: 'resources',
+        tier: 1,
+        oneTime: true
+      },
+      {
+        id: 'gathering_bonus_2',
+        name: 'Bountiful Harvest II',
+        description: '+2 extra resources from all gathering',
+        requires: 'gathering_bonus_1',
+        cost: { gold: 800 },
+        effect: { gatheringBonus: 2 },
+        category: 'resources',
+        tier: 2,
+        oneTime: true
+      },
+      {
+        id: 'gathering_bonus_3',
+        name: 'Bountiful Harvest III',
+        description: '+3 extra resources from all gathering',
+        requires: 'gathering_bonus_2',
+        cost: { gold: 2000 },
+        effect: { gatheringBonus: 3 },
+        category: 'resources',
+        tier: 3,
+        oneTime: true
+      },
+      // ADDITIVE XP BONUSES
+      {
+        id: 'xp_bonus_1',
+        name: 'Quick Learner I',
+        description: '+5 XP from every lesson',
+        cost: { gold: 250 },
+        effect: { xpBonus: 5 },
+        category: 'resources',
+        tier: 1,
+        oneTime: true
+      },
+      {
+        id: 'xp_bonus_2',
+        name: 'Quick Learner II',
+        description: '+10 XP from every lesson',
+        requires: 'xp_bonus_1',
+        cost: { gold: 600 },
+        effect: { xpBonus: 10 },
+        category: 'resources',
+        tier: 2,
+        oneTime: true
       }
     ];
   }
@@ -322,6 +377,8 @@ class AccountProgressionConfig {
       dialectProgressMultiplier: 1.0,
       dialectXpMultiplier: 1.0,
       doubleLootChance: 0,
+      gatheringBonus: 0,      // Flat additive bonus to gathering yields
+      xpBonus: 0,             // Flat additive bonus to XP earned
       unlockedFeatures: []
     };
   }

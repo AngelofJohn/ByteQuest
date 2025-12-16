@@ -15,8 +15,8 @@
         <div class="title-logo">ByteQuest</div>
         <div class="title-subtitle">Learn French Through Adventure</div>
         <div class="title-menu">
-            <button class="pixel-btn pixel-btn-gold" id="new-game-btn">New Game</button>
-            <button class="pixel-btn" id="continue-btn" style="display: none;">Continue</button>
+            <button class="art-btn art-btn-large art-btn-gold" id="new-game-btn">New Game</button>
+            <button class="art-btn art-btn-large" id="continue-btn" style="display: none;">Continue</button>
         </div>
         <div style="position: absolute; bottom: 40px; color: var(--text-muted); font-size: 14px;">
             Phase 1 - Dawnmere Vertical Slice
@@ -54,7 +54,7 @@
             </div>
             <div class="currency-display">
                 <div class="currency gold" data-tooltip="gold-display">
-                    <span class="currency-icon">💰</span>
+                    <span class="currency-icon art-icon-coin"></span>
                     <span class="currency-value">0</span>
                 </div>
             </div>
@@ -92,9 +92,13 @@
                     <span class="nav-icon">⛏️</span>
                     Gather
                 </button>
-                <button class="nav-btn" data-screen="alchemy">
-                    <span class="nav-icon">⚗️</span>
-                    Alchemy
+                <button class="nav-btn" data-screen="projects">
+                    <span class="nav-icon">🏘️</span>
+                    Projects
+                </button>
+                <button class="nav-btn feature-locked" data-screen="crafting" data-feature="alchemy" style="display: none;">
+                    <span class="nav-icon">🔨</span>
+                    Crafting
                 </button>
                 <div style="flex: 1;"></div>
                 <button class="nav-btn" data-screen="settings">
@@ -223,8 +227,13 @@
     <script src="js/titleSystem.js"></script>
     <script src="js/tooltipSystem.js"></script>
     <script src="js/spellbookSystem.js"></script>
+    <script src="js/villageProjects.js"></script>
     <script src="js/resourceMinigames.js"></script>
     <script src="js/alchemySystem.js"></script>
+    <script src="js/smithingSystem.js"></script>
+    <script src="js/craftingSystem.js"></script>
+    <script src="js/enchantingSystem.js"></script>
+    <script src="js/audioSystem.js"></script>
 
     <!-- Account Progression System -->
     <script src="js/accountProgression.js"></script>

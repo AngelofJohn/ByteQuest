@@ -31,7 +31,7 @@ const GAME_DATA = {
       level: 1,
       discovered: true,
       hasBossExam: true,  // Zone mastery test
-      npcs: ["urma", "rega", "merchant", "baker", "sage_aldric", "old_pieron", "yris", "brother_varek", "tommen", "widow_senna", "old_jorel"],
+      npcs: ["urma", "rega", "merchant", "baker", "sage_aldric", "old_pieron", "yris", "brother_varek", "tommen", "widow_senna", "old_jorel", "settlers_rep"],
       hotspots: [
         {
           id: "shrine_alcove",
@@ -60,11 +60,13 @@ const GAME_DATA = {
       ],
       quests: [
         "meeting_family",
+        "choose_your_path",
         "slime_farming",
+        "gathering_basics",
         "bakers_dozen",
         "daily_practice",
         "weekly_challenge",
-        "helping_hand",
+        "herb_delivery",
         "secret_student",
         "festival_feast",
         // Grammar quests
@@ -76,6 +78,7 @@ const GAME_DATA = {
         "grammar_mixed_practice_1",
         // Travel quests - Merchant journey chain (starts here)
         "road_to_haari",
+        "haari_arrival",  // Continues in Dawnmere, travel objective discovers Haari Fields
         // Filler quests - NPC mini-arcs
         "river_whispers",
         "lights_below",
@@ -181,7 +184,14 @@ const GAME_DATA = {
           requiredRep: { faction: "old_guard", amount: 200 }
         }
       ],
-      quests: [],
+      quests: [
+        "archives_of_lurenium",
+        "words_of_law",
+        "songs_of_old",
+        "ledgers_of_the_guild",
+        "orders_from_above",
+        "hymns_of_light"
+      ],
       connectedTo: ["haari_fields"],
       atmosphere: "ancient",
       music: null
@@ -236,29 +246,31 @@ const GAME_DATA = {
       // Content
       description: "Learn to introduce yourself and meet the settlers of Dawnmere.",
       objectives: [
-        { 
-          id: "learn_greetings", 
+        {
+          id: "learn_cognates",
           type: "lesson",
-          text: "Learn basic French greetings", 
+          text: "Discover words you already know",
+          lessonId: "lesson_1",
           target: null
         },
-        { 
-          id: "learn_family", 
+        {
+          id: "learn_greetings",
           type: "lesson",
-          text: "Learn family vocabulary", 
+          text: "Learn essential greetings",
+          lessonId: "lesson_8",
           target: null
         },
-        { 
-          id: "meet_settlers", 
+        {
+          id: "meet_settlers",
           type: "meet",
-          text: "Introduce yourself to settlers", 
+          text: "Introduce yourself to settlers",
           target: 3
         }
       ],
       dialogue: {
-        intro: "Well hello there! I want you to meet everyone here. There are many of us, so I hope you can remember it all! We will be happy to get to know you.",
-        progress: "Have you met everyone yet? Don't be shy!",
-        complete: "Wonderful! You're picking up our ways quickly. The people here will remember your kindness."
+        intro: "Bonjour, traveler! Before you meet everyone, let me share a secret: you already know more French than you think! Words like 'table', 'animal', 'restaurant' - they're the same! Let me show you.",
+        progress: "Learning that French and English share so many words? Now learn to say hello!",
+        complete: "Wonderful! You already knew dozens of French words and didn't even realize it. Now go meet the others!"
       },
       
       // Rewards
@@ -278,54 +290,113 @@ const GAME_DATA = {
       hiddenTrigger: null
     },
 
-    slime_farming: {
-      id: "slime_farming",
-      name: "Slime Farming",
-      giver: "rega",
+    // -------------------------------------------------
+    // CLASS SELECTION - Choose your Order
+    // -------------------------------------------------
+    choose_your_path: {
+      id: "choose_your_path",
+      name: "Choose Your Path",
+      giver: "brother_varek",
       location: "dawnmere",
-      
+
       type: "main",
-      category: "combat",
+      category: "social",
       status: "locked",
-      
+
       levelRequired: 1,
       prerequisites: ["meeting_family"],
       classRequired: null,
       reputationRequired: null,
-      
-      chainId: "dawnmere_intro",
-      chainOrder: 2,
+
+      chainId: "cleric_origin",
+      chainOrder: 1,
       chainNext: null,
-      
+
       timeLimit: null,
       cooldown: null,
       seasonalWindow: null,
-      
-      description: "Help Rega defend his farm from mysterious slime creatures.",
+
+      description: "Brother Varek senses your calling and offers guidance. It is time to choose which Order you will serve.",
       objectives: [
-        { 
-          id: "learn_farming", 
-          type: "lesson",
-          text: "Learn farming vocabulary", 
-          target: null
-        },
-        { 
-          id: "defeat_slimes", 
-          type: "combat",
-          text: "Defeat the slimes", 
-          target: 5
-        },
-        { 
-          id: "return_rega", 
+        {
+          id: "speak_varek",
           type: "interact",
-          text: "Return to Rega", 
-          target: null
+          text: "Speak with Brother Varek about your path",
+          target: "brother_varek"
+        },
+        {
+          id: "choose_order",
+          type: "special",
+          text: "Choose your Order",
+          target: "order_selection"
         }
       ],
       dialogue: {
-        intro: "You're just in time! This is the first time I've seen this happen to my farm, but there are slimes—well, sliming all around my crops! Would you be so kind as to remove some of them for me?",
-        progress: "How goes the hunt? Those slimes won't clear themselves!",
-        complete: "Thanks! I'm sure I'll survive this season now. Here, I hope this is enough compensation."
+        intro: "Ah, a fellow servant of the Light! I sensed your arrival. You carry the mark of faith, but your path is not yet set. The Light manifests in many ways—through Knowledge, Protection, or Shadow. Come, let us discover which calling speaks to your soul.",
+        progress: "Take your time with this decision. Your Order will shape your journey in this land.",
+        complete: "Your path is chosen. May the Light guide your steps, Brother/Sister. Your Order welcomes you."
+      },
+
+      rewards: {
+        xp: 50,
+        gold: 0,
+        items: [],
+        reputation: { order_of_dawn: 25 }
+      },
+      repeatRewardMultiplier: null,
+
+      vocabulary: null, // No lesson
+
+      cannotAbandon: true,
+      hiddenTrigger: null,
+
+      // Special flag for class selection quest
+      isClassSelection: true
+    },
+
+    slime_farming: {
+      id: "slime_farming",
+      name: "Situation at the Farm",
+      giver: "rega",
+      location: "dawnmere",
+
+      type: "main",
+      category: "lesson",
+      status: "locked",
+
+      levelRequired: 1,
+      prerequisites: ["meeting_family"],
+      classRequired: null,
+      reputationRequired: null,
+
+      chainId: "dawnmere_intro",
+      chainOrder: 2,
+      chainNext: null,
+
+      timeLimit: null,
+      cooldown: null,
+      seasonalWindow: null,
+
+      description: "Rega is worried about strange creatures near his farm. Help calm his nerves by learning useful vocabulary.",
+      objectives: [
+        {
+          id: "learn_tion_pattern",
+          type: "lesson",
+          text: "Learn the -tion pattern",
+          lessonId: "lesson_2",
+          target: null
+        },
+        {
+          id: "return_rega",
+          type: "interact",
+          text: "Report back to Rega",
+          target: "rega"
+        }
+      ],
+      dialogue: {
+        intro: "Strange situation at my farm! I need information about what's happening. But first, let me share an observation: words ending in -tion are identical in French. Nation, situation, action, solution... Pay attention to this pattern!",
+        progress: "Learning those -tion words? Remember: they need no translation!",
+        complete: "Thanks for listening! Your dedication deserves compensation. That's another -tion word you now know!"
       },
       
       rewards: {
@@ -342,9 +413,140 @@ const GAME_DATA = {
       hiddenTrigger: null
     },
 
+    // Gathering Tutorial - Introduces the Gather menu
+    gathering_basics: {
+      id: "gathering_basics",
+      name: "Tools of the Trade",
+      giver: "rega",
+      location: "dawnmere",
+
+      type: "main",
+      category: "gathering",
+      status: "locked",
+
+      levelRequired: 1,
+      prerequisites: ["slime_farming"],
+      classRequired: null,
+      reputationRequired: null,
+
+      chainId: "dawnmere_intro",
+      chainOrder: 3,
+      chainNext: null,
+
+      timeLimit: null,
+      cooldown: null,
+      seasonalWindow: null,
+
+      description: "Rega teaches you to gather resources from the land.",
+      objectives: [
+        {
+          id: "learn_ment_pattern",
+          type: "lesson",
+          text: "Learn the -ment pattern",
+          lessonId: "lesson_3",
+          target: null
+        },
+        {
+          id: "gather_ore",
+          type: "gather",
+          text: "Gather 2 ore from mining",
+          target: 2,
+          itemCategory: "ore"
+        },
+        {
+          id: "gather_herbs",
+          type: "gather",
+          text: "Gather 2 herbs from herbalism",
+          target: 2,
+          itemCategory: "herb"
+        }
+      ],
+      dialogue: {
+        intro: "Now that the slimes are gone, it's time for some equipment! But first, another language pattern - words ending in -ment. Document, instrument, moment... these work the same in French! A useful development for your vocabulary.",
+        progress: "The -ment pattern is your second big shortcut. Use the Gather menu to practice!",
+        complete: "Excellent! You've made good progress - and that's not just a compliment, it's a fact!"
+      },
+
+      rewards: {
+        xp: 75,
+        gold: 15,
+        items: ["gathering_pouch"],
+        reputation: { dawnmere: 50 }
+      },
+      repeatRewardMultiplier: null,
+
+      vocabulary: ["nature.beginner"],
+
+      cannotAbandon: false,
+      hiddenTrigger: null
+    },
+
     // -------------------------------------------------
     // SIDE QUESTS - Optional, One-time
     // -------------------------------------------------
+
+    // Crafting-gated quest - requires crafted copper_dagger
+    farm_defense: {
+      id: "farm_defense",
+      name: "Farm Defense",
+      giver: "rega",
+      location: "dawnmere",
+
+      type: "side",
+      category: "crafting",
+      status: "locked",
+
+      levelRequired: 2,
+      prerequisites: ["gathering_basics"],
+      classRequired: null,
+      reputationRequired: null,
+
+      chainId: null,
+      chainOrder: null,
+      chainNext: null,
+
+      timeLimit: null,
+      cooldown: null,
+      seasonalWindow: null,
+
+      description: "Rega wants protection against future slime invasions. Craft a copper dagger for her.",
+      objectives: [
+        {
+          id: "craft_dagger",
+          type: "gather",
+          text: "Craft a Copper Dagger",
+          target: 1,
+          itemId: "copper_dagger",
+          consumeOnComplete: true  // Dagger is given to Rega
+        },
+        {
+          id: "deliver_dagger",
+          type: "interact",
+          text: "Bring the dagger to Rega",
+          target: "rega"
+        }
+      ],
+      dialogue: {
+        intro: "Those slimes... what if they come back? I need some protection - something sharp! Could you forge me a dagger at the smithy? You'll need copper bars and some pine wood for the handle.",
+        progress: "Have you made that dagger yet? I can't sleep knowing those creatures might return.",
+        complete: "A real copper dagger! Oh, this is wonderful. Now I can defend my crops in peace. Here, take this as thanks - my grandmother's recipe book. Maybe you'll find something useful inside!"
+      },
+
+      rewards: {
+        xp: 50,
+        gold: 20,
+        items: ["empty_bottle", "empty_bottle"],
+        reputation: { dawnmere: 30 },
+        unlocks: ["basic_smithing_tutorial"]
+      },
+      repeatRewardMultiplier: null,
+
+      vocabulary: ["tools.basic"],
+
+      cannotAbandon: false,
+      hiddenTrigger: null
+    },
+
     bakers_dozen: {
       id: "bakers_dozen",
       name: "A Baker's Dozen",
@@ -370,17 +572,18 @@ const GAME_DATA = {
       
       description: "Help Marta prepare bread for the upcoming festival by learning about food.",
       objectives: [
-        { 
-          id: "learn_food", 
+        {
+          id: "learn_able_pattern",
           type: "lesson",
-          text: "Learn food vocabulary", 
+          text: "Learn the -able/-ible pattern",
+          lessonId: "lesson_4",
           target: null
         }
       ],
       dialogue: {
-        intro: "Hello traveler! I'm trying to bake bread for the upcoming festival. To help me, you'll need to know the names of ingredients. Would you like to learn?",
-        progress: "Ready to learn about food? It'll help you understand my recipes!",
-        complete: "Magnifique! Now you know your food vocabulary. Here, have some bread as thanks!"
+        intro: "Hello traveler! Learning a language can feel impossible at first, but it's actually quite possible! Let me show you a comfortable pattern that makes things more acceptable to your brain.",
+        progress: "Words ending in -able and -ible are nearly identical in French!",
+        complete: "Magnifique! You've learned an incredible pattern. Here, have some bread as thanks!"
       },
       
       rewards: {
@@ -425,10 +628,11 @@ const GAME_DATA = {
       
       description: "Practice your vocabulary with the settlers. A little each day goes a long way!",
       objectives: [
-        { 
-          id: "complete_review", 
+        {
+          id: "complete_review",
           type: "lesson",
-          text: "Complete a vocabulary review", 
+          text: "Review: Close cousins",
+          lessonId: "lesson_5",
           target: null
         }
       ],
@@ -480,16 +684,17 @@ const GAME_DATA = {
       
       description: "Urma challenges you to prove your knowledge with a comprehensive test.",
       objectives: [
-        { 
-          id: "complete_challenge", 
+        {
+          id: "complete_challenge",
           type: "lesson",
-          text: "Complete the Elder's vocabulary challenge", 
+          text: "Learn the -ique pattern",
+          lessonId: "lesson_6",
           target: null
         },
-        { 
-          id: "perfect_score", 
+        {
+          id: "perfect_score",
           type: "task",
-          text: "Score at least 80%", 
+          text: "Score at least 80%",
           target: null
         }
       ],
@@ -516,54 +721,63 @@ const GAME_DATA = {
     // -------------------------------------------------
     // REPEATABLE QUESTS - Can redo after cooldown
     // -------------------------------------------------
-    helping_hand: {
-      id: "helping_hand",
-      name: "A Helping Hand",
-      giver: "rega",
+
+    // Resource request quest - gives gathering immediate purpose
+    herb_delivery: {
+      id: "herb_delivery",
+      name: "Fresh Herbs for the Baker",
+      giver: "baker",
       location: "dawnmere",
-      
+
       type: "repeatable",
       category: "gathering",
       status: "locked",
-      
+
       levelRequired: 1,
-      prerequisites: ["slime_farming"],
+      prerequisites: ["gathering_basics"],
       classRequired: null,
       reputationRequired: null,
-      
+
       chainId: null,
       chainOrder: null,
       chainNext: null,
-      
+
       timeLimit: null,
-      cooldown: 3600000, // 1 hour in milliseconds
+      cooldown: 1800000, // 30 minutes cooldown
       seasonalWindow: null,
-      
-      description: "Help around the farm. There's always work to be done.",
+
+      description: "Marta needs fresh herbs for her baking. Gather meadow leaves and bring them to her.",
       objectives: [
-        { 
-          id: "farm_tasks", 
-          type: "task",
-          text: "Complete farm tasks", 
-          target: 5
+        {
+          id: "gather_herbs",
+          type: "gather",
+          text: "Gather 5 Meadow Leaves",
+          target: 5,
+          itemCategory: "herb"
+        },
+        {
+          id: "deliver_herbs",
+          type: "interact",
+          text: "Deliver herbs to Marta",
+          target: "baker"
         }
       ],
       dialogue: {
-        intro: "More work has piled up. You know how it is on a farm—never ends!",
-        progress: "Keep at it! Almost done.",
-        complete: "You're a reliable one. Come back anytime you want to help."
+        intro: "Oh, perfect timing! I've run out of meadow leaves for my herb bread. Could you gather some fresh ones for me? They grow all around the village.",
+        progress: "Have you gathered those herbs yet? My customers are waiting for their herb bread!",
+        complete: "These are perfect! So fresh and fragrant. Here's your payment, and take some bread for the road!"
       },
-      
+
       rewards: {
-        xp: 20,  // was 30
-        gold: 8,
-        items: [],
-        reputation: { dawnmere: 10 }
+        xp: 25,
+        gold: 15,
+        items: ["bread", "bread"],
+        reputation: { dawnmere: 15 }
       },
-      repeatRewardMultiplier: 0.75, // 75% rewards on repeat
-      
-      vocabulary: ["farming.beginner"],
-      
+      repeatRewardMultiplier: 0.8, // 80% rewards on repeat
+
+      vocabulary: null, // No lesson component
+
       cannotAbandon: false,
       hiddenTrigger: null
     },
@@ -600,7 +814,7 @@ const GAME_DATA = {
           id: "meet_tutor",
           type: "interact",
           text: "Speak with Old Pieron",
-          target: null
+          target: "old_pieron"
         },
         {
           id: "special_lesson",
@@ -792,7 +1006,8 @@ const GAME_DATA = {
         {
           id: "learn_nature",
           type: "lesson",
-          text: "Learn nature vocabulary with Yris",
+          text: "Learn sound-alike words",
+          lessonId: "lesson_7",
           target: null
         },
         {
@@ -849,9 +1064,10 @@ const GAME_DATA = {
       description: "Yris has seen strange lights beneath the water. She wants you to know the words for what dwells in darkness.",
       objectives: [
         {
-          id: "learn_colors",
+          id: "learn_articles",
           type: "lesson",
-          text: "Learn colors and light vocabulary",
+          text: "Learn le and la (articles)",
+          lessonId: "lesson_9",
           target: null
         },
         {
@@ -862,9 +1078,9 @@ const GAME_DATA = {
         }
       ],
       dialogue: {
-        intro: "The lights are getting brighter. My mother said they were spirits of the drowned. But I think... I think they're something else. Something older.",
-        progress: "Stay until dark. You need to see this.",
-        complete: "Beautiful and terrible, like I said. Whatever they are, they're waking up. The river is changing."
+        intro: "The lights are getting brighter. To understand what lies beneath, you must first learn to name things properly. In French, every noun has a gender - le or la. Le soleil, la lune... the sun, the moon. Let me teach you.",
+        progress: "Le is masculine, la is feminine. It sounds strange, but you'll get used to it.",
+        complete: "Now you can name what you see. Le livre, la porte, le jardin... The river holds many secrets, but at least you have the words for them."
       },
 
       rewards: {
@@ -910,9 +1126,10 @@ const GAME_DATA = {
       description: "Brother Varek needs help with the morning shrine rituals and wants to teach you the sacred words.",
       objectives: [
         {
-          id: "learn_religious",
+          id: "learn_family",
           type: "lesson",
-          text: "Learn religious and spiritual vocabulary",
+          text: "Learn family vocabulary",
+          lessonId: "lesson_10",
           target: null
         },
         {
@@ -923,9 +1140,9 @@ const GAME_DATA = {
         }
       ],
       dialogue: {
-        intro: "Ah, a traveler seeking the Light? Or perhaps just curious? Either way, the flame welcomes all. Help me with the morning rituals, and I'll teach you the old words.",
-        progress: "The flame never sleeps. Neither does faith.",
-        complete: "You have a gentle touch. The Light sees kindness, traveler, even in those who don't believe. Thank you."
+        intro: "Ah, a traveler! The flame welcomes all. You know, faith is like family - la mère, le père, les enfants. We care for each other. Let me teach you the words for family while we tend the shrine together.",
+        progress: "Family words are important. La mère is mother, le père is father... you'll remember.",
+        complete: "You have a gentle touch. Now you know the words for those you love - and for those who watch over this flame. Thank you."
       },
 
       rewards: {
@@ -978,7 +1195,7 @@ const GAME_DATA = {
           id: "conversation",
           type: "interact",
           text: "Have a deep conversation with Varek",
-          target: null
+          target: "brother_varek"
         }
       ],
       dialogue: {
@@ -1039,7 +1256,7 @@ const GAME_DATA = {
           id: "share_stories",
           type: "interact",
           text: "Share stories with Tommen",
-          target: null
+          target: "tommen"
         }
       ],
       dialogue: {
@@ -1156,7 +1373,7 @@ const GAME_DATA = {
           id: "hear_concerns",
           type: "interact",
           text: "Listen to Senna's concerns",
-          target: null
+          target: "widow_senna"
         }
       ],
       dialogue: {
@@ -1215,7 +1432,7 @@ const GAME_DATA = {
           id: "drink_together",
           type: "interact",
           text: "Share a drink with Jorel",
-          target: null
+          target: "old_jorel"
         }
       ],
       dialogue: {
@@ -1273,7 +1490,7 @@ const GAME_DATA = {
           id: "listen_truth",
           type: "interact",
           text: "Listen to Jorel's story",
-          target: null
+          target: "old_jorel"
         }
       ],
       dialogue: {
@@ -1331,6 +1548,7 @@ const GAME_DATA = {
         {
           id: "learn_crops",
           type: "lesson",
+          lessonId: "lesson_14",
           text: "Learn crop vocabulary from Dave",
           target: 1
         },
@@ -1396,6 +1614,7 @@ const GAME_DATA = {
         {
           id: "learn_herbs",
           type: "lesson",
+          lessonId: "lesson_15",
           text: "Learn herb vocabulary from Lyra",
           target: 1
         },
@@ -1462,6 +1681,7 @@ const GAME_DATA = {
         {
           id: "learn_basics",
           type: "lesson",
+          lessonId: "lesson_17",
           text: "Learn the basics of alchemy",
           target: 1
         }
@@ -1520,6 +1740,7 @@ const GAME_DATA = {
         {
           id: "learn_music",
           type: "lesson",
+          lessonId: "lesson_16",
           text: "Learn music and sound vocabulary",
           target: null
         },
@@ -1578,6 +1799,7 @@ const GAME_DATA = {
         {
           id: "advanced_vocab",
           type: "lesson",
+          lessonId: "lesson_13",
           text: "Learn advanced vocabulary with Venn's method",
           target: null
         },
@@ -1637,6 +1859,7 @@ const GAME_DATA = {
         {
           id: "learn_animals",
           type: "lesson",
+          lessonId: "lesson_20",
           text: "Learn animal and tracking vocabulary",
           target: null
         },
@@ -1695,6 +1918,7 @@ const GAME_DATA = {
         {
           id: "learn_danger",
           type: "lesson",
+          lessonId: "lesson_19",
           text: "Learn words for danger and warning",
           target: null
         },
@@ -1757,6 +1981,7 @@ const GAME_DATA = {
         {
           id: "learn_abstract",
           type: "lesson",
+          lessonId: "lesson_12",
           text: "Learn abstract and philosophical vocabulary",
           target: null
         },
@@ -1764,7 +1989,7 @@ const GAME_DATA = {
           id: "hear_truth",
           type: "interact",
           text: "Listen to the Veiled One's revelation",
-          target: null
+          target: "the_veiled_one"
         }
       ],
       dialogue: {
@@ -1844,7 +2069,7 @@ const GAME_DATA = {
           id: "prepare_journey",
           type: "interact",
           text: "Speak with the Merchant about the journey",
-          target: null
+          target: "merchant"
         }
       ],
       dialogue: {
@@ -1873,7 +2098,7 @@ const GAME_DATA = {
       id: "haari_arrival",
       name: "Arrival at the Fields",
       giver: "merchant",
-      location: "haari_fields",
+      location: "dawnmere",  // Quest starts in Dawnmere, travel objective takes player to Haari Fields
 
       type: "travel",
       category: "story",  // Changed from exploration - marks as narrative-focused
@@ -1901,16 +2126,10 @@ const GAME_DATA = {
           target: "haari_fields"
         },
         {
-          id: "explore_fields",
-          type: "interact",
-          text: "Look around the golden fields",
-          target: null
-        },
-        {
           id: "meet_dave",
           type: "interact",
-          text: "Introduce the Merchant to Dave",
-          target: null
+          text: "Meet Dave the Herbalist",
+          target: "dave"
         }
       ],
       dialogue: {
@@ -1961,6 +2180,7 @@ const GAME_DATA = {
         {
           id: "learn_commerce",
           type: "lesson",
+          lessonId: "lesson_18",
           text: "Learn commerce vocabulary",
           target: null
         },
@@ -1968,7 +2188,7 @@ const GAME_DATA = {
           id: "receive_thanks",
           type: "interact",
           text: "Accept the Merchant's thanks",
-          target: null
+          target: "merchant"
         }
       ],
       dialogue: {
@@ -2031,11 +2251,11 @@ const GAME_DATA = {
           text: "Collect corrupted samples", 
           target: 5
         },
-        { 
-          id: "report_dave", 
+        {
+          id: "report_dave",
           type: "interact",
-          text: "Report findings to Dave", 
-          target: null
+          text: "Report findings to Dave",
+          target: "dave"
         }
       ],
       dialogue: {
@@ -2054,6 +2274,388 @@ const GAME_DATA = {
       repeatRewardMultiplier: null,
 
       vocabulary: ["farming.intermediate", "farming.creatures"],
+
+      cannotAbandon: false,
+      hiddenTrigger: null
+    },
+
+    // -------------------------------------------------
+    // LURENIUM - Ancient City Quests
+    // -------------------------------------------------
+
+    // ARCHIVIST THELON - Scholarly intro quest
+    archives_of_lurenium: {
+      id: "archives_of_lurenium",
+      name: "The Archives of Lurenium",
+      giver: "archivist_thelon",
+      location: "lurenium",
+
+      type: "main",
+      category: "lesson",
+      status: "locked",
+
+      levelRequired: 10,
+      prerequisites: ["corruption_rises"],
+      classRequired: null,
+      reputationRequired: null,
+
+      chainId: null,
+      chainOrder: null,
+      chainNext: null,
+
+      timeLimit: null,
+      cooldown: null,
+      seasonalWindow: null,
+
+      description: "The Archivist needs help cataloging ancient texts. Complete sentences from fragmented manuscripts.",
+      objectives: [
+        {
+          id: "fill_blanks_cognates",
+          type: "fill_blank",
+          text: "Complete the fragmented texts",
+          target: 5,
+          category: "cognates"
+        },
+        {
+          id: "catalog_texts",
+          type: "interact",
+          text: "Help Thelon catalog the manuscripts",
+          target: 1
+        }
+      ],
+      dialogue: {
+        intro: "Ah, a traveler with educated eyes! These ancient texts are damaged—words missing, sentences incomplete. Help me fill in the gaps, and I'll share what the archives have taught me.",
+        progress: "The old language flows through these pages. Can you see the patterns?",
+        complete: "Remarkable! You have a scholar's intuition. These texts speak of times before Lurenium—before the Light, even. Return when you're ready for deeper mysteries."
+      },
+
+      rewards: {
+        xp: 120,
+        gold: 50,
+        items: ["archivist_seal"],
+        reputation: { lurenium: 50, see_of_lurenium: 25 }
+      },
+      repeatRewardMultiplier: null,
+
+      vocabulary: [],
+
+      cannotAbandon: false,
+      hiddenTrigger: null
+    },
+
+    // MAGISTRATE CORINNE - City governance quest
+    words_of_law: {
+      id: "words_of_law",
+      name: "Words of Law",
+      giver: "magistrate_corinne",
+      location: "lurenium",
+
+      type: "side",
+      category: "lesson",
+      status: "locked",
+
+      levelRequired: 11,
+      prerequisites: ["archives_of_lurenium"],
+      classRequired: null,
+      reputationRequired: null,
+
+      chainId: null,
+      chainOrder: null,
+      chainNext: null,
+
+      timeLimit: null,
+      cooldown: null,
+      seasonalWindow: null,
+
+      description: "The Magistrate needs help interpreting legal documents written in the old formal style.",
+      objectives: [
+        {
+          id: "fill_blanks_articles",
+          type: "fill_blank",
+          text: "Complete the legal phrases",
+          target: 5,
+          category: "articles"
+        },
+        {
+          id: "review_documents",
+          type: "interact",
+          text: "Present your interpretations to the Magistrate",
+          target: 1
+        }
+      ],
+      dialogue: {
+        intro: "Lurenium's laws are written in the formal tongue. Many young clerks struggle with the articles—le, la, les. Help me test these documents and I'll see you're properly rewarded.",
+        progress: "Precision matters in law. Every word carries weight.",
+        complete: "Your command of the articles is commendable. The law is built on such foundations—small words that change everything."
+      },
+
+      rewards: {
+        xp: 100,
+        gold: 60,
+        items: [],
+        reputation: { lurenium: 40 }
+      },
+      repeatRewardMultiplier: null,
+
+      vocabulary: [],
+
+      cannotAbandon: false,
+      hiddenTrigger: null
+    },
+
+    // OLD JOREL - Elder's wisdom quest
+    songs_of_old: {
+      id: "songs_of_old",
+      name: "Songs of Old",
+      giver: "old_jorel",
+      location: "lurenium",
+
+      type: "side",
+      category: "lesson",
+      status: "locked",
+
+      levelRequired: 11,
+      prerequisites: ["archives_of_lurenium"],
+      classRequired: null,
+      reputationRequired: null,
+
+      chainId: null,
+      chainOrder: null,
+      chainNext: null,
+
+      timeLimit: null,
+      cooldown: null,
+      seasonalWindow: null,
+
+      description: "Old Jorel remembers songs from his grandmother's time. Help him complete the forgotten verses.",
+      objectives: [
+        {
+          id: "fill_blanks_family",
+          type: "fill_blank",
+          text: "Complete the old family songs",
+          target: 4,
+          category: "family"
+        },
+        {
+          id: "learn_melody",
+          type: "task",
+          text: "Learn the melody from Jorel",
+          target: 1
+        }
+      ],
+      dialogue: {
+        intro: "My grandmother sang these songs when I was small. Now the words slip away like water through fingers. Will you help an old man remember?",
+        progress: "That's it... la mère, le père... the old words are coming back.",
+        complete: "You've given me back something precious. These songs—they're not just words. They're who we were, before all this gold and glory. Thank you, young one."
+      },
+
+      rewards: {
+        xp: 80,
+        gold: 30,
+        items: ["jorels_pendant"],
+        reputation: { lurenium: 30 },
+        spellbookUnlock: ["founding_before_the_light"]
+      },
+      repeatRewardMultiplier: null,
+
+      vocabulary: [],
+
+      cannotAbandon: false,
+      hiddenTrigger: null
+    },
+
+    // MERCHANT LISELLE - Trade quest
+    ledgers_of_the_guild: {
+      id: "ledgers_of_the_guild",
+      name: "Ledgers of the Guild",
+      giver: "merchant_liselle",
+      location: "lurenium",
+
+      type: "side",
+      category: "lesson",
+      status: "locked",
+
+      levelRequired: 12,
+      prerequisites: ["archives_of_lurenium"],
+      classRequired: null,
+      reputationRequired: null,
+
+      chainId: null,
+      chainOrder: null,
+      chainNext: null,
+
+      timeLimit: null,
+      cooldown: null,
+      seasonalWindow: null,
+
+      description: "Merchant Liselle needs help auditing old trade ledgers with number discrepancies.",
+      objectives: [
+        {
+          id: "fill_blanks_numbers",
+          type: "fill_blank",
+          text: "Complete the numerical entries",
+          target: 4,
+          category: "numbers"
+        },
+        {
+          id: "fill_blanks_food",
+          type: "fill_blank",
+          text: "Identify the trade goods",
+          target: 4,
+          category: "food"
+        },
+        {
+          id: "balance_ledger",
+          type: "interact",
+          text: "Present the balanced ledger to Liselle",
+          target: 1
+        }
+      ],
+      dialogue: {
+        intro: "These ledgers go back generations—quantities, goods, all in the old notation. My clerks can't make sense of them. Someone with knowledge of the old tongue could help me balance these books.",
+        progress: "Trois crates of café, sept barrels of... what's that word?",
+        complete: "The books balance! And look—someone was skimming from the guild for decades. Long dead now, but the truth matters. Here's your payment, plus a bonus for honesty."
+      },
+
+      rewards: {
+        xp: 130,
+        gold: 100,
+        items: ["guild_recommendation"],
+        reputation: { lurenium: 50, merchants_guild: 75 }
+      },
+      repeatRewardMultiplier: null,
+
+      vocabulary: [],
+
+      cannotAbandon: false,
+      hiddenTrigger: null
+    },
+
+    // CAPTAIN VARRO - Military quest
+    orders_from_above: {
+      id: "orders_from_above",
+      name: "Orders from Above",
+      giver: "captain_varro",
+      location: "lurenium",
+
+      type: "side",
+      category: "lesson",
+      status: "locked",
+
+      levelRequired: 13,
+      prerequisites: ["words_of_law"],
+      classRequired: null,
+      reputationRequired: null,
+
+      chainId: null,
+      chainOrder: null,
+      chainNext: null,
+
+      timeLimit: null,
+      cooldown: null,
+      seasonalWindow: null,
+
+      description: "Captain Varro received encoded orders but the cipher key uses weather terminology he doesn't recognize.",
+      objectives: [
+        {
+          id: "fill_blanks_weather",
+          type: "fill_blank",
+          text: "Decode the weather cipher",
+          target: 4,
+          category: "weather"
+        },
+        {
+          id: "deliver_decoded",
+          type: "interact",
+          text: "Deliver the decoded message to Varro",
+          target: 1
+        }
+      ],
+      dialogue: {
+        intro: "These orders came from the capital, but the cipher... it uses old weather terms as code words. 'When the tempête arrives at the soleil's setting...' I need someone who knows these words.",
+        progress: "The code is becoming clearer. Keep working.",
+        complete: "The orders... they're about troop movements near Renque. Something is happening at the border. You've done Lurenium a great service. This information could save lives."
+      },
+
+      rewards: {
+        xp: 150,
+        gold: 75,
+        items: ["military_commendation"],
+        reputation: { lurenium: 60, old_guard: 50 },
+        artifactUnlock: "war_border_intelligence"
+      },
+      repeatRewardMultiplier: null,
+
+      vocabulary: [],
+
+      cannotAbandon: false,
+      hiddenTrigger: null
+    },
+
+    // BROTHER CASSIUS - Religious quest
+    hymns_of_light: {
+      id: "hymns_of_light",
+      name: "Hymns of Light",
+      giver: "brother_cassius",
+      location: "lurenium",
+
+      type: "hidden",
+      category: "lore",
+      status: "locked",
+
+      levelRequired: 14,
+      prerequisites: ["songs_of_old"],
+      classRequired: null,
+      reputationRequired: { see_of_lurenium: 100 },
+
+      chainId: null,
+      chainOrder: null,
+      chainNext: null,
+
+      timeLimit: null,
+      cooldown: null,
+      seasonalWindow: null,
+
+      description: "Brother Cassius has found hymns that predate the Church of Light. The verses are incomplete.",
+      objectives: [
+        {
+          id: "fill_blanks_colors",
+          type: "fill_blank",
+          text: "Complete the symbolic color references",
+          target: 5,
+          category: "colors"
+        },
+        {
+          id: "fill_blanks_body",
+          type: "fill_blank",
+          text: "Complete the body metaphors",
+          target: 3,
+          category: "body"
+        },
+        {
+          id: "contemplate_meaning",
+          type: "interact",
+          text: "Discuss the hymns' meaning with Brother Cassius",
+          target: 1
+        }
+      ],
+      dialogue: {
+        intro: "I found these hymns in the oldest chapel—hidden beneath the altar stone. They speak of Light, yes, but also of... something before. Colors have meaning here: blanc for purity, noir for what came before. Help me understand.",
+        progress: "The heart... le cœur... it appears again and again. What were they trying to say?",
+        complete: "These hymns... they don't worship the Light. They warn of it. 'When blanc consumes noir, the yeux will close forever.' The Church has hidden this for centuries. I... I need time to think about what this means."
+      },
+
+      rewards: {
+        xp: 200,
+        gold: 0,
+        items: ["heretical_text"],
+        reputation: { see_of_lurenium: -50 },
+        spellbookUnlock: ["the_light", "the_war"],
+        artifactUnlock: "founding_heretical_hymns"
+      },
+      repeatRewardMultiplier: null,
+
+      vocabulary: [],
 
       cannotAbandon: false,
       hiddenTrigger: null
@@ -2520,7 +3122,17 @@ const GAME_DATA = {
       stackable: false,
       icon: "🎓"
     },
-    
+    settlers_hat: {
+      id: "settlers_hat",
+      name: "Settler's Hat",
+      type: "helm",
+      description: "A wide-brimmed hat worn by Dawnmere settlers. A symbol of the frontier spirit.",
+      stats: {},
+      value: 50,
+      stackable: false,
+      icon: "👒"
+    },
+
     // Equipment - Weapons
     broken_shovel: {
       id: "broken_shovel",
@@ -2722,7 +3334,255 @@ const GAME_DATA = {
       stackable: false,
       icon: "🦺"
     },
-    
+
+    // =====================================================
+    // Crafted Armor - Smithing
+    // =====================================================
+    copper_chainmail: {
+      id: "copper_chainmail",
+      name: "Copper Chainmail",
+      type: "armor",
+      description: "Light copper chain armor. +2 Defense, +5 Max HP",
+      stats: { defense: 2, maxHp: 5 },
+      value: 45,
+      stackable: false,
+      icon: "🛡️",
+      craftedFrom: "smithing"
+    },
+    iron_platemail: {
+      id: "iron_platemail",
+      name: "Iron Platemail",
+      type: "armor",
+      description: "Heavy iron plate armor. +4 Defense, +10 Max HP",
+      stats: { defense: 4, maxHp: 10 },
+      value: 110,
+      stackable: false,
+      icon: "🛡️",
+      craftedFrom: "smithing"
+    },
+    silver_crown: {
+      id: "silver_crown",
+      name: "Silver Crown",
+      type: "helm",
+      description: "An elegant silver crown. +3 Wisdom, +2 Knowledge",
+      stats: { wisdom: 3, knowledge: 2 },
+      value: 200,
+      stackable: false,
+      icon: "👑",
+      craftedFrom: "smithing"
+    },
+
+    // =====================================================
+    // Crafted Boots - Leatherworking
+    // =====================================================
+    leather_boots: {
+      id: "leather_boots",
+      name: "Leather Boots",
+      type: "boots",
+      description: "Sturdy boots for traveling. +1 Luck",
+      stats: { luck: 1 },
+      value: 35,
+      stackable: false,
+      icon: "👢",
+      craftedFrom: "leatherworking"
+    },
+    wolf_fur_boots: {
+      id: "wolf_fur_boots",
+      name: "Wolf Fur Boots",
+      type: "boots",
+      description: "Warm, comfortable boots. +2 Luck, +1 Defense",
+      stats: { luck: 2, defense: 1 },
+      value: 75,
+      stackable: false,
+      icon: "👢",
+      craftedFrom: "leatherworking"
+    },
+    bear_fur_boots: {
+      id: "bear_fur_boots",
+      name: "Bear Fur Boots",
+      type: "boots",
+      description: "Luxurious, warm boots. +3 Luck, +2 Defense, +5 Max HP",
+      stats: { luck: 3, defense: 2, maxHp: 5 },
+      value: 150,
+      stackable: false,
+      icon: "👢",
+      craftedFrom: "leatherworking"
+    },
+
+    // =====================================================
+    // Crafted Cloaks - Leatherworking
+    // =====================================================
+    travelers_cloak: {
+      id: "travelers_cloak",
+      name: "Traveler's Cloak",
+      type: "cloak",
+      description: "A warm cloak for the road. +1 Defense, +1 Devotion",
+      stats: { defense: 1, devotion: 1 },
+      value: 40,
+      stackable: false,
+      icon: "🧥",
+      craftedFrom: "leatherworking"
+    },
+    rangers_cloak: {
+      id: "rangers_cloak",
+      name: "Ranger's Cloak",
+      type: "cloak",
+      description: "A fine cloak favored by scouts. +2 Defense, +1 Knowledge, +1 Luck",
+      stats: { defense: 2, knowledge: 1, luck: 1 },
+      value: 90,
+      stackable: false,
+      icon: "🧥",
+      craftedFrom: "leatherworking"
+    },
+    masters_cloak: {
+      id: "masters_cloak",
+      name: "Master's Cloak",
+      type: "cloak",
+      description: "A magnificent cloak of superior craftsmanship. +3 Defense, +2 Wisdom, +1 Knowledge",
+      stats: { defense: 3, wisdom: 2, knowledge: 1 },
+      value: 180,
+      stackable: false,
+      icon: "🧥",
+      craftedFrom: "leatherworking"
+    },
+
+    // =====================================================
+    // Crafting Materials - Leatherworking
+    // =====================================================
+    cured_boar_hide: {
+      id: "cured_boar_hide",
+      name: "Cured Boar Hide",
+      type: "resource",
+      category: "leather",
+      description: "Properly treated hide ready for crafting.",
+      value: 8,
+      stackable: true,
+      icon: "🟫"
+    },
+    cured_wolf_pelt: {
+      id: "cured_wolf_pelt",
+      name: "Cured Wolf Pelt",
+      type: "resource",
+      category: "leather",
+      description: "Premium treated wolf leather.",
+      value: 18,
+      stackable: true,
+      icon: "🐺"
+    },
+    cured_bear_fur: {
+      id: "cured_bear_fur",
+      name: "Cured Bear Fur",
+      type: "resource",
+      category: "leather",
+      description: "The finest treated leather.",
+      value: 35,
+      stackable: true,
+      icon: "🐻"
+    },
+
+    // =====================================================
+    // Crafted Food - Cooking
+    // =====================================================
+    grilled_perch: {
+      id: "grilled_perch",
+      name: "Grilled Perch",
+      type: "consumable",
+      category: "food",
+      description: "A simple grilled fish. Restores 15 HP.",
+      effect: { type: "heal", value: 15 },
+      value: 5,
+      stackable: true,
+      icon: "🍽️",
+      craftedFrom: "cooking"
+    },
+    herb_salad: {
+      id: "herb_salad",
+      name: "Herb Salad",
+      type: "consumable",
+      category: "food",
+      description: "A fresh salad. Restores 10 HP.",
+      effect: { type: "heal", value: 10 },
+      value: 4,
+      stackable: true,
+      icon: "🥗",
+      craftedFrom: "cooking"
+    },
+    fishermans_stew: {
+      id: "fishermans_stew",
+      name: "Fisherman's Stew",
+      type: "consumable",
+      category: "food",
+      description: "Hearty stew. Restores 25 HP.",
+      effect: { type: "heal", value: 25 },
+      value: 12,
+      stackable: true,
+      icon: "🍲",
+      craftedFrom: "cooking"
+    },
+    trout_fillet: {
+      id: "trout_fillet",
+      name: "Trout Fillet",
+      type: "consumable",
+      category: "food",
+      description: "Delicate fillet. Restores 35 HP.",
+      effect: { type: "heal", value: 35 },
+      value: 18,
+      stackable: true,
+      icon: "🐟",
+      craftedFrom: "cooking"
+    },
+    scholars_meal: {
+      id: "scholars_meal",
+      name: "Scholar's Meal",
+      type: "consumable",
+      category: "buff_food",
+      description: "Brain food. +1 Knowledge for 10 lessons.",
+      effect: { type: "tempStatBuff", stat: "knowledge", value: 1, duration: 10 },
+      value: 35,
+      stackable: true,
+      icon: "📖",
+      craftedFrom: "cooking"
+    },
+    fortifying_feast: {
+      id: "fortifying_feast",
+      name: "Fortifying Feast",
+      type: "consumable",
+      category: "buff_food",
+      description: "Strengthening meal. +10 Max HP for 10 lessons.",
+      effect: { type: "tempStatBuff", stat: "maxHp", value: 10, duration: 10 },
+      value: 40,
+      stackable: true,
+      icon: "🍖",
+      craftedFrom: "cooking"
+    },
+    moonlit_sashimi: {
+      id: "moonlit_sashimi",
+      name: "Moonlit Sashimi",
+      type: "consumable",
+      category: "buff_food",
+      description: "Exquisite dish. +2 Wisdom for 10 lessons.",
+      effect: { type: "tempStatBuff", stat: "wisdom", value: 2, duration: 10 },
+      value: 70,
+      stackable: true,
+      icon: "🌙",
+      craftedFrom: "cooking"
+    },
+    grand_banquet: {
+      id: "grand_banquet",
+      name: "Grand Banquet",
+      type: "consumable",
+      category: "buff_food",
+      description: "A feast fit for royalty. Restores 75 HP and +5% XP for 5 lessons.",
+      effect: { type: "compound", effects: [
+        { type: "heal", value: 75 },
+        { type: "xpMultiplier", value: 1.05, duration: 5 }
+      ]},
+      value: 120,
+      stackable: true,
+      icon: "👑",
+      craftedFrom: "cooking"
+    },
+
     // Equipment - Accessories
     traveler_cloak: {
       id: "traveler_cloak",
@@ -2817,6 +3677,16 @@ const GAME_DATA = {
       value: 30,
       stackable: false,
       icon: "👝"
+    },
+    gathering_pouch: {
+      id: "gathering_pouch",
+      name: "Gatherer's Satchel",
+      type: "accessory",
+      description: "A sturdy satchel for collecting resources. +1 Stamina, +1 Agility",
+      stats: { stamina: 1, agility: 1 },
+      value: 20,
+      stackable: false,
+      icon: "🎒"
     }
   },
 
@@ -2891,41 +3761,58 @@ const GAME_DATA = {
   },
 
   // =====================================================
-  // Classes
+  // Classes - Player starts as Cleric, chooses Order later
   // =====================================================
   classes: {
-    scholar: {
-      id: "scholar",
-      name: "Scholar",
-      description: "You came to study the divine light and ancient texts.",
+    // Base class - everyone starts here
+    cleric: {
+      id: "cleric",
+      name: "Cleric",
+      description: "A servant of the Light, sent from distant lands to investigate strange happenings.",
+      flavor: "You carry the teachings of your homeland, but much remains to learn in this foreign tongue.",
+      startingStats: { maxHp: 90 },
+      startingItems: [],
+      bonus: "Balanced starting stats",
+      bonusDesc: "90 HP",
+      icon: "✝️",
+      isBaseClass: true
+    },
+    // Specializations - chosen later via quest
+    sage: {
+      id: "sage",
+      name: "Order of Knowledge",
+      description: "Devoted to preserving and uncovering sacred wisdom.",
       flavor: "Knowledge is the truest power. You seek wisdom in dusty tomes and forgotten lore.",
-      startingStats: { maxHp: 80, attack: 3 },
+      startingStats: { maxHp: 80 },
       startingItems: ["scholars_cap"],
-      bonus: "Extra hints during lessons",
-      bonusDesc: "+1 hint per lesson",
-      icon: "📚"
+      bonus: "Scholar's Cap (+2 Wisdom)",
+      bonusDesc: "-10 HP, +Scholar's Cap",
+      icon: "📚",
+      isBaseClass: false
     },
-    warrior: {
-      id: "warrior",
-      name: "Warrior",
-      description: "You seek mastery of blade and combat.",
+    protector: {
+      id: "protector",
+      name: "Order of Protection",
+      description: "Guardians who shield the faithful from corruption and harm.",
       flavor: "Strength protects. You've trained your body to endure what others cannot.",
-      startingStats: { maxHp: 100, attack: 5 },
+      startingStats: { maxHp: 100 },
       startingItems: ["basic_helm"],
-      bonus: "Extra HP recovery between battles",
-      bonusDesc: "+20 HP, +2 Attack",
-      icon: "⚔️"
+      bonus: "Higher HP",
+      bonusDesc: "+10 HP, +Helm",
+      icon: "🛡️",
+      isBaseClass: false
     },
-    rogue: {
-      id: "rogue",
-      name: "Rogue",
-      description: "You move unseen and learn secrets others miss.",
-      flavor: "Every crowd hides opportunity. You read people as easily as signs.",
-      startingStats: { maxHp: 90, attack: 4 },
+    pathfinder: {
+      id: "pathfinder",
+      name: "Order of Pilgrimage",
+      description: "Wanderers who walk the sacred paths and guide others through the unknown.",
+      flavor: "Every journey reveals truth. You read the land as easily as others read books.",
+      startingStats: { maxHp: 90 },
       startingItems: ["health_potion"],
-      bonus: "Better shop prices",
-      bonusDesc: "10% discount at shops",
-      icon: "🗡️"
+      bonus: "Health Potion for survival",
+      bonusDesc: "+Health Potion",
+      icon: "🧭",
+      isBaseClass: false
     }
   },
 

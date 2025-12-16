@@ -133,6 +133,367 @@ const SPELLBOOK_PAGES = {
       pattern: "re_verbs"
     }
   },
+  // Additional Common Verbs
+  mettre: {
+    id: "mettre",
+    title: "Mettre",
+    subtitle: "to put/place",
+    category: "verbs",
+    icon: "📦",
+    unlockHint: "Learn to put things in their place",
+    description: "The verb of placement. Put your hat on? Mettre. Set the table? Mettre. Takes forever to do something? 'Mettre du temps.' This verb gets around more than a traveling merchant.",
+    examples: [
+      { french: "Je mets mon chapeau.", english: "I put on my hat." },
+      { french: "Elle met la table.", english: "She sets the table." },
+      { french: "Nous mettons du temps.", english: "We take a long time." }
+    ],
+    content: { type: "conjugation", verb: "mettre" }
+  },
+  partir: {
+    id: "partir",
+    title: "Partir",
+    subtitle: "to leave/depart",
+    category: "verbs",
+    icon: "🚪",
+    unlockHint: "Learn to make your exit",
+    description: "When you need to leave dramatically. Uses être in passé composé because the French consider leaving a transformative life experience. 'Je suis parti' - I have become one who has left.",
+    examples: [
+      { french: "Je pars demain.", english: "I'm leaving tomorrow." },
+      { french: "Elle est partie hier.", english: "She left yesterday." },
+      { french: "Nous partons en vacances.", english: "We're leaving on vacation." }
+    ],
+    content: { type: "conjugation", verb: "partir" }
+  },
+  sortir: {
+    id: "sortir",
+    title: "Sortir",
+    subtitle: "to go out/exit",
+    category: "verbs",
+    icon: "🌙",
+    unlockHint: "Learn to go out on the town",
+    description: "For going out, taking things out, or dating. Uses être when intransitive (going out), avoir when transitive (taking something out). 'Je sors' could mean you're leaving OR you're on a date. Context is everything.",
+    examples: [
+      { french: "Je sors ce soir.", english: "I'm going out tonight." },
+      { french: "Il sort les poubelles.", english: "He takes out the trash." },
+      { french: "Nous sortons ensemble.", english: "We're dating." }
+    ],
+    content: { type: "conjugation", verb: "sortir" }
+  },
+  dormir: {
+    id: "dormir",
+    title: "Dormir",
+    subtitle: "to sleep",
+    category: "verbs",
+    icon: "😴",
+    unlockHint: "Learn the art of rest",
+    description: "Essential for any adventurer. Irregular -ir that drops letters in singular forms like it's too tired to pronounce them all. 'Je dors' - even the verb is half asleep.",
+    examples: [
+      { french: "Je dors huit heures.", english: "I sleep eight hours." },
+      { french: "Tu dors bien?", english: "Do you sleep well?" },
+      { french: "Les enfants dorment.", english: "The children are sleeping." }
+    ],
+    content: { type: "conjugation", verb: "dormir" }
+  },
+  lire: {
+    id: "lire",
+    title: "Lire",
+    subtitle: "to read",
+    category: "verbs",
+    icon: "📖",
+    unlockHint: "Discover the joy of reading",
+    description: "For all your scholarly pursuits. Irregular but memorable. Every spellbook entry you read? You're using lire. Very meta.",
+    examples: [
+      { french: "Je lis un livre.", english: "I'm reading a book." },
+      { french: "Elle lit le journal.", english: "She reads the newspaper." },
+      { french: "Nous lisons ensemble.", english: "We read together." }
+    ],
+    content: { type: "conjugation", verb: "lire" }
+  },
+  ecrire: {
+    id: "ecrire",
+    title: "Écrire",
+    subtitle: "to write",
+    category: "verbs",
+    icon: "✍️",
+    unlockHint: "Put pen to parchment",
+    description: "The companion to lire. Note the sneaky 'v' that appears in plural forms—'nous écrivons.' Because apparently writing requires more letters when done collectively.",
+    examples: [
+      { french: "J'écris une lettre.", english: "I'm writing a letter." },
+      { french: "Il écrit bien.", english: "He writes well." },
+      { french: "Elles écrivent des poèmes.", english: "They write poems." }
+    ],
+    content: { type: "conjugation", verb: "ecrire" }
+  },
+  boire: {
+    id: "boire",
+    title: "Boire",
+    subtitle: "to drink",
+    category: "verbs",
+    icon: "🍷",
+    unlockHint: "Learn to quench your thirst",
+    description: "Possibly the most irregular verb after être. The stem completely transforms: boi- becomes buv- in plural forms. It's like the verb itself had a few drinks.",
+    examples: [
+      { french: "Je bois du café.", english: "I drink coffee." },
+      { french: "Nous buvons du vin.", english: "We drink wine." },
+      { french: "Ils boivent de l'eau.", english: "They drink water." }
+    ],
+    content: { type: "conjugation", verb: "boire" }
+  },
+  acheter: {
+    id: "acheter",
+    title: "Acheter",
+    subtitle: "to buy",
+    category: "verbs",
+    icon: "🛒",
+    unlockHint: "Master the art of commerce",
+    description: "A stem-changing verb—the 'e' becomes 'è' when stressed. J'achète, but nous achetons. The French economy runs on this verb and proper accent placement.",
+    examples: [
+      { french: "J'achète du pain.", english: "I buy bread." },
+      { french: "Elle achète une robe.", english: "She buys a dress." },
+      { french: "Nous achetons des fruits.", english: "We buy fruits." }
+    ],
+    content: { type: "conjugation", verb: "acheter" }
+  },
+  donner: {
+    id: "donner",
+    title: "Donner",
+    subtitle: "to give",
+    category: "verbs",
+    icon: "🎁",
+    unlockHint: "Learn the joy of giving",
+    description: "Blissfully regular -er verb. Give gifts, give advice, give up—donner does it all. 'Donner sur' means to overlook (a window giving onto the garden).",
+    examples: [
+      { french: "Je donne un cadeau.", english: "I give a gift." },
+      { french: "Elle me donne des conseils.", english: "She gives me advice." },
+      { french: "La fenêtre donne sur le jardin.", english: "The window overlooks the garden." }
+    ],
+    content: { type: "conjugation", verb: "donner" }
+  },
+  recevoir: {
+    id: "recevoir",
+    title: "Recevoir",
+    subtitle: "to receive",
+    category: "verbs",
+    icon: "📬",
+    unlockHint: "Learn to receive graciously",
+    description: "The counterpart to donner. Irregular -oir verb with a cedilla (ç) appearing before 'o' to keep the soft 's' sound. Je reçois, nous recevons. The French love their special characters.",
+    examples: [
+      { french: "Je reçois une lettre.", english: "I receive a letter." },
+      { french: "Il reçoit des invités.", english: "He receives guests." },
+      { french: "Nous recevons de bonnes nouvelles.", english: "We receive good news." }
+    ],
+    content: { type: "conjugation", verb: "recevoir" }
+  },
+  ouvrir: {
+    id: "ouvrir",
+    title: "Ouvrir",
+    subtitle: "to open",
+    category: "verbs",
+    icon: "🚪",
+    unlockHint: "Open doors to new knowledge",
+    description: "The rebel -ir verb that conjugates like an -er verb. J'ouvre, tu ouvres—no -iss- anywhere. It just does its own thing. Also covers 'couvrir' (cover) and 'offrir' (offer).",
+    examples: [
+      { french: "J'ouvre la porte.", english: "I open the door." },
+      { french: "Le magasin ouvre à 9h.", english: "The store opens at 9." },
+      { french: "Nous ouvrons les fenêtres.", english: "We open the windows." }
+    ],
+    content: { type: "conjugation", verb: "ouvrir" }
+  },
+  fermer: {
+    id: "fermer",
+    title: "Fermer",
+    subtitle: "to close",
+    category: "verbs",
+    icon: "🔒",
+    unlockHint: "Learn to close things properly",
+    description: "The opposite of ouvrir, and thankfully regular. Close doors, close shops, close your eyes—fermer handles it all with predictable -er endings.",
+    examples: [
+      { french: "Je ferme la fenêtre.", english: "I close the window." },
+      { french: "Le magasin ferme à 18h.", english: "The store closes at 6pm." },
+      { french: "Fermez les yeux!", english: "Close your eyes!" }
+    ],
+    content: { type: "conjugation", verb: "fermer" }
+  },
+  croire: {
+    id: "croire",
+    title: "Croire",
+    subtitle: "to believe",
+    category: "verbs",
+    icon: "🙏",
+    unlockHint: "Believe in the power of verbs",
+    description: "For matters of faith and trust. 'Croire à' = believe in (something). 'Croire en' = believe in (someone/abstract). The stem changes: croi- / croy-. Very philosophical.",
+    examples: [
+      { french: "Je crois en toi.", english: "I believe in you." },
+      { french: "Tu crois cette histoire?", english: "Do you believe this story?" },
+      { french: "Nous croyons au progrès.", english: "We believe in progress." }
+    ],
+    content: { type: "conjugation", verb: "croire" }
+  },
+  penser: {
+    id: "penser",
+    title: "Penser",
+    subtitle: "to think",
+    category: "verbs",
+    icon: "💭",
+    unlockHint: "Learn to express your thoughts",
+    description: "Regular -er verb for all your thinking needs. 'Penser à' = think about (have in mind). 'Penser de' = think of (have an opinion). 'Je pense, donc je suis' - you know the rest.",
+    examples: [
+      { french: "Je pense à toi.", english: "I'm thinking about you." },
+      { french: "Que pensez-vous de ce livre?", english: "What do you think of this book?" },
+      { french: "Elle pense que c'est vrai.", english: "She thinks it's true." }
+    ],
+    content: { type: "conjugation", verb: "penser" }
+  },
+  dire: {
+    id: "dire",
+    title: "Dire",
+    subtitle: "to say/tell",
+    category: "verbs",
+    icon: "💬",
+    unlockHint: "Learn to speak your mind",
+    description: "Essential for communication. Irregular with a twist: 'vous dites' NOT 'vous disez.' The French decided one form needed to be weird. Also used in 'vouloir dire' (to mean).",
+    examples: [
+      { french: "Je dis la vérité.", english: "I tell the truth." },
+      { french: "Qu'est-ce que tu dis?", english: "What are you saying?" },
+      { french: "Vous dites que non.", english: "You say no." }
+    ],
+    content: { type: "conjugation", verb: "dire" }
+  },
+  venir: {
+    id: "venir",
+    title: "Venir",
+    subtitle: "to come",
+    category: "verbs",
+    icon: "🏃",
+    unlockHint: "Learn to come and go",
+    description: "The opposite of aller. Uses être in passé composé. 'Venir de + infinitive' = just did something (passé récent). 'Je viens de manger' = I just ate. Very useful for excuses.",
+    examples: [
+      { french: "Je viens de Paris.", english: "I come from Paris." },
+      { french: "Elle vient de partir.", english: "She just left." },
+      { french: "Nous venons vous voir.", english: "We're coming to see you." }
+    ],
+    content: { type: "conjugation", verb: "venir" }
+  },
+  prendre: {
+    id: "prendre",
+    title: "Prendre",
+    subtitle: "to take",
+    category: "verbs",
+    icon: "✋",
+    unlockHint: "Learn to take what you need",
+    description: "Take food, take a shower, take a decision—prendre is everywhere. Stem changes: prend- / pren-. Apprendre (learn) and comprendre (understand) follow the same pattern.",
+    examples: [
+      { french: "Je prends le train.", english: "I take the train." },
+      { french: "Tu prends un café?", english: "Will you have a coffee?" },
+      { french: "Ils prennent des photos.", english: "They take photos." }
+    ],
+    content: { type: "conjugation", verb: "prendre" }
+  },
+  voir: {
+    id: "voir",
+    title: "Voir",
+    subtitle: "to see",
+    category: "verbs",
+    icon: "👁️",
+    unlockHint: "Open your eyes to new sights",
+    description: "See things, see people, see the truth. Stem changes: voi- / voy-. 'Voyons!' = Let's see! (also used when exasperated). Don't confuse with regarder (to watch/look at).",
+    examples: [
+      { french: "Je vois la mer.", english: "I see the sea." },
+      { french: "Tu vois ce que je veux dire?", english: "Do you see what I mean?" },
+      { french: "Nous voyons nos amis.", english: "We see our friends." }
+    ],
+    content: { type: "conjugation", verb: "voir" }
+  },
+  pouvoir: {
+    id: "pouvoir",
+    title: "Pouvoir",
+    subtitle: "can/to be able",
+    category: "verbs",
+    icon: "💪",
+    unlockHint: "Unlock your potential",
+    description: "The modal verb of ability and permission. Highly irregular with three stems. 'Je peux' or 'puis-je?' in questions. Very powerful verb—it can do anything.",
+    examples: [
+      { french: "Je peux t'aider.", english: "I can help you." },
+      { french: "Puis-je entrer?", english: "May I enter?" },
+      { french: "Nous pouvons essayer.", english: "We can try." }
+    ],
+    content: { type: "conjugation", verb: "pouvoir" }
+  },
+  vouloir: {
+    id: "vouloir",
+    title: "Vouloir",
+    subtitle: "to want",
+    category: "verbs",
+    icon: "🌟",
+    unlockHint: "Learn to express your desires",
+    description: "The verb of desire. 'Je voudrais' (I would like) is more polite than 'je veux' (I want). 'Vouloir dire' = to mean. Essential for getting what you want, politely or otherwise.",
+    examples: [
+      { french: "Je veux partir.", english: "I want to leave." },
+      { french: "Je voudrais un café.", english: "I would like a coffee." },
+      { french: "Que veut dire ce mot?", english: "What does this word mean?" }
+    ],
+    content: { type: "conjugation", verb: "vouloir" }
+  },
+  devoir: {
+    id: "devoir",
+    title: "Devoir",
+    subtitle: "must/to have to",
+    category: "verbs",
+    icon: "⚠️",
+    unlockHint: "Learn about obligations",
+    description: "The verb of obligation and probability. 'Je dois' = I must. 'Je devais' = I was supposed to. 'Il doit être tard' = It must be late. Also a noun: 'les devoirs' = homework.",
+    examples: [
+      { french: "Je dois partir.", english: "I must leave." },
+      { french: "Tu dois étudier.", english: "You have to study." },
+      { french: "Il doit être malade.", english: "He must be sick." }
+    ],
+    content: { type: "conjugation", verb: "devoir" }
+  },
+  savoir: {
+    id: "savoir",
+    title: "Savoir",
+    subtitle: "to know (facts/how)",
+    category: "verbs",
+    icon: "🧠",
+    unlockHint: "Know the difference between knowing",
+    description: "Know facts, know how to do things. NOT for people/places (use connaître). 'Je sais nager' = I know how to swim. 'Je ne sais pas' = I don't know (the French shrug phrase).",
+    examples: [
+      { french: "Je sais la réponse.", english: "I know the answer." },
+      { french: "Tu sais nager?", english: "Can you swim?" },
+      { french: "Nous savons la vérité.", english: "We know the truth." }
+    ],
+    content: { type: "conjugation", verb: "savoir" }
+  },
+  connaitre: {
+    id: "connaitre",
+    title: "Connaître",
+    subtitle: "to know (people/places)",
+    category: "verbs",
+    icon: "🤝",
+    unlockHint: "Get to know people and places",
+    description: "Know people, know places, be familiar with things. NOT for facts (use savoir). 'Je connais Paris' = I know Paris (been there). The circumflex on 'î' is disappearing in modern French.",
+    examples: [
+      { french: "Je connais Marie.", english: "I know Marie." },
+      { french: "Tu connais ce restaurant?", english: "Do you know this restaurant?" },
+      { french: "Nous connaissons la ville.", english: "We know the city." }
+    ],
+    content: { type: "conjugation", verb: "connaitre" }
+  },
+  attendre: {
+    id: "attendre",
+    title: "Attendre",
+    subtitle: "to wait (for)",
+    category: "verbs",
+    icon: "⏳",
+    unlockHint: "Patience is a virtue",
+    description: "Regular -re verb. Note: NO preposition needed! 'J'attends le bus' NOT 'J'attends pour le bus.' English uses 'wait for,' French just waits. More efficient.",
+    examples: [
+      { french: "J'attends le bus.", english: "I'm waiting for the bus." },
+      { french: "Elle attend son ami.", english: "She's waiting for her friend." },
+      { french: "Attendez un moment!", english: "Wait a moment!" }
+    ],
+    content: { type: "conjugation", verb: "attendre" }
+  },
 
   // Grammar
   articles: {
@@ -320,6 +681,227 @@ const SPELLBOOK_PAGES = {
     ],
     content: {
       type: "object_pronouns"
+    }
+  },
+  reflexive_verbs: {
+    id: "reflexive_verbs",
+    title: "Reflexive Verbs",
+    subtitle: "se lever, s'habiller, se coucher",
+    category: "grammar",
+    icon: "🪞",
+    unlockHint: "Learn daily routines in Dawnmere",
+    description: "Actions you do TO YOURSELF get a special pronoun buddy. 'Je lave' means 'I wash (something).' 'Je me lave' means 'I wash myself.' The reflexive pronoun must match the subject, and in passé composé, these verbs use être—with agreement. Self-care has never been so grammatically complex.",
+    examples: [
+      { french: "Je me lève à sept heures.", english: "I get up at seven o'clock." },
+      { french: "Elle s'habille rapidement.", english: "She gets dressed quickly." },
+      { french: "Nous nous couchons tard.", english: "We go to bed late." }
+    ],
+    content: {
+      type: "reflexive_verbs"
+    }
+  },
+  imperative: {
+    id: "imperative",
+    title: "Imperative Mood",
+    subtitle: "Commands: Parle! Mangez! Allons-y!",
+    category: "grammar",
+    icon: "📢",
+    unlockHint: "Learn to give commands in Haari Fields",
+    description: "Ordering people around in French requires dropping the subject pronoun and sometimes the 's' from tu forms. 'Tu parles' becomes 'Parle!' For reflexives, the pronoun moves AFTER the verb with a hyphen: 'Lève-toi!' But in negative commands, it goes back before. French commands are bossy AND complicated.",
+    examples: [
+      { french: "Parle plus fort!", english: "Speak louder! (tu form, -s dropped)" },
+      { french: "Mangez vos légumes!", english: "Eat your vegetables! (vous form)" },
+      { french: "Allons-y!", english: "Let's go! (nous form)" }
+    ],
+    content: {
+      type: "imperative"
+    }
+  },
+  demonstratives: {
+    id: "demonstratives",
+    title: "Demonstratives",
+    subtitle: "ce, cet, cette, ces (this/that)",
+    category: "grammar",
+    icon: "👉",
+    unlockHint: "Point at things in the markets",
+    description: "Pointing at stuff requires gender awareness. 'Ce livre' (this book, masc), 'cette table' (this table, fem), 'cet homme' (this man, masc before vowel), 'ces livres' (these books). Want to distinguish THIS from THAT? Add '-ci' or '-là' after the noun. French pointing is precise.",
+    examples: [
+      { french: "Ce livre est intéressant.", english: "This book is interesting." },
+      { french: "Cette maison est grande.", english: "This house is big." },
+      { french: "Je préfère ce gâteau-ci, pas celui-là.", english: "I prefer this cake, not that one." }
+    ],
+    content: {
+      type: "demonstratives"
+    }
+  },
+  partitive_articles: {
+    id: "partitive_articles",
+    title: "Partitive Articles",
+    subtitle: "du, de la, de l', des (some/any)",
+    category: "grammar",
+    icon: "🥧",
+    unlockHint: "Talk about food quantities in Haari Fields",
+    description: "When you want SOME of something (not all, not a specific one), French demands partitive articles. 'Je mange du pain' (I eat some bread), 'Elle boit de l'eau' (She drinks some water). In negative sentences, they ALL become just 'de'. Some rules have no exceptions. This isn't one of them.",
+    examples: [
+      { french: "Je voudrais du pain.", english: "I would like some bread." },
+      { french: "Elle boit de l'eau.", english: "She drinks (some) water." },
+      { french: "Je ne mange pas de viande.", english: "I don't eat (any) meat. (negative = de)" }
+    ],
+    content: {
+      type: "partitive_articles"
+    }
+  },
+  il_y_a: {
+    id: "il_y_a",
+    title: "Il y a",
+    subtitle: "There is/are, ago",
+    category: "grammar",
+    icon: "📍",
+    unlockHint: "Describe locations in Dawnmere",
+    description: "Three tiny words, two big meanings. 'Il y a un problème' = There is a problem. 'Il y a trois jours' = Three days ago. Context tells you which. The negative is 'il n'y a pas de...' and the question form 'Y a-t-il...?' exists but 'Est-ce qu'il y a...?' is easier. Locals just say 'Y'a' because efficiency.",
+    examples: [
+      { french: "Il y a un chat dans le jardin.", english: "There is a cat in the garden." },
+      { french: "Il y a beaucoup de gens ici.", english: "There are a lot of people here." },
+      { french: "Je l'ai vu il y a deux semaines.", english: "I saw him two weeks ago." }
+    ],
+    content: {
+      type: "il_y_a"
+    }
+  },
+  cest_vs_ilest: {
+    id: "cest_vs_ilest",
+    title: "C'est vs Il est",
+    subtitle: "Two ways to say 'it is'",
+    category: "grammar",
+    icon: "🎭",
+    unlockHint: "Master descriptions in Dawnmere",
+    description: "Both mean 'it is' but are NOT interchangeable. Use C'EST before: nouns with articles (c'est un livre), proper nouns (c'est Marie), pronouns (c'est moi), and modified adjectives (c'est très beau). Use IL EST before: adjectives alone (il est grand), professions without article (il est médecin), and time (il est midi). Mixing them up marks you as a foreigner instantly.",
+    examples: [
+      { french: "C'est un bon restaurant.", english: "It's a good restaurant. (noun with article)" },
+      { french: "Il est français.", english: "He is French. (adjective alone)" },
+      { french: "C'est intéressant!", english: "That's interesting! (general comment)" }
+    ],
+    content: {
+      type: "cest_vs_ilest"
+    }
+  },
+  time_expressions: {
+    id: "time_expressions",
+    title: "Depuis / Pendant / Pour",
+    subtitle: "Time duration expressions",
+    category: "grammar",
+    icon: "⏱️",
+    unlockHint: "Talk about time in your travels",
+    description: "Three words for time duration that English often translates as 'for'—but they're NOT the same. DEPUIS = since/for (ongoing action, still happening). PENDANT = during/for (completed duration). POUR = for (future intended duration). 'J'étudie depuis 2 heures' = I've been studying for 2 hours (still studying). 'J'ai étudié pendant 2 heures' = I studied for 2 hours (done).",
+    examples: [
+      { french: "J'habite ici depuis cinq ans.", english: "I've lived here for five years. (still living)" },
+      { french: "J'ai dormi pendant huit heures.", english: "I slept for eight hours. (completed)" },
+      { french: "Je pars pour deux semaines.", english: "I'm leaving for two weeks. (future plan)" }
+    ],
+    content: {
+      type: "time_expressions"
+    }
+  },
+  plus_que_parfait: {
+    id: "plus_que_parfait",
+    title: "Plus-que-parfait",
+    subtitle: "The past before the past",
+    category: "grammar",
+    icon: "⏪",
+    unlockHint: "Discover ancient history in Renque",
+    description: "When you need to talk about something that happened BEFORE another past event—the 'had done' tense. Formation: imparfait of avoir/être + past participle. 'J'avais mangé avant qu'il arrive' = I had eaten before he arrived. It's the flashback tense. Very useful for dramatic revelations.",
+    examples: [
+      { french: "J'avais déjà mangé.", english: "I had already eaten." },
+      { french: "Elle était partie quand je suis arrivé.", english: "She had left when I arrived." },
+      { french: "Nous avions fini avant midi.", english: "We had finished before noon." }
+    ],
+    content: {
+      type: "plus_que_parfait"
+    }
+  },
+  relative_pronouns: {
+    id: "relative_pronouns",
+    title: "Relative Pronouns",
+    subtitle: "qui, que, dont, où",
+    category: "grammar",
+    icon: "🔗",
+    unlockHint: "Connect ideas in Lurenium",
+    description: "These words connect clauses like bridges between ideas. QUI = who/which (subject). QUE = whom/which (object). DONT = whose/of which. OÙ = where/when. The trick: QUI is followed by a verb, QUE is followed by a subject. Mix them up and the French will know.",
+    examples: [
+      { french: "L'homme qui parle est mon père.", english: "The man who is speaking is my father." },
+      { french: "Le livre que j'ai lu était bon.", english: "The book (that) I read was good." },
+      { french: "La ville où j'habite est petite.", english: "The city where I live is small." }
+    ],
+    content: {
+      type: "relative_pronouns"
+    }
+  },
+  y_and_en: {
+    id: "y_and_en",
+    title: "Y and En",
+    subtitle: "The mystery pronouns",
+    category: "grammar",
+    icon: "🎯",
+    unlockHint: "Master pronoun shortcuts in advanced studies",
+    description: "Two tiny words that replace entire phrases. Y replaces 'à + thing/place' (Je vais à Paris → J'y vais). EN replaces 'de + thing' or quantities (J'ai trois pommes → J'en ai trois). They go before the verb and save you from sounding repetitive. Master these and you're officially intermediate.",
+    examples: [
+      { french: "Tu vas à Paris? Oui, j'y vais.", english: "Going to Paris? Yes, I'm going (there)." },
+      { french: "Tu veux du café? J'en veux.", english: "Want coffee? I want some." },
+      { french: "Il y en a trois.", english: "There are three (of them)." }
+    ],
+    content: {
+      type: "y_and_en"
+    }
+  },
+  passive_voice: {
+    id: "passive_voice",
+    title: "Passive Voice",
+    subtitle: "être + past participle",
+    category: "grammar",
+    icon: "🔀",
+    unlockHint: "Learn formal writing in the archives",
+    description: "When you want to emphasize WHAT happened rather than WHO did it. Formation: être (conjugated) + past participle (agrees with subject). 'Le livre a été écrit par Victor Hugo.' French uses passive less than English—often preferring 'on' constructions instead. But for formal writing and news, it's essential.",
+    examples: [
+      { french: "La porte est ouverte.", english: "The door is open(ed)." },
+      { french: "Le château a été construit en 1200.", english: "The castle was built in 1200." },
+      { french: "Les lettres seront envoyées demain.", english: "The letters will be sent tomorrow." }
+    ],
+    content: {
+      type: "passive_voice"
+    }
+  },
+  indirect_speech: {
+    id: "indirect_speech",
+    title: "Indirect Speech",
+    subtitle: "Il a dit que...",
+    category: "grammar",
+    icon: "💬",
+    unlockHint: "Report conversations accurately",
+    description: "Reporting what someone said without quoting them directly. Main verb in past? The reported speech shifts back in time (present→imparfait, passé composé→plus-que-parfait, future→conditional). Questions become 'si' clauses. Commands become 'de + infinitive'. It's like time travel for sentences.",
+    examples: [
+      { french: "Il dit qu'il est fatigué.", english: "He says (that) he's tired." },
+      { french: "Elle a dit qu'elle viendrait.", english: "She said she would come. (future→conditional)" },
+      { french: "Il m'a demandé si j'avais faim.", english: "He asked me if I was hungry." }
+    ],
+    content: {
+      type: "indirect_speech"
+    }
+  },
+  si_clauses: {
+    id: "si_clauses",
+    title: "Si Clauses",
+    subtitle: "If/then conditions",
+    category: "grammar",
+    icon: "🔀",
+    unlockHint: "Explore possibilities in your journey",
+    description: "Three types of 'if' sentences, each with its own tense combo. Type 1 (real): Si + présent → présent/futur. Type 2 (hypothetical): Si + imparfait → conditionnel. Type 3 (impossible past): Si + plus-que-parfait → conditionnel passé. NEVER put 'si' with futur or conditionnel—it's a cardinal sin of French grammar.",
+    examples: [
+      { french: "Si tu viens, je serai content.", english: "If you come, I'll be happy. (Type 1)" },
+      { french: "Si j'avais de l'argent, j'achèterais une maison.", english: "If I had money, I would buy a house. (Type 2)" },
+      { french: "Si j'avais su, je serais venu.", english: "If I had known, I would have come. (Type 3)" }
+    ],
+    content: {
+      type: "si_clauses"
     }
   },
   numbers: {
@@ -1225,6 +1807,32 @@ class SpellbookManager {
         return this.renderComparatives();
       case 'object_pronouns':
         return this.renderObjectPronouns();
+      case 'reflexive_verbs':
+        return this.renderReflexiveVerbs();
+      case 'imperative':
+        return this.renderImperative();
+      case 'demonstratives':
+        return this.renderDemonstratives();
+      case 'partitive_articles':
+        return this.renderPartitiveArticles();
+      case 'il_y_a':
+        return this.renderIlYA();
+      case 'cest_vs_ilest':
+        return this.renderCestVsIlEst();
+      case 'time_expressions':
+        return this.renderTimeExpressions();
+      case 'plus_que_parfait':
+        return this.renderPlusQueParfait();
+      case 'relative_pronouns':
+        return this.renderRelativePronouns();
+      case 'y_and_en':
+        return this.renderYAndEn();
+      case 'passive_voice':
+        return this.renderPassiveVoice();
+      case 'indirect_speech':
+        return this.renderIndirectSpeech();
+      case 'si_clauses':
+        return this.renderSiClauses();
       case 'lore':
         return this.renderLore(page.content.era);
       default:
@@ -2497,6 +3105,823 @@ class SpellbookManager {
       <div class="grammar-tip">
         <span class="grammar-tip-icon">💡</span>
         Object pronouns go <strong>before</strong> the verb: "Je le vois" not "Je vois le". In passé composé, they go before avoir/être: "Je l'ai vu."
+      </div>
+    `;
+  }
+
+  /**
+   * Render reflexive verbs reference
+   */
+  renderReflexiveVerbs() {
+    return `
+      <div class="page-section">
+        <div class="page-section-title">Reflexive Pronouns</div>
+        <p style="margin-bottom: 12px;">The pronoun must match the subject:</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th>Reflexive Pronoun</th>
+              <th>Example (se laver)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>je</td><td>me (m')</td><td>Je me lave.</td></tr>
+            <tr><td>tu</td><td>te (t')</td><td>Tu te laves.</td></tr>
+            <tr><td>il/elle/on</td><td>se (s')</td><td>Il se lave.</td></tr>
+            <tr><td>nous</td><td>nous</td><td>Nous nous lavons.</td></tr>
+            <tr><td>vous</td><td>vous</td><td>Vous vous lavez.</td></tr>
+            <tr><td>ils/elles</td><td>se (s')</td><td>Ils se lavent.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">Common Reflexive Verbs</div>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <thead>
+            <tr>
+              <th>French</th>
+              <th>English</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>se lever</td><td>to get up</td></tr>
+            <tr><td>se coucher</td><td>to go to bed</td></tr>
+            <tr><td>s'habiller</td><td>to get dressed</td></tr>
+            <tr><td>se laver</td><td>to wash oneself</td></tr>
+            <tr><td>se réveiller</td><td>to wake up</td></tr>
+            <tr><td>se promener</td><td>to take a walk</td></tr>
+            <tr><td>s'appeler</td><td>to be called (name)</td></tr>
+            <tr><td>se sentir</td><td>to feel</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">Passé Composé with Reflexives</div>
+        <p style="margin-bottom: 12px;">Reflexive verbs <strong>always</strong> use être, with agreement:</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <tbody>
+            <tr><td>Je me suis levé(e).</td><td>I got up.</td></tr>
+            <tr><td>Elle s'est habillée.</td><td>She got dressed.</td></tr>
+            <tr><td>Nous nous sommes promenés.</td><td>We took a walk.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grammar-tip">
+        <span class="grammar-tip-icon">💡</span>
+        In negative sentences, wrap the reflexive pronoun AND verb: "Je <strong>ne me</strong> lève <strong>pas</strong> tôt."
+      </div>
+    `;
+  }
+
+  /**
+   * Render imperative mood reference
+   */
+  renderImperative() {
+    return `
+      <div class="page-section">
+        <div class="page-section-title">Formation</div>
+        <p style="margin-bottom: 12px;">Use present tense forms without subject pronouns. For <strong>-er verbs</strong>, drop the -s from tu form:</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <thead>
+            <tr>
+              <th>Form</th>
+              <th>parler</th>
+              <th>finir</th>
+              <th>attendre</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>tu</td><td>Parle!</td><td>Finis!</td><td>Attends!</td></tr>
+            <tr><td>nous</td><td>Parlons!</td><td>Finissons!</td><td>Attendons!</td></tr>
+            <tr><td>vous</td><td>Parlez!</td><td>Finissez!</td><td>Attendez!</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">Irregular Imperatives</div>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <thead>
+            <tr>
+              <th>Verb</th>
+              <th>tu</th>
+              <th>nous</th>
+              <th>vous</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>être</td><td>Sois!</td><td>Soyons!</td><td>Soyez!</td></tr>
+            <tr><td>avoir</td><td>Aie!</td><td>Ayons!</td><td>Ayez!</td></tr>
+            <tr><td>savoir</td><td>Sache!</td><td>Sachons!</td><td>Sachez!</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">Reflexive Commands</div>
+        <p style="margin-bottom: 12px;">Pronoun goes <strong>after</strong> verb with hyphen (te becomes toi):</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <tbody>
+            <tr><td>Lève-toi!</td><td>Get up!</td></tr>
+            <tr><td>Asseyons-nous!</td><td>Let's sit down!</td></tr>
+            <tr><td>Dépêchez-vous!</td><td>Hurry up!</td></tr>
+          </tbody>
+        </table>
+        <p style="margin-top: 12px;">But in <strong>negative</strong>, pronoun returns before verb:</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <tbody>
+            <tr><td>Ne te lève pas!</td><td>Don't get up!</td></tr>
+            <tr><td>Ne vous inquiétez pas!</td><td>Don't worry!</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grammar-tip">
+        <span class="grammar-tip-icon">💡</span>
+        The -s returns to tu form when followed by y or en for pronunciation: "Vas-y!" (Go there!) "Manges-en!" (Eat some!)
+      </div>
+    `;
+  }
+
+  /**
+   * Render demonstratives reference
+   */
+  renderDemonstratives() {
+    return `
+      <div class="page-section">
+        <div class="page-section-title">Demonstrative Adjectives</div>
+        <p style="margin-bottom: 12px;">Used before nouns to mean "this/that/these/those":</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <thead>
+            <tr>
+              <th>Gender/Number</th>
+              <th>Form</th>
+              <th>Example</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Masculine singular</td><td>ce</td><td>ce livre (this book)</td></tr>
+            <tr><td>Masc. sing. (before vowel)</td><td>cet</td><td>cet homme (this man)</td></tr>
+            <tr><td>Feminine singular</td><td>cette</td><td>cette maison (this house)</td></tr>
+            <tr><td>All plurals</td><td>ces</td><td>ces livres (these books)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">This vs That (-ci / -là)</div>
+        <p style="margin-bottom: 12px;">Add suffix to noun to distinguish proximity:</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <tbody>
+            <tr><td>ce livre<strong>-ci</strong></td><td>this book (here, closer)</td></tr>
+            <tr><td>ce livre<strong>-là</strong></td><td>that book (there, farther)</td></tr>
+            <tr><td>cette fois<strong>-ci</strong></td><td>this time</td></tr>
+            <tr><td>ces jours<strong>-là</strong></td><td>those days</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">Demonstrative Pronouns</div>
+        <p style="margin-bottom: 12px;">Stand alone (no noun following):</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <thead>
+            <tr>
+              <th>Gender/Number</th>
+              <th>Form</th>
+              <th>Example</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Masc. sing.</td><td>celui</td><td>celui-ci (this one)</td></tr>
+            <tr><td>Fem. sing.</td><td>celle</td><td>celle-là (that one)</td></tr>
+            <tr><td>Masc. plural</td><td>ceux</td><td>ceux de Paris (those from Paris)</td></tr>
+            <tr><td>Fem. plural</td><td>celles</td><td>celles qui... (those who...)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grammar-tip">
+        <span class="grammar-tip-icon">💡</span>
+        "Cet" is only used before masculine singular nouns starting with a vowel or silent h: "cet ami", "cet hôtel".
+      </div>
+    `;
+  }
+
+  /**
+   * Render partitive articles reference
+   */
+  renderPartitiveArticles() {
+    return `
+      <div class="page-section">
+        <div class="page-section-title">Partitive Articles</div>
+        <p style="margin-bottom: 12px;">Used for "some" or unspecified quantities:</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <thead>
+            <tr>
+              <th>Gender</th>
+              <th>Form</th>
+              <th>Example</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Masculine</td><td>du</td><td>du pain (some bread)</td></tr>
+            <tr><td>Feminine</td><td>de la</td><td>de la soupe (some soup)</td></tr>
+            <tr><td>Before vowel</td><td>de l'</td><td>de l'eau (some water)</td></tr>
+            <tr><td>Plural</td><td>des</td><td>des légumes (some vegetables)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">In Negative Sentences</div>
+        <p style="margin-bottom: 12px;">All partitives become <strong>de/d'</strong> after negation:</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <tbody>
+            <tr><td>J'ai du temps.</td><td>Je n'ai pas <strong>de</strong> temps.</td></tr>
+            <tr><td>Elle mange de la viande.</td><td>Elle ne mange pas <strong>de</strong> viande.</td></tr>
+            <tr><td>Il boit de l'eau.</td><td>Il ne boit pas <strong>d'</strong>eau.</td></tr>
+            <tr><td>Nous avons des amis.</td><td>Nous n'avons pas <strong>d'</strong>amis.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">Partitive vs Definite</div>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <tbody>
+            <tr><td>J'aime <strong>le</strong> chocolat.</td><td>I like chocolate (in general).</td></tr>
+            <tr><td>Je mange <strong>du</strong> chocolat.</td><td>I'm eating (some) chocolate.</td></tr>
+            <tr><td><strong>La</strong> vie est belle.</td><td>Life is beautiful (in general).</td></tr>
+            <tr><td>Il y a <strong>de la</strong> vie ici.</td><td>There is life here (some).</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grammar-tip">
+        <span class="grammar-tip-icon">💡</span>
+        After expressions of quantity (beaucoup, peu, assez, trop), always use <strong>de</strong>: "beaucoup de pain", "peu d'eau".
+      </div>
+    `;
+  }
+
+  /**
+   * Render il y a reference
+   */
+  renderIlYA() {
+    return `
+      <div class="page-section">
+        <div class="page-section-title">Meaning 1: "There is / There are"</div>
+        <p style="margin-bottom: 12px;">Use to indicate existence or presence:</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <tbody>
+            <tr><td>Il y a un problème.</td><td>There is a problem.</td></tr>
+            <tr><td>Il y a trois chats.</td><td>There are three cats.</td></tr>
+            <tr><td>Il y a beaucoup de monde.</td><td>There are a lot of people.</td></tr>
+            <tr><td>Il y a du soleil.</td><td>It's sunny. (lit: There is sun.)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">Meaning 2: "Ago"</div>
+        <p style="margin-bottom: 12px;">Placed <strong>after</strong> time expression:</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <tbody>
+            <tr><td>Il y a deux jours...</td><td>Two days ago...</td></tr>
+            <tr><td>Il y a une semaine...</td><td>A week ago...</td></tr>
+            <tr><td>Je l'ai vu il y a trois mois.</td><td>I saw him three months ago.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">Negative & Questions</div>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <thead>
+            <tr>
+              <th>Form</th>
+              <th>Example</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Negative</td><td>Il n'y a pas de problème. (No problem.)</td></tr>
+            <tr><td>Question (formal)</td><td>Y a-t-il une solution? (Is there a solution?)</td></tr>
+            <tr><td>Question (standard)</td><td>Est-ce qu'il y a...? (Is there...?)</td></tr>
+            <tr><td>Question (casual)</td><td>Il y a...? / Y'a...? (Is there...?)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grammar-tip">
+        <span class="grammar-tip-icon">💡</span>
+        In spoken French, "il y a" often becomes "y'a" — "Y'a quelqu'un?" (Is anyone there?)
+      </div>
+    `;
+  }
+
+  /**
+   * Render c'est vs il est reference
+   */
+  renderCestVsIlEst() {
+    return `
+      <div class="page-section">
+        <div class="page-section-title">Use C'EST Before:</div>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Example</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Noun with article</td><td>C'est <strong>un livre</strong>. (It's a book.)</td></tr>
+            <tr><td>Proper noun</td><td>C'est <strong>Marie</strong>. (It's Marie.)</td></tr>
+            <tr><td>Pronoun</td><td>C'est <strong>moi</strong>. (It's me.)</td></tr>
+            <tr><td>Modified adjective</td><td>C'est <strong>très beau</strong>. (It's very beautiful.)</td></tr>
+            <tr><td>General statements</td><td>C'est <strong>difficile</strong>. (It's difficult.)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">Use IL EST Before:</div>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Example</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Adjective alone</td><td>Il est <strong>grand</strong>. (He is tall.)</td></tr>
+            <tr><td>Profession (no article)</td><td>Il est <strong>médecin</strong>. (He's a doctor.)</td></tr>
+            <tr><td>Nationality (no article)</td><td>Elle est <strong>française</strong>. (She's French.)</td></tr>
+            <tr><td>Religion (no article)</td><td>Il est <strong>catholique</strong>. (He's Catholic.)</td></tr>
+            <tr><td>Time</td><td>Il est <strong>midi</strong>. (It's noon.)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">Compare</div>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <tbody>
+            <tr><td><strong>C'est</strong> un bon médecin.</td><td>He's a good doctor. (noun with article)</td></tr>
+            <tr><td><strong>Il est</strong> médecin.</td><td>He's a doctor. (profession, no article)</td></tr>
+            <tr><td><strong>C'est</strong> intéressant!</td><td>That's interesting! (general comment)</td></tr>
+            <tr><td><strong>Il est</strong> intéressant.</td><td>He/It is interesting. (specific person/thing)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grammar-tip">
+        <span class="grammar-tip-icon">💡</span>
+        When referring to ideas or situations in general, use "c'est": "C'est vrai" (That's true), "C'est possible" (It's possible).
+      </div>
+    `;
+  }
+
+  /**
+   * Render time expressions reference
+   */
+  renderTimeExpressions() {
+    return `
+      <div class="page-section">
+        <div class="page-section-title">DEPUIS (since/for - ongoing)</div>
+        <p style="margin-bottom: 12px;">Action <strong>started in past and continues now</strong>. Use with <strong>present tense</strong>:</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <tbody>
+            <tr><td>J'habite ici <strong>depuis</strong> 2020.</td><td>I've lived here since 2020. (still living)</td></tr>
+            <tr><td>Elle travaille <strong>depuis</strong> trois heures.</td><td>She's been working for 3 hours. (still working)</td></tr>
+            <tr><td><strong>Depuis</strong> quand attends-tu?</td><td>Since when have you been waiting?</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">PENDANT (during/for - completed)</div>
+        <p style="margin-bottom: 12px;">Action with a <strong>defined duration, now finished</strong>. Often with <strong>passé composé</strong>:</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <tbody>
+            <tr><td>J'ai dormi <strong>pendant</strong> huit heures.</td><td>I slept for 8 hours. (done sleeping)</td></tr>
+            <tr><td>Il a plu <strong>pendant</strong> trois jours.</td><td>It rained for 3 days. (stopped)</td></tr>
+            <tr><td>Elle a vécu à Paris <strong>pendant</strong> cinq ans.</td><td>She lived in Paris for 5 years. (no longer)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">POUR (for - future/intended)</div>
+        <p style="margin-bottom: 12px;">Planned or <strong>intended future duration</strong>:</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <tbody>
+            <tr><td>Je pars <strong>pour</strong> deux semaines.</td><td>I'm leaving for two weeks.</td></tr>
+            <tr><td>Il est ici <strong>pour</strong> longtemps.</td><td>He's here for a long time. (intended stay)</td></tr>
+            <tr><td>Elle sera absente <strong>pour</strong> un mois.</td><td>She'll be away for a month.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">Quick Comparison</div>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <thead>
+            <tr>
+              <th>Word</th>
+              <th>Time</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>depuis</strong></td><td>past → present</td><td>ongoing</td></tr>
+            <tr><td><strong>pendant</strong></td><td>defined period</td><td>completed</td></tr>
+            <tr><td><strong>pour</strong></td><td>future</td><td>intended</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grammar-tip">
+        <span class="grammar-tip-icon">💡</span>
+        "Depuis" triggers present tense in French where English uses past perfect: "Je l'attends depuis une heure" = "I've been waiting for an hour."
+      </div>
+    `;
+  }
+
+  /**
+   * Render plus-que-parfait reference
+   */
+  renderPlusQueParfait() {
+    return `
+      <div class="page-section">
+        <div class="page-section-title">Formation</div>
+        <p style="margin-bottom: 12px;"><strong>Imparfait of avoir/être</strong> + <strong>past participle</strong>:</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th>with avoir (manger)</th>
+              <th>with être (aller)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>je</td><td>j'avais mangé</td><td>j'étais allé(e)</td></tr>
+            <tr><td>tu</td><td>tu avais mangé</td><td>tu étais allé(e)</td></tr>
+            <tr><td>il/elle</td><td>il avait mangé</td><td>elle était allée</td></tr>
+            <tr><td>nous</td><td>nous avions mangé</td><td>nous étions allé(e)s</td></tr>
+            <tr><td>vous</td><td>vous aviez mangé</td><td>vous étiez allé(e)(s)</td></tr>
+            <tr><td>ils/elles</td><td>ils avaient mangé</td><td>elles étaient allées</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">When to Use</div>
+        <p style="margin-bottom: 12px;">For actions completed <strong>before</strong> another past action:</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <tbody>
+            <tr><td>Quand je suis arrivé, il <strong>avait déjà mangé</strong>.</td><td>When I arrived, he had already eaten.</td></tr>
+            <tr><td>Elle <strong>était partie</strong> avant mon appel.</td><td>She had left before my call.</td></tr>
+            <tr><td>Nous <strong>avions fini</strong> quand il a commencé à pleuvoir.</td><td>We had finished when it started raining.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">Timeline Visualization</div>
+        <p style="font-family: monospace; background: var(--bg-dark); padding: 12px; border-radius: 4px;">
+          Plus-que-parfait ──→ Passé composé/Imparfait ──→ Present<br>
+          (earlier past)       (past reference point)      (now)<br><br>
+          "J'avais mangé"  →  "quand tu es arrivé"   →   now
+        </p>
+      </div>
+
+      <div class="grammar-tip">
+        <span class="grammar-tip-icon">💡</span>
+        Same verbs use être in plus-que-parfait as in passé composé (DR MRS VANDERTRAMP + reflexives). Agreement rules apply!
+      </div>
+    `;
+  }
+
+  /**
+   * Render relative pronouns reference
+   */
+  renderRelativePronouns() {
+    return `
+      <div class="page-section">
+        <div class="page-section-title">The Four Main Relative Pronouns</div>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <thead>
+            <tr>
+              <th>Pronoun</th>
+              <th>Function</th>
+              <th>English</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>qui</strong></td><td>Subject of relative clause</td><td>who, which, that</td></tr>
+            <tr><td><strong>que</strong></td><td>Direct object of relative clause</td><td>whom, which, that</td></tr>
+            <tr><td><strong>dont</strong></td><td>Replaces de + noun</td><td>whose, of which, about whom</td></tr>
+            <tr><td><strong>où</strong></td><td>Place or time</td><td>where, when</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">QUI vs QUE</div>
+        <p style="margin-bottom: 12px;"><strong>QUI</strong> = followed by verb (it's the subject):</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <tbody>
+            <tr><td>L'homme <strong>qui parle</strong> est mon père.</td><td>The man who is speaking is my father.</td></tr>
+            <tr><td>Le livre <strong>qui est</strong> sur la table...</td><td>The book that is on the table...</td></tr>
+          </tbody>
+        </table>
+        <p style="margin: 12px 0;"><strong>QUE</strong> = followed by subject (it's the object):</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <tbody>
+            <tr><td>L'homme <strong>que je vois</strong> est grand.</td><td>The man (whom) I see is tall.</td></tr>
+            <tr><td>Le livre <strong>que tu lis</strong> est intéressant.</td><td>The book (that) you're reading is interesting.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">DONT and OÙ</div>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <tbody>
+            <tr><td>Le film <strong>dont</strong> je parle...</td><td>The film I'm talking about... (parler de)</td></tr>
+            <tr><td>La femme <strong>dont</strong> le fils est médecin...</td><td>The woman whose son is a doctor...</td></tr>
+            <tr><td>La ville <strong>où</strong> j'habite...</td><td>The city where I live...</td></tr>
+            <tr><td>Le jour <strong>où</strong> je suis né...</td><td>The day when I was born...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grammar-tip">
+        <span class="grammar-tip-icon">💡</span>
+        "Que" contracts to "qu'" before a vowel: "Le livre qu'il lit" (The book he's reading). "Qui" never contracts.
+      </div>
+    `;
+  }
+
+  /**
+   * Render Y and En reference
+   */
+  renderYAndEn() {
+    return `
+      <div class="page-section">
+        <div class="page-section-title">Y - Replaces "à + thing/place"</div>
+        <p style="margin-bottom: 12px;">Use Y to replace locations or things introduced by <strong>à</strong>:</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <thead>
+            <tr>
+              <th>Original</th>
+              <th>With Y</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Je vais <strong>à Paris</strong>.</td><td>J'<strong>y</strong> vais. (I'm going there.)</td></tr>
+            <tr><td>Elle pense <strong>à son travail</strong>.</td><td>Elle <strong>y</strong> pense. (She's thinking about it.)</td></tr>
+            <tr><td>Nous restons <strong>à la maison</strong>.</td><td>Nous <strong>y</strong> restons. (We're staying there.)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">EN - Replaces "de + thing" or quantities</div>
+        <p style="margin-bottom: 12px;">Use EN for things with <strong>de</strong> or quantities:</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <thead>
+            <tr>
+              <th>Original</th>
+              <th>With EN</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Je veux <strong>du pain</strong>.</td><td>J'<strong>en</strong> veux. (I want some.)</td></tr>
+            <tr><td>Elle parle <strong>de son voyage</strong>.</td><td>Elle <strong>en</strong> parle. (She talks about it.)</td></tr>
+            <tr><td>J'ai <strong>trois pommes</strong>.</td><td>J'<strong>en</strong> ai trois. (I have three.)</td></tr>
+            <tr><td>Il revient <strong>de Paris</strong>.</td><td>Il <strong>en</strong> revient. (He's coming back from there.)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">Position in Sentence</div>
+        <p style="margin-bottom: 12px;">Y and EN go <strong>before</strong> the verb (or auxiliary in compound tenses):</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <tbody>
+            <tr><td>J'<strong>y</strong> vais.</td><td>Present</td></tr>
+            <tr><td>J'<strong>y</strong> suis allé.</td><td>Passé composé</td></tr>
+            <tr><td>Je n'<strong>y</strong> vais pas.</td><td>Negative</td></tr>
+            <tr><td>J'<strong>en</strong> ai mangé.</td><td>Passé composé with EN</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grammar-tip">
+        <span class="grammar-tip-icon">💡</span>
+        "Il y en a" = There are some (of them). This common phrase combines both Y and EN!
+      </div>
+    `;
+  }
+
+  /**
+   * Render passive voice reference
+   */
+  renderPassiveVoice() {
+    return `
+      <div class="page-section">
+        <div class="page-section-title">Formation</div>
+        <p style="margin-bottom: 12px;"><strong>être</strong> (conjugated in any tense) + <strong>past participle</strong> (agrees with subject):</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <thead>
+            <tr>
+              <th>Tense</th>
+              <th>Active</th>
+              <th>Passive</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Present</td><td>On écrit le livre.</td><td>Le livre <strong>est écrit</strong>.</td></tr>
+            <tr><td>Passé composé</td><td>On a écrit le livre.</td><td>Le livre <strong>a été écrit</strong>.</td></tr>
+            <tr><td>Imparfait</td><td>On écrivait le livre.</td><td>Le livre <strong>était écrit</strong>.</td></tr>
+            <tr><td>Future</td><td>On écrira le livre.</td><td>Le livre <strong>sera écrit</strong>.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">Agent with "par"</div>
+        <p style="margin-bottom: 12px;">Use <strong>par</strong> to indicate who/what performs the action:</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <tbody>
+            <tr><td>Le livre a été écrit <strong>par Victor Hugo</strong>.</td><td>The book was written by Victor Hugo.</td></tr>
+            <tr><td>La porte a été ouverte <strong>par le vent</strong>.</td><td>The door was opened by the wind.</td></tr>
+            <tr><td>Les enfants seront accompagnés <strong>par leurs parents</strong>.</td><td>The children will be accompanied by their parents.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">Alternative: "On" Construction</div>
+        <p style="margin-bottom: 12px;">French often prefers active voice with "on" instead of passive:</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <thead>
+            <tr>
+              <th>Passive</th>
+              <th>Active with "on"</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Le français est parlé ici.</td><td><strong>On parle</strong> français ici.</td></tr>
+            <tr><td>Les portes sont fermées à 18h.</td><td><strong>On ferme</strong> les portes à 18h.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grammar-tip">
+        <span class="grammar-tip-icon">💡</span>
+        The past participle must agree with the subject in gender and number: "La lettre est écrit<strong>e</strong>", "Les lettres sont écrit<strong>es</strong>".
+      </div>
+    `;
+  }
+
+  /**
+   * Render indirect speech reference
+   */
+  renderIndirectSpeech() {
+    return `
+      <div class="page-section">
+        <div class="page-section-title">Basic Structure</div>
+        <p style="margin-bottom: 12px;">Direct → Indirect with <strong>que</strong>:</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <thead>
+            <tr>
+              <th>Direct Speech</th>
+              <th>Indirect Speech</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Il dit: "Je suis fatigué."</td><td>Il dit <strong>qu'</strong>il est fatigué.</td></tr>
+            <tr><td>Elle dit: "J'ai faim."</td><td>Elle dit <strong>qu'</strong>elle a faim.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">Tense Changes (when main verb is past)</div>
+        <p style="margin-bottom: 12px;">When reporting past speech, tenses shift back:</p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <thead>
+            <tr>
+              <th>Direct</th>
+              <th>→</th>
+              <th>Indirect</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Présent</td><td>→</td><td>Imparfait</td></tr>
+            <tr><td>Passé composé</td><td>→</td><td>Plus-que-parfait</td></tr>
+            <tr><td>Futur</td><td>→</td><td>Conditionnel</td></tr>
+            <tr><td>Futur antérieur</td><td>→</td><td>Conditionnel passé</td></tr>
+          </tbody>
+        </table>
+        <table class="conjugation-table" style="max-width: 100%; margin-top: 12px;">
+          <tbody>
+            <tr><td>"Je <strong>suis</strong> malade."</td><td>→ Il a dit qu'il <strong>était</strong> malade.</td></tr>
+            <tr><td>"J'<strong>ai fini</strong>."</td><td>→ Elle a dit qu'elle <strong>avait fini</strong>.</td></tr>
+            <tr><td>"Je <strong>viendrai</strong>."</td><td>→ Il a dit qu'il <strong>viendrait</strong>.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">Questions & Commands</div>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <tbody>
+            <tr><td colspan="2"><strong>Yes/No Questions → si</strong></td></tr>
+            <tr><td>"Tu viens?"</td><td>→ Il demande <strong>si</strong> tu viens.</td></tr>
+            <tr><td colspan="2"><strong>Information Questions → same word</strong></td></tr>
+            <tr><td>"Où vas-tu?"</td><td>→ Il demande <strong>où</strong> tu vas.</td></tr>
+            <tr><td colspan="2"><strong>Commands → de + infinitive</strong></td></tr>
+            <tr><td>"Viens ici!"</td><td>→ Il m'a dit <strong>de venir</strong>.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grammar-tip">
+        <span class="grammar-tip-icon">💡</span>
+        Pronouns and possessives also change: "mon" → "son", "je" → "il/elle", "ici" → "là", "aujourd'hui" → "ce jour-là".
+      </div>
+    `;
+  }
+
+  /**
+   * Render si clauses reference
+   */
+  renderSiClauses() {
+    return `
+      <div class="page-section">
+        <div class="page-section-title">Type 1: Real/Possible Conditions</div>
+        <p style="margin-bottom: 12px;"><strong>Si + présent</strong> → <strong>présent / futur / impératif</strong></p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <tbody>
+            <tr><td>Si tu <strong>viens</strong>, je <strong>serai</strong> content.</td><td>If you come, I'll be happy.</td></tr>
+            <tr><td>Si il <strong>pleut</strong>, nous <strong>restons</strong> ici.</td><td>If it rains, we stay here.</td></tr>
+            <tr><td>Si tu <strong>as</strong> faim, <strong>mange</strong>!</td><td>If you're hungry, eat!</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">Type 2: Hypothetical/Unlikely Conditions</div>
+        <p style="margin-bottom: 12px;"><strong>Si + imparfait</strong> → <strong>conditionnel présent</strong></p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <tbody>
+            <tr><td>Si j'<strong>avais</strong> de l'argent, j'<strong>achèterais</strong> une maison.</td><td>If I had money, I would buy a house.</td></tr>
+            <tr><td>Si elle <strong>était</strong> là, elle <strong>comprendrait</strong>.</td><td>If she were here, she would understand.</td></tr>
+            <tr><td>Si nous <strong>pouvions</strong>, nous <strong>viendrions</strong>.</td><td>If we could, we would come.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">Type 3: Impossible Past Conditions</div>
+        <p style="margin-bottom: 12px;"><strong>Si + plus-que-parfait</strong> → <strong>conditionnel passé</strong></p>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <tbody>
+            <tr><td>Si j'<strong>avais su</strong>, je <strong>serais venu</strong>.</td><td>If I had known, I would have come.</td></tr>
+            <tr><td>Si elle <strong>était partie</strong> plus tôt, elle <strong>aurait attrapé</strong> le train.</td><td>If she had left earlier, she would have caught the train.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page-section">
+        <div class="page-section-title">Quick Reference</div>
+        <table class="conjugation-table" style="max-width: 100%;">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Si clause</th>
+              <th>Result clause</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>1 (Real)</td><td>Présent</td><td>Présent / Futur / Impératif</td></tr>
+            <tr><td>2 (Hypothetical)</td><td>Imparfait</td><td>Conditionnel présent</td></tr>
+            <tr><td>3 (Impossible)</td><td>Plus-que-parfait</td><td>Conditionnel passé</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grammar-tip">
+        <span class="grammar-tip-icon">💡</span>
+        NEVER use futur or conditionnel after "si"! "Si j'aurais" is WRONG. Always: "Si j'avais..." The only exception is "si" meaning "whether": "Je ne sais pas si je viendrai."
       </div>
     `;
   }

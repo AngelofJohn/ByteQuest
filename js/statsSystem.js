@@ -349,32 +349,32 @@ const ACHIEVEMENT_DEFINITIONS = {
     check: (state) => (state.player.seasonalQuestsCompleted || 0) >= 1
   },
   // Class Achievements
-  scholars_path: {
-    id: 'scholars_path',
-    name: "Scholar's Path",
-    description: 'Begin your journey as a Scholar',
-    icon: '📖',
+  sages_path: {
+    id: 'sages_path',
+    name: "Sage's Path",
+    description: 'Begin your journey as a Sage',
+    icon: '📚',
     hidden: false,
-    reward: { title: 'Scholar' },
-    check: (state) => state.player.class === 'scholar'
+    reward: { title: 'Sage' },
+    check: (state) => state.player.class === 'sage'
   },
-  warriors_path: {
-    id: 'warriors_path',
-    name: "Warrior's Path",
-    description: 'Begin your journey as a Warrior',
-    icon: '⚔️',
+  protectors_path: {
+    id: 'protectors_path',
+    name: "Protector's Path",
+    description: 'Begin your journey as a Protector',
+    icon: '🛡️',
     hidden: false,
-    reward: { title: 'Warrior' },
-    check: (state) => state.player.class === 'warrior'
+    reward: { title: 'Protector' },
+    check: (state) => state.player.class === 'protector'
   },
-  rogues_path: {
-    id: 'rogues_path',
-    name: "Rogue's Path",
-    description: 'Begin your journey as a Rogue',
-    icon: '🗡️',
+  pathfinders_path: {
+    id: 'pathfinders_path',
+    name: "Pathfinder's Path",
+    description: 'Begin your journey as a Pathfinder',
+    icon: '🧭',
     hidden: false,
-    reward: { title: 'Rogue' },
-    check: (state) => state.player.class === 'rogue'
+    reward: { title: 'Pathfinder' },
+    check: (state) => state.player.class === 'pathfinder'
   },
   // Hidden Achievements
   night_owl: {

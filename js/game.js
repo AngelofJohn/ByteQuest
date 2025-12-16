@@ -59,6 +59,7 @@ const GameState = {
     seasonalQuestsCompleted: 0,
     studiedAfterMidnight: false,
     studiedBeforeSix: false,
+    freeReviveUsed: false,
     // Spellbook
     spellbook: {
       unlockedPages: ["pronouns"],
@@ -66,6 +67,17 @@ const GameState = {
     },
     // Feature unlocks (alchemy, smithing, etc.)
     unlockedFeatures: [],
+    // Skills (gathering and crafting)
+    skills: {
+      mining: { level: 1, xp: 0 },
+      woodcutting: { level: 1, xp: 0 },
+      herbalism: { level: 1, xp: 0 },
+      fishing: { level: 1, xp: 0 },
+      hunting: { level: 1, xp: 0 },
+      alchemy: { level: 1, xp: 0 },
+      smithing: { level: 1, xp: 0 },
+      enchanting: { level: 1, xp: 0 }
+    },
     // Meta
     createdAt: null,
     playTime: 0
@@ -140,7 +152,9 @@ const GameState = {
       completedQuest: false,  // Completed first quest
       usedInventory: false,   // Opened inventory
       usedMap: false,         // Opened map
-      gainedReputation: false // Gained reputation for first time
+      gainedReputation: false, // Gained reputation for first time
+      viewedStats: false,     // Viewed stats/profile screen
+      viewedReputation: false // Viewed reputation tab
     },
     skipAll: false,           // User chose to skip tutorials
     currentTip: null          // Currently showing tip
@@ -201,6 +215,303 @@ let smithingManager = null;
 // Initialize Enchanting Manager
 let enchantingManager = null;
 
+// Initialize Village Projects Manager
+let villageProjectsManager = null;
+
+// =====================================================
+// Bonus Calculator - Idleon-style Visible Stacking
+// =====================================================
+
+/**
+ * BonusCalculator - Tracks and displays all bonus sources
+ * Shows: Base + Additive Bonuses × Multiplicative Bonuses = Total
+ */
+const BonusCalculator = {
+  /**
+   * Calculate XP with full breakdown
+   * @param {number} baseXP - Base XP before bonuses
+   * @param {object} context - Context for bonus calculation (streak, lessonType, etc.)
+   * @returns {object} - { total, breakdown: [{source, type, value, formatted}] }
+   */
+  calculateXP(baseXP, context = {}) {
+    const breakdown = [];
+    let additive = 0;
+    let multiplicative = 1.0;
+
+    // Start with base
+    breakdown.push({
+      source: 'Base XP',
+      type: 'base',
+      value: baseXP,
+      formatted: `${baseXP}`
+    });
+
+    // Streak bonus (multiplicative) - requires streak_xp_bonus unlock from Village Well project
+    const hasStreakUnlock = villageProjectsManager?.hasUnlock('streak_xp_bonus') || false;
+    if (hasStreakUnlock && context.streak && context.streak > 0) {
+      const streakMultiplier = getMultiplierForStreak(context.streak);
+      if (streakMultiplier > 1) {
+        multiplicative *= streakMultiplier;
+        breakdown.push({
+          source: `${context.streak} Answer Streak`,
+          type: 'multiplier',
+          value: streakMultiplier,
+          formatted: `×${streakMultiplier.toFixed(1)}`
+        });
+      }
+    }
+
+    // Account progression XP multiplier
+    if (typeof accountProgression !== 'undefined' && accountProgression) {
+      const effects = accountProgression.getActiveEffects();
+      if (effects.xpMultiplier && effects.xpMultiplier > 1) {
+        multiplicative *= effects.xpMultiplier;
+        breakdown.push({
+          source: 'Account Mastery',
+          type: 'multiplier',
+          value: effects.xpMultiplier,
+          formatted: `×${effects.xpMultiplier.toFixed(2)}`
+        });
+      }
+      // Flat XP bonus from account upgrades
+      if (effects.xpBonus && effects.xpBonus > 0) {
+        additive += effects.xpBonus;
+        breakdown.push({
+          source: 'Quick Learner',
+          type: 'additive',
+          value: effects.xpBonus,
+          formatted: `+${effects.xpBonus}`
+        });
+      }
+    }
+
+    // Equipment XP bonuses (additive percentage converted to flat)
+    const equipBonuses = this.getEquipmentBonuses('xp');
+    if (equipBonuses.total > 0) {
+      const equipFlat = Math.floor(baseXP * equipBonuses.total);
+      additive += equipFlat;
+      breakdown.push({
+        source: 'Equipment',
+        type: 'additive',
+        value: equipFlat,
+        formatted: `+${equipFlat}`,
+        details: equipBonuses.sources
+      });
+    }
+
+    // Title bonuses (if any XP-related titles exist)
+    const titleBonus = this.getTitleBonus('xp');
+    if (titleBonus.value > 0) {
+      const titleFlat = Math.floor(baseXP * titleBonus.value);
+      additive += titleFlat;
+      breakdown.push({
+        source: titleBonus.source,
+        type: 'additive',
+        value: titleFlat,
+        formatted: `+${titleFlat}`
+      });
+    }
+
+    // Perfect lesson bonus (additive)
+    if (context.isPerfect) {
+      const perfectBonus = Math.floor(baseXP * 0.25); // 25% bonus for perfect
+      additive += perfectBonus;
+      breakdown.push({
+        source: 'Perfect Lesson',
+        type: 'additive',
+        value: perfectBonus,
+        formatted: `+${perfectBonus}`
+      });
+    }
+
+    // Calculate total: (base + additive) × multiplicative
+    const subtotal = baseXP + additive;
+    const total = Math.floor(subtotal * multiplicative);
+
+    return {
+      base: baseXP,
+      additive,
+      multiplicative,
+      subtotal,
+      total,
+      breakdown
+    };
+  },
+
+  /**
+   * Calculate gathering yield with full breakdown
+   * @param {number} baseYield - Base resource amount
+   * @param {string} skillType - mining, fishing, herbalism, etc.
+   * @param {object} context - Additional context
+   */
+  calculateGathering(baseYield, skillType, context = {}) {
+    const breakdown = [];
+    let additive = 0;
+    let multiplicative = 1.0;
+
+    breakdown.push({
+      source: 'Base Yield',
+      type: 'base',
+      value: baseYield,
+      formatted: `${baseYield}`
+    });
+
+    // Skill level bonus (additive)
+    const skills = GameState.player.skills?.[skillType];
+    if (skills && skills.level > 1) {
+      const skillBonus = Math.floor((skills.level - 1) * 0.1 * baseYield);
+      if (skillBonus > 0) {
+        additive += skillBonus;
+        breakdown.push({
+          source: `${this.capitalize(skillType)} Lv.${skills.level}`,
+          type: 'additive',
+          value: skillBonus,
+          formatted: `+${skillBonus}`
+        });
+      }
+    }
+
+    // Equipment bonuses for gathering
+    const equipBonuses = this.getEquipmentBonuses(skillType);
+    if (equipBonuses.total > 0) {
+      const equipBonus = Math.floor(baseYield * equipBonuses.total);
+      additive += equipBonus;
+      breakdown.push({
+        source: 'Equipment',
+        type: 'additive',
+        value: equipBonus,
+        formatted: `+${equipBonus}`,
+        details: equipBonuses.sources
+      });
+    }
+
+    // Account progression gathering bonus (flat additive)
+    if (typeof accountProgression !== 'undefined' && accountProgression) {
+      const effects = accountProgression.getActiveEffects();
+      if (effects.gatheringBonus && effects.gatheringBonus > 0) {
+        additive += effects.gatheringBonus;
+        breakdown.push({
+          source: 'Bountiful Harvest',
+          type: 'additive',
+          value: effects.gatheringBonus,
+          formatted: `+${effects.gatheringBonus}`
+        });
+      }
+    }
+
+    // Lucky proc (multiplicative chance-based)
+    if (context.luckyProc) {
+      multiplicative *= 2;
+      breakdown.push({
+        source: 'Lucky Find!',
+        type: 'multiplier',
+        value: 2,
+        formatted: '×2'
+      });
+    }
+
+    const subtotal = baseYield + additive;
+    const total = Math.floor(subtotal * multiplicative);
+
+    return {
+      base: baseYield,
+      additive,
+      multiplicative,
+      subtotal,
+      total,
+      breakdown
+    };
+  },
+
+  /**
+   * Get all XP/stat bonuses from equipped items
+   */
+  getEquipmentBonuses(bonusType) {
+    const sources = [];
+    let total = 0;
+
+    if (!GameState.player.equipment) return { total: 0, sources: [] };
+
+    Object.entries(GameState.player.equipment).forEach(([slot, itemId]) => {
+      if (!itemId) return;
+
+      const item = GAME_DATA.items?.[itemId];
+      if (!item || !item.stats) return;
+
+      // Check for relevant bonus
+      let bonus = 0;
+      if (bonusType === 'xp' && item.stats.xpBonus) {
+        bonus = item.stats.xpBonus;
+      } else if (item.stats[bonusType + 'Bonus']) {
+        bonus = item.stats[bonusType + 'Bonus'];
+      }
+
+      if (bonus > 0) {
+        total += bonus;
+        sources.push({ name: item.name, value: bonus });
+      }
+    });
+
+    return { total, sources };
+  },
+
+  /**
+   * Get bonus from active title
+   */
+  getTitleBonus(bonusType) {
+    if (!GameState.player.activeTitle) return { value: 0, source: null };
+
+    const title = GAME_DATA.titles?.[GameState.player.activeTitle];
+    if (!title || !title.effects) return { value: 0, source: null };
+
+    if (bonusType === 'xp' && title.effects.xpBonus) {
+      return { value: title.effects.xpBonus, source: title.name };
+    }
+
+    return { value: 0, source: null };
+  },
+
+  /**
+   * Format a breakdown for display in UI
+   */
+  formatBreakdownHTML(calculation) {
+    let html = '<div class="bonus-breakdown">';
+
+    calculation.breakdown.forEach((item, index) => {
+      const typeClass = `breakdown-${item.type}`;
+      const prefix = index === 0 ? '' : (item.type === 'multiplier' ? '' : '');
+
+      html += `<div class="breakdown-row ${typeClass}">`;
+      html += `<span class="breakdown-source">${item.source}</span>`;
+      html += `<span class="breakdown-value">${item.formatted}</span>`;
+      html += '</div>';
+
+      // Show details if present (e.g., individual equipment pieces)
+      if (item.details && item.details.length > 0) {
+        item.details.forEach(detail => {
+          html += `<div class="breakdown-detail">`;
+          html += `<span class="detail-source">  └ ${detail.name}</span>`;
+          html += `<span class="detail-value">+${Math.floor(detail.value * 100)}%</span>`;
+          html += '</div>';
+        });
+      }
+    });
+
+    // Show total
+    html += '<div class="breakdown-total">';
+    html += '<span class="breakdown-source">Total</span>';
+    html += `<span class="breakdown-value">${calculation.total}</span>`;
+    html += '</div>';
+
+    html += '</div>';
+    return html;
+  },
+
+  capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+};
+
 // =====================================================
 // Save/Load System
 // =====================================================
@@ -236,6 +547,18 @@ function loadGame() {
     const data = JSON.parse(saveData);
     GameState.player = { ...GameState.player, ...data.player };
     GameState.currentLocation = data.currentLocation;
+
+    // Sync player.locations.current with currentLocation for locationManager compatibility
+    if (!GameState.player.locations) {
+      GameState.player.locations = {
+        current: data.currentLocation || 'dawnmere',
+        discovered: GameState.player.discoveredLocations || ['dawnmere'],
+        unlocked: GameState.player.discoveredLocations || ['dawnmere']
+      };
+    } else {
+      GameState.player.locations.current = data.currentLocation || 'dawnmere';
+    }
+
     // Load tutorial state if it exists
     if (data.tutorial) {
       GameState.tutorial = { ...GameState.tutorial, ...data.tutorial };
@@ -327,10 +650,102 @@ function renderLocation() {
   renderHotspots(location);
 }
 
+// =====================================================
+// NPC State Resolution
+// =====================================================
+
+/**
+ * Get NPC data with stateOverrides applied based on current game state.
+ * Resolves dynamic NPC properties like location and dialogue based on quest progress.
+ */
+function getNPC(npcId) {
+  const baseNPC = GAME_DATA.npcs[npcId];
+  if (!baseNPC) return null;
+
+  // If no state overrides, return base NPC
+  if (!baseNPC.stateOverrides || baseNPC.stateOverrides.length === 0) {
+    return baseNPC;
+  }
+
+  // Create a copy to modify
+  const npc = { ...baseNPC };
+
+  // Find the first matching state override (order matters - first match wins)
+  for (const override of baseNPC.stateOverrides) {
+    if (checkStateCondition(override.when)) {
+      // Apply override properties (dialogue, location, title, etc.)
+      if (override.dialogue) {
+        npc.dialogue = { ...npc.dialogue, ...override.dialogue };
+      }
+      if (override.location) {
+        npc.location = override.location;
+      }
+      if (override.title) {
+        npc.title = override.title;
+      }
+      if (override.hidden !== undefined) {
+        npc.hidden = override.hidden;
+      }
+      // First matching override wins
+      break;
+    }
+  }
+
+  return npc;
+}
+
+/**
+ * Check if a state condition is met.
+ * Supports: quest (completed), questActive, questNotStarted
+ */
+function checkStateCondition(condition) {
+  if (!condition) return false;
+
+  // Check all conditions in the object (all must match)
+  for (const [key, value] of Object.entries(condition)) {
+    switch (key) {
+      case 'quest':
+        // Quest must be completed
+        if (!GameState.player.completedQuests.includes(value)) {
+          return false;
+        }
+        break;
+      case 'questActive':
+        // Quest must be currently active
+        if (!GameState.player.activeQuests.some(q => q.id === value)) {
+          return false;
+        }
+        break;
+      case 'questNotStarted':
+        // Quest must NOT be active or completed
+        if (GameState.player.completedQuests.includes(value) ||
+            GameState.player.activeQuests.some(q => q.id === value)) {
+          return false;
+        }
+        break;
+      case 'reputation':
+        // Check reputation threshold: { reputation: { faction: minValue } }
+        if (typeof value === 'object') {
+          for (const [faction, minRep] of Object.entries(value)) {
+            const currentRep = GameState.player.reputation?.[faction] || 0;
+            if (currentRep < minRep) return false;
+          }
+        }
+        break;
+      default:
+        // Unknown condition type
+        console.warn('Unknown state condition:', key);
+        break;
+    }
+  }
+
+  return true;
+}
+
 function renderNPCs(location) {
   const scene = document.getElementById('game-scene');
   if (!scene) return;
-  
+
   // Clear existing NPCs
   scene.querySelectorAll('.npc-sprite').forEach(el => el.remove());
   
@@ -350,12 +765,38 @@ function renderNPCs(location) {
     { x: 86, y: 48 }
   ];
   
+  // Collect all NPCs that should be in this location
+  // This includes: NPCs in location.npcs whose resolved location is here,
+  // AND NPCs from other locations who have moved here via stateOverrides
+  const npcsToShow = new Set();
+
+  // Check location's default NPCs
+  if (location.npcs) {
+    location.npcs.forEach(npcId => {
+      const npc = getNPC(npcId);
+      if (npc && npc.location === location.id) {
+        npcsToShow.add(npcId);
+      }
+    });
+  }
+
+  // Check all NPCs for any that have moved to this location via stateOverrides
+  Object.keys(GAME_DATA.npcs).forEach(npcId => {
+    const baseNPC = GAME_DATA.npcs[npcId];
+    if (baseNPC.stateOverrides && baseNPC.stateOverrides.length > 0) {
+      const resolvedNPC = getNPC(npcId);
+      if (resolvedNPC && resolvedNPC.location === location.id) {
+        npcsToShow.add(npcId);
+      }
+    }
+  });
+
   // Filter to only visible NPCs
   let visibleIndex = 0;
-  location.npcs.forEach((npcId) => {
-    const npc = getNPC ? getNPC(npcId) : GAME_DATA.npcs[npcId];
+  npcsToShow.forEach((npcId) => {
+    const npc = getNPC(npcId);
     if (!npc) return;
-    
+
     // Check visibility using new system
     if (typeof isNPCVisible === 'function' && !isNPCVisible(npc, GameState)) {
       return;
@@ -918,6 +1359,20 @@ function acceptQuest(questId) {
   GameState.player.activeQuests.push(questState);
   showNotification(`Quest Accepted: ${quest.name}`);
 
+  // Discover travel destinations so player can travel to complete objectives
+  if (quest.objectives && locationManager) {
+    quest.objectives.forEach(obj => {
+      if (obj.type === 'travel' && obj.target) {
+        if (!locationManager.isDiscovered(obj.target)) {
+          locationManager.discoverLocation(obj.target);
+        }
+        if (!locationManager.isUnlocked(obj.target) && locationManager.meetsLevelRequirement(obj.target)) {
+          locationManager.unlockLocation(obj.target);
+        }
+      }
+    });
+  }
+
   // Check gather objectives immediately (in case player already has items)
   checkGatherObjectives();
 
@@ -954,11 +1409,33 @@ function updateQuestProgress(questId, objectiveId, increment = 1) {
 function checkQuestCompletion(questId) {
   const quest = GameState.player.activeQuests.find(q => q.id === questId);
   if (!quest) return;
-  
+
   const allComplete = quest.objectives.every(o => o.completed);
   if (allComplete) {
     completeQuest(questId);
   }
+}
+
+// Auto-complete task objectives when lesson is completed
+// Task objectives are narrative flavor (e.g., "sing along", "find tracks")
+function autoCompleteTaskObjectives(questId) {
+  if (!questId) return;
+
+  const quest = GameState.player.activeQuests.find(q => q.id === questId);
+  if (!quest) return;
+
+  const questDef = getQuest(questId);
+  if (!questDef) return;
+
+  for (const obj of quest.objectives) {
+    const objDef = questDef.objectives.find(o => o.id === obj.id);
+    if (objDef?.type === 'task' && !obj.completed) {
+      obj.completed = true;
+      showNotification(`Objective Complete: ${objDef.text}`);
+    }
+  }
+
+  checkQuestCompletion(questId);
 }
 
 function completeQuest(questId) {
@@ -967,8 +1444,9 @@ function completeQuest(questId) {
 
   if (questIndex === -1) return;
 
-  // Tutorial: First quest complete
-  if (shouldShowTutorial('completedQuest')) {
+  // Tutorial: First quest complete - track for cutscene
+  const isFirstQuestComplete = shouldShowTutorial('completedQuest');
+  if (isFirstQuestComplete) {
     markTutorialComplete('completedQuest');
   }
 
@@ -977,7 +1455,19 @@ function completeQuest(questId) {
 
   // Add to completed
   GameState.player.completedQuests.push(questId);
-  
+
+  // Consume items for gather objectives marked with consumeOnComplete
+  if (questData.objectives) {
+    questData.objectives.forEach(obj => {
+      if (obj.type === 'gather' && obj.consumeOnComplete && obj.itemId) {
+        const amount = obj.target || 1;
+        if (typeof itemManager !== 'undefined' && itemManager) {
+          itemManager.removeItem(obj.itemId, amount);
+        }
+      }
+    });
+  }
+
   // Collect reward data for display
   const rewardData = {
     questName: questData.name,
@@ -1117,8 +1607,13 @@ function completeQuest(questId) {
   }
 
   // Show rewards screen
-  showRewardsScreen(rewardData);
-  
+  // Show first quest complete cutscene after rewards modal
+  const onRewardsClosed = isFirstQuestComplete
+    ? () => triggerCutscene('first_quest_complete')
+    : null;
+
+  showRewardsScreen(rewardData, onRewardsClosed);
+
   // Unlock next quests
   unlockDependentQuests(questId);
   
@@ -1212,19 +1707,52 @@ function addGoldSilent(amount) {
   return finalAmount;
 }
 
+// Store pending level ups to show after lesson/quest completion screens
+let pendingLevelUps = [];
+
 function levelUpSilent() {
   GameState.player.xp -= GameState.player.xpToNext;
   GameState.player.level++;
-  
+
   const nextLevel = GAME_DATA.levelTable.find(l => l.level === GameState.player.level + 1);
   GameState.player.xpToNext = nextLevel ? nextLevel.xpRequired : Math.floor(GameState.player.xpToNext * 1.5);
-  
+
   // Stat increase from statsManager
+  let statResult = null;
   if (statsManager) {
-    statsManager.handleLevelUp(GameState.player.level);
+    statResult = statsManager.handleLevelUp(GameState.player.level);
+    // Recalculate max HP based on new Stamina
+    GameState.player.maxHp = statsManager.calculateMaxHp();
+  } else {
+    // Fallback if stats manager not ready
+    GameState.player.maxHp += 2;
   }
-  
+
+  // Restore HP on level up
+  GameState.player.hp = GameState.player.maxHp;
+
+  // Store level up data to show later
+  pendingLevelUps.push({
+    level: GameState.player.level,
+    statResult: statResult
+  });
+
   recalculateStats();
+}
+
+// Show any pending level up screens one by one
+function showPendingLevelUps() {
+  if (pendingLevelUps.length === 0) return;
+
+  // Get the first pending level up
+  const levelUpData = pendingLevelUps.shift();
+
+  // Show the full level up screen
+  showLevelUpScreen(levelUpData.level, levelUpData.statResult);
+
+  // Check achievements and milestones after showing level up
+  checkAchievements();
+  checkMilestones();
 }
 
 function addItemToInventorySilent(itemId, count = 1) {
@@ -1312,7 +1840,7 @@ function getItemCount(itemId) {
 // Rewards Screen
 // =====================================================
 
-function showRewardsScreen(rewardData) {
+function showRewardsScreen(rewardData, onClose = null) {
   // Build items HTML
   let itemsHtml = '';
   if (rewardData.items.length > 0) {
@@ -1443,13 +1971,26 @@ function showRewardsScreen(rewardData) {
       </div>
       
       <div class="rewards-footer">
-        <button class="pixel-btn pixel-btn-gold" onclick="hideModal('rewards-modal')">Continue</button>
+        <button class="pixel-btn pixel-btn-gold" id="rewards-continue-btn">Continue</button>
       </div>
     </div>
   `);
 
-  // Bind tooltips to reward items after modal renders
+  // Bind continue button
   setTimeout(() => {
+    const continueBtn = document.getElementById('rewards-continue-btn');
+    if (continueBtn) {
+      continueBtn.addEventListener('click', () => {
+        hideModal('rewards-modal');
+        if (onClose) onClose();
+        // Show any pending level ups after rewards screen closes
+        setTimeout(() => {
+          showPendingLevelUps();
+        }, 300);
+      });
+    }
+
+    // Bind tooltips to reward items
     const modal = document.getElementById('rewards-modal');
     if (modal && typeof TooltipSystem !== 'undefined') {
       TooltipSystem.bindAllInContainer(modal);
@@ -1470,7 +2011,7 @@ function showLessonCompletionScreen(data) {
     wrongAnswers,
     totalQuestions,
     xpEarned,
-    bonusXP,
+    xpBreakdown,     // optional - BonusCalculator result for visible stacking
     hpRecovered,
     hpLost,
     isPerfect,
@@ -1535,11 +2076,33 @@ function showLessonCompletionScreen(data) {
     let rewardItems = [];
 
     if (xpEarned > 0) {
-      let xpText = `+${xpEarned} XP`;
-      if (bonusXP > 0) {
-        xpText = `+${xpEarned - bonusXP} XP <span class="bonus">(+${bonusXP} streak)</span>`;
+      // Use breakdown if available for Idleon-style visible stacking
+      if (xpBreakdown && xpBreakdown.breakdown && xpBreakdown.breakdown.length > 1) {
+        let breakdownHtml = '<div class="xp-breakdown-container">';
+        breakdownHtml += '<div class="xp-breakdown-header"><span class="reward-icon">⭐</span>Experience Gained</div>';
+        breakdownHtml += '<div class="xp-breakdown-list">';
+
+        xpBreakdown.breakdown.forEach((item, index) => {
+          const rowClass = item.type === 'base' ? 'breakdown-base' :
+                          item.type === 'multiplier' ? 'breakdown-multiplier' : 'breakdown-additive';
+          breakdownHtml += `<div class="xp-breakdown-row ${rowClass}">`;
+          breakdownHtml += `<span class="breakdown-label">${item.source}</span>`;
+          breakdownHtml += `<span class="breakdown-value">${item.formatted}</span>`;
+          breakdownHtml += '</div>';
+        });
+
+        breakdownHtml += '</div>';
+        breakdownHtml += `<div class="xp-breakdown-total">`;
+        breakdownHtml += `<span class="breakdown-label">Total XP</span>`;
+        breakdownHtml += `<span class="breakdown-value total-value">+${xpBreakdown.total}</span>`;
+        breakdownHtml += '</div>';
+        breakdownHtml += '</div>';
+
+        rewardItems.push(breakdownHtml);
+      } else {
+        // Fallback to simple display
+        rewardItems.push(`<div class="reward-item xp"><span class="reward-icon">⭐</span>+${xpEarned} XP</div>`);
       }
-      rewardItems.push(`<div class="reward-item xp"><span class="reward-icon">⭐</span>${xpText}</div>`);
     }
 
     if (hpRecovered > 0) {
@@ -1622,10 +2185,19 @@ function showLessonCompletionScreen(data) {
       ${failureHtml}
 
       <div class="lesson-complete-footer">
-        <button class="pixel-btn ${passed ? 'pixel-btn-gold' : ''}" onclick="hideModal('lesson-complete-modal')">Continue</button>
+        <button class="pixel-btn ${passed ? 'pixel-btn-gold' : ''}" onclick="closeLessonComplete()">Continue</button>
       </div>
     </div>
   `);
+}
+
+// Close lesson complete modal and show any pending level ups
+function closeLessonComplete() {
+  hideModal('lesson-complete-modal');
+  // Show pending level ups after a brief delay for smooth transition
+  setTimeout(() => {
+    showPendingLevelUps();
+  }, 300);
 }
 
 function unlockDependentQuests(completedQuestId) {
@@ -1671,11 +2243,11 @@ function addXP(amount) {
 function levelUp() {
   GameState.player.xp -= GameState.player.xpToNext;
   GameState.player.level++;
-  
+
   // Update XP requirement
   const nextLevel = GAME_DATA.levelTable.find(l => l.level === GameState.player.level + 1);
   GameState.player.xpToNext = nextLevel ? nextLevel.xpRequired : GameState.player.xpToNext * 1.5;
-  
+
   // Handle stat increase via stats manager
   let statResult = null;
   if (statsManager) {
@@ -1686,19 +2258,132 @@ function levelUp() {
     // Fallback if stats manager not ready
     GameState.player.maxHp += 2; // Reduced from 10 to 2 per level
   }
-  
+
   // Restore HP on level up
   GameState.player.hp = GameState.player.maxHp;
-  
-  // Show notification
-  if (statResult) {
-    showNotification(`Level Up! You are now level ${GameState.player.level}! +1 ${statResult.statName}`, 'success');
-  } else {
-    showNotification(`Level Up! You are now level ${GameState.player.level}!`, 'success');
-  }
-  
-  // Check for new achievements
+
+  // Show level up screen
+  showLevelUpScreen(GameState.player.level, statResult);
+
+  // Check for new achievements and milestones
   checkAchievements();
+  checkMilestones();
+}
+
+function showLevelUpScreen(newLevel, statResult) {
+  // Find newly available quests at this level
+  const newQuests = [];
+  Object.values(GAME_DATA.quests).forEach(quest => {
+    if (quest.levelRequired === newLevel &&
+        quest.type !== 'hidden' &&
+        quest.type !== 'daily' &&
+        quest.type !== 'weekly') {
+      newQuests.push(quest);
+    }
+  });
+
+  // Find newly accessible locations at this level
+  const newLocations = [];
+  Object.values(GAME_DATA.locations).forEach(loc => {
+    if (loc.level === newLevel && !loc.discovered) {
+      newLocations.push(loc);
+    }
+  });
+
+  // Build stat gain HTML
+  let statHtml = '';
+  if (statResult) {
+    const statIcon = {
+      'Strength': '💪',
+      'Agility': '🏃',
+      'Wisdom': '📚',
+      'Charisma': '💬',
+      'Luck': '🍀',
+      'Stamina': '❤️'
+    }[statResult.statName] || '⬆️';
+
+    statHtml = `
+      <div class="levelup-stat-gain">
+        <span class="stat-icon">${statIcon}</span>
+        <span class="stat-text">+1 ${statResult.statName}</span>
+        <span class="stat-total">(now ${statResult.newValue})</span>
+      </div>
+    `;
+  }
+
+  // Build HP restore HTML
+  const hpHtml = `
+    <div class="levelup-hp-restore">
+      <span class="hp-icon">❤️</span>
+      <span class="hp-text">HP Fully Restored!</span>
+      <span class="hp-value">${GameState.player.hp}/${GameState.player.maxHp}</span>
+    </div>
+  `;
+
+  // Build unlocks HTML
+  let unlocksHtml = '';
+  if (newQuests.length > 0 || newLocations.length > 0) {
+    unlocksHtml = '<div class="levelup-unlocks"><div class="unlocks-title">🔓 New Opportunities</div>';
+
+    if (newLocations.length > 0) {
+      unlocksHtml += '<div class="unlock-category">Areas accessible:</div>';
+      newLocations.forEach(loc => {
+        unlocksHtml += `<div class="unlock-item">📍 ${loc.name}</div>`;
+      });
+    }
+
+    if (newQuests.length > 0 && newQuests.length <= 5) {
+      unlocksHtml += '<div class="unlock-category">New quests available:</div>';
+      newQuests.slice(0, 3).forEach(quest => {
+        unlocksHtml += `<div class="unlock-item">📜 ${quest.name}</div>`;
+      });
+      if (newQuests.length > 3) {
+        unlocksHtml += `<div class="unlock-item">...and ${newQuests.length - 3} more!</div>`;
+      }
+    } else if (newQuests.length > 5) {
+      unlocksHtml += `<div class="unlock-category">${newQuests.length} new quests available!</div>`;
+    }
+
+    unlocksHtml += '</div>';
+  }
+
+  // XP to next level
+  const xpHtml = `
+    <div class="levelup-xp-next">
+      Next level: ${GameState.player.xpToNext} XP
+    </div>
+  `;
+
+  const modalContent = `
+    <div class="levelup-screen">
+      <div class="levelup-celebration">🎊</div>
+      <div class="levelup-title">LEVEL UP!</div>
+      <div class="levelup-level">Level ${newLevel}</div>
+
+      <div class="levelup-rewards">
+        ${statHtml}
+        ${hpHtml}
+      </div>
+
+      ${unlocksHtml}
+      ${xpHtml}
+
+      <button class="pixel-btn pixel-btn-gold levelup-continue" onclick="closeLevelUpScreen()">
+        Continue Your Journey
+      </button>
+    </div>
+  `;
+
+  showModal('levelup-modal', modalContent);
+}
+
+// Close level up modal and show any additional pending level ups
+function closeLevelUpScreen() {
+  hideModal('levelup-modal');
+  // Check for more pending level ups (in case player gained multiple levels)
+  setTimeout(() => {
+    showPendingLevelUps();
+  }, 300);
 }
 
 // =====================================================
@@ -1745,6 +2430,31 @@ function healPlayer(amount) {
 }
 
 function handlePlayerDeath() {
+  // Check for free revive (first death is free)
+  if (!GameState.player.freeReviveUsed) {
+    GameState.player.freeReviveUsed = true;
+    GameState.player.hp = GameState.player.maxHp;
+    renderHUD();
+    showModal('free-revive-modal', `
+      <div style="text-align: center;">
+        <h2 style="font-family: var(--font-display); font-size: 20px; color: var(--accent-gold); margin-bottom: 16px;">
+          ✨ Second Chance!
+        </h2>
+        <p style="margin-bottom: 16px;">
+          The spirits of Dawnmere have granted you another chance. Your health has been fully restored!
+        </p>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">
+          This was your free revival. Next time you fall, you'll need to review vocabulary to recover.
+        </p>
+        <button class="art-btn art-btn-gold" onclick="hideModal('free-revive-modal')">
+          Continue Adventure
+        </button>
+      </div>
+    `);
+    autoSave();
+    return;
+  }
+
   // Get vocabulary stats if available
   let statsHtml = '';
   if (srManager) {
@@ -1760,13 +2470,13 @@ function handlePlayerDeath() {
       `;
     }
   }
-  
+
   const canReview = srManager && srManager.canReview(4);
   const reviewButtonText = canReview ? 'Review Vocabulary (Free)' : 'Rest & Recover (Free)';
-  const reviewButtonDesc = canReview 
+  const reviewButtonDesc = canReview
     ? 'Practice words you\'ve learned. HP restored based on performance.'
     : 'Not enough vocabulary yet. Partial HP restored.';
-  
+
   showModal('death-modal', `
     <div style="text-align: center;">
       <h2 style="font-family: var(--font-display); font-size: 20px; color: var(--accent-red); margin-bottom: 16px;">
@@ -1785,17 +2495,6 @@ function handlePlayerDeath() {
             ${reviewButtonDesc}
           </div>
         </div>
-        <div>
-          <button class="pixel-btn pixel-btn-gold" onclick="restAtInn()" style="width: 100%;">
-            🏨 Rest at Inn (50 Gold)
-          </button>
-          <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
-            Full HP restored instantly. Premium option.
-          </div>
-        </div>
-      </div>
-      <div style="margin-top: 16px; font-size: 12px; color: var(--text-muted);">
-        Current Gold: <span style="color: var(--accent-gold);">${GameState.player.gold}</span>
       </div>
     </div>
   `);
@@ -1869,19 +2568,6 @@ function reviewLessons() {
   }
   
   showLessonModal();
-}
-
-function restAtInn() {
-  if (GameState.player.gold >= 50) {
-    GameState.player.gold -= 50;
-    GameState.player.hp = GameState.player.maxHp;
-    hideModal('death-modal');
-    renderHUD();
-    showNotification("You feel fully rested!", 'success');
-    autoSave();
-  } else {
-    showNotification("Not enough gold! You need 50 gold.", 'error');
-  }
 }
 
 // =====================================================
@@ -2025,7 +2711,7 @@ function recalculateStats() {
 // =====================================================
 
 function interactWithNPC(npcId) {
-  const npc = GAME_DATA.npcs[npcId];
+  const npc = getNPC(npcId);
   if (!npc) return;
 
   // Tutorial: First NPC click
@@ -2059,37 +2745,9 @@ function interactWithNPC(npcId) {
   // Determine dialog based on quest state
   let dialogText = npc.dialogue.greeting;
   let options = [];
-  
-  // Check for available quest from this NPC
-  const availableQuest = getAvailableQuests().find(q => q.giver === npcId);
-  if (availableQuest) {
-    const questDef = getQuest(availableQuest.id);
-    dialogText = questDef?.dialogue?.intro || npc.dialogue.quest_intro || dialogText;
-    options.push({
-      text: "Accept Quest",
-      action: () => {
-        // Tutorial: First quest accept - check before marking complete
-        const isFirstQuest = shouldShowTutorial('acceptedQuest');
-        if (isFirstQuest) {
-          markTutorialComplete('acceptedQuest');
-        }
-        acceptQuest(availableQuest.id);
-        hideDialog();
-        // Show quest panel tutorial after accepting first quest
-        if (isFirstQuest) {
-          setTimeout(() => {
-            showTutorialTip('questPanel', '[data-screen="quests"]', () => {});
-          }, 500);
-        }
-      }
-    });
-    options.push({
-      text: "Not now",
-      action: hideDialog
-    });
-  }
-  // Check for active quest with this NPC
-  else if (hasActiveQuest(npcId)) {
+
+  // PRIORITY 1: Check for active quest with this NPC (already accepted quests take priority)
+  if (hasActiveQuest(npcId)) {
     const activeQuest = GameState.player.activeQuests.find(q => 
       getQuest(q.id)?.giver === npcId
     );
@@ -2108,7 +2766,47 @@ function interactWithNPC(npcId) {
         });
       } else {
         dialogText = questData?.dialogue?.progress || "Keep working on it!";
-        
+
+        // Auto-complete "task" type objectives when talking to quest giver
+        // (e.g., "listen to gossip" - talking to them IS the task)
+        activeQuest.objectives.forEach(obj => {
+          if (obj.completed) return;
+          const objDef = questData?.objectives?.find(o => o.id === obj.id);
+          if (objDef && objDef.type === 'task' && !objDef.target) {
+            obj.completed = true;
+            showNotification(`Objective Complete: ${objDef.text}`);
+          }
+        });
+
+        // Auto-complete "interact" type objectives when talking to target NPC
+        activeQuest.objectives.forEach(obj => {
+          if (obj.completed) return;
+          const objDef = questData?.objectives?.find(o => o.id === obj.id);
+          if (objDef && objDef.type === 'interact' && objDef.target === npcId) {
+            obj.completed = true;
+            showNotification(`Objective Complete: ${objDef.text}`);
+          }
+        });
+
+        // Check if all objectives are now complete after auto-completing tasks
+        const nowComplete = activeQuest.objectives.every(o => o.completed);
+        if (nowComplete) {
+          dialogText = questData?.dialogue?.complete || "Quest complete!";
+          options.push({
+            text: "Complete Quest",
+            action: () => {
+              completeQuest(activeQuest.id);
+              hideDialog();
+            }
+          });
+          options.push({
+            text: "Not yet",
+            action: hideDialog
+          });
+          showDialog(npc.name, dialogText, options);
+          return;
+        }
+
         // Check for lesson objectives (vocabulary or grammar)
         const lessonObjective = activeQuest.objectives.find(o => {
           if (o.completed) return false;
@@ -2133,6 +2831,33 @@ function interactWithNPC(npcId) {
           });
         }
 
+        // Check for special objectives (like Order selection)
+        const specialObjective = activeQuest.objectives.find(o => {
+          if (o.completed) return false;
+          const objDef = questData?.objectives?.find(obj => obj.id === o.id);
+          return objDef && objDef.type === 'special';
+        });
+
+        if (specialObjective) {
+          const objDef = questData?.objectives?.find(obj => obj.id === specialObjective.id);
+
+          // Check if previous objectives are complete (for Order selection, need to speak first)
+          const objIndex = questData.objectives.findIndex(obj => obj.id === specialObjective.id);
+          const previousObjectivesComplete = activeQuest.objectives
+            .slice(0, objIndex)
+            .every(o => o.completed);
+
+          if (previousObjectivesComplete && objDef?.target === 'order_selection') {
+            options.push({
+              text: "Choose Your Order",
+              action: () => {
+                hideDialog();
+                showOrderSelection();
+              }
+            });
+          }
+        }
+
         // Allow shop access during active quests if NPC has shop
         if (npcHasAnyShop(npcId)) {
           options.push({
@@ -2148,29 +2873,59 @@ function interactWithNPC(npcId) {
       }
     }
   }
-  // Check if NPC has shop (no active quest)
-  else if (npcHasAnyShop(npcId)) {
-    options.push({
-      text: "Browse Wares",
-      action: () => openShop(npcId)
-    });
-    options.push({
-      text: "Goodbye",
-      action: hideDialog
-    });
-  }
+  // PRIORITY 2: Check for available quest from this NPC
   else {
-    // Random idle dialog
-    const idle = npc.dialogue.idle;
-    if (idle && idle.length > 0) {
-      dialogText = idle[Math.floor(Math.random() * idle.length)];
+    const availableQuest = getAvailableQuests().find(q => q.giver === npcId);
+    if (availableQuest) {
+      const questDef = getQuest(availableQuest.id);
+      dialogText = questDef?.dialogue?.intro || npc.dialogue.quest_intro || dialogText;
+      options.push({
+        text: "Accept Quest",
+        action: () => {
+          // Tutorial: First quest accept - check before marking complete
+          const isFirstQuest = shouldShowTutorial('acceptedQuest');
+          if (isFirstQuest) {
+            markTutorialComplete('acceptedQuest');
+          }
+          acceptQuest(availableQuest.id);
+          hideDialog();
+          // Show quest panel tutorial after accepting first quest
+          if (isFirstQuest) {
+            setTimeout(() => {
+              showTutorialTip('questPanel', '[data-screen="quests"]', () => {});
+            }, 500);
+          }
+        }
+      });
+      options.push({
+        text: "Not now",
+        action: hideDialog
+      });
     }
-    options.push({
-      text: "Goodbye",
-      action: hideDialog
-    });
+    // PRIORITY 3: Check if NPC has shop (no active or available quest)
+    else if (npcHasAnyShop(npcId)) {
+      options.push({
+        text: "Browse Wares",
+        action: () => openShop(npcId)
+      });
+      options.push({
+        text: "Goodbye",
+        action: hideDialog
+      });
+    }
+    // PRIORITY 4: Idle dialog
+    else {
+      const idle = npc.dialogue.idle;
+      if (idle && idle.length > 0) {
+        dialogText = idle[Math.floor(Math.random() * idle.length)];
+      }
+      options.push({
+        text: "Goodbye",
+        action: hideDialog
+      });
+    }
   }
-  
+
   showDialog(npc.name, dialogText, options);
 }
 
@@ -2245,21 +3000,8 @@ function checkAchievements() {
   const newlyUnlocked = statsManager.checkAllAchievements();
   
   for (const result of newlyUnlocked) {
-    showNotification(`🏆 Achievement: ${result.achievement.name}!`, 'success');
-    
-    // Show reward notifications
-    for (const reward of result.rewards) {
-      if (reward.type === 'stat') {
-        setTimeout(() => {
-          showNotification(`+${reward.amount} ${reward.statName}`, 'info');
-        }, 500);
-      }
-      if (reward.type === 'title') {
-        setTimeout(() => {
-          showNotification(`Title Unlocked: ${reward.title}`, 'info');
-        }, 500);
-      }
-    }
+    // Use WoW-style achievement toast instead of regular notification
+    showAchievementToast(result.achievement, result.rewards);
   }
   
   return newlyUnlocked;
@@ -2267,10 +3009,23 @@ function checkAchievements() {
 
 function checkMilestones() {
   if (!statsManager) return [];
-  
+
   const allProgress = statsManager.getAllMilestoneProgress();
   const claimable = allProgress.filter(p => p.hasUnclaimedReward);
-  
+
+  // Auto-claim and notify for each claimable milestone
+  for (const progress of claimable) {
+    const rewards = statsManager.claimMilestoneReward(progress.milestone.id);
+    if (rewards && rewards.length > 0) {
+      // Show milestone toast (similar to achievement)
+      showAchievementToast({
+        icon: progress.milestone.icon || '🎯',
+        name: `${progress.milestone.name}: ${progress.currentTier.label}`,
+        description: progress.milestone.description || 'Milestone reached!'
+      }, rewards);
+    }
+  }
+
   return claimable;
 }
 
@@ -2304,14 +3059,33 @@ function trackLongestStreak(currentStreak) {
 function renderStreakDisplay() {
   const state = GameState.lessonState;
   const streakDisplay = document.querySelector('.streak-display');
-  
+
   if (!streakDisplay) return;
-  
+
+  // Check if streak XP bonus is unlocked (from Village Well project)
+  const hasStreakUnlock = villageProjectsManager?.hasUnlock('streak_xp_bonus') || false;
+
+  if (!hasStreakUnlock) {
+    // Show locked state - hint at the feature
+    streakDisplay.innerHTML = `
+      <div class="streak-counter locked">
+        <span class="streak-flame">🔒</span>
+        <span class="streak-number">?</span>
+      </div>
+      <div class="multiplier-display locked" title="Complete a Village Project to unlock streak bonuses!">
+        <span class="multiplier-value">1x</span>
+        <span class="multiplier-progress">Locked</span>
+      </div>
+    `;
+    streakDisplay.classList.remove('has-bonus');
+    return;
+  }
+
   const nextThreshold = getNextMultiplierThreshold(state.streak);
-  const progressToNext = nextThreshold 
-    ? `${state.streak}/${nextThreshold}` 
+  const progressToNext = nextThreshold
+    ? `${state.streak}/${nextThreshold}`
     : 'MAX';
-  
+
   streakDisplay.innerHTML = `
     <div class="streak-counter ${state.streak >= 3 ? 'active' : ''}">
       <span class="streak-flame">${state.streak >= 3 ? '🔥' : '💫'}</span>
@@ -2322,7 +3096,7 @@ function renderStreakDisplay() {
       ${nextThreshold ? `<span class="multiplier-progress">${progressToNext}</span>` : '<span class="multiplier-max">MAX!</span>'}
     </div>
   `;
-  
+
   // Add animation class if multiplier just increased
   if (state.currentMultiplier > 1) {
     streakDisplay.classList.add('has-bonus');
@@ -2358,30 +3132,56 @@ function startLesson(questId, objectiveId) {
     showNotification('Error: Quest not found!', 'error');
     return;
   }
-  
-  // Gather vocabulary for this quest
-  const vocabCategories = quest.vocabulary || [];
-  let allVocab = [];
-  
-  console.log('Starting lesson for quest:', questId, 'with vocabulary categories:', vocabCategories);
-  
-  vocabCategories.forEach(cat => {
-    const [category, subcategory] = cat.split('.');
-    const vocab = VOCABULARY[category]?.[subcategory] || [];
-    console.log(`Vocabulary category ${cat}: found ${vocab.length} words`);
-    allVocab = allVocab.concat(vocab);
-  });
-  
-  // Check if we have enough vocabulary
-  if (allVocab.length < 4) {
-    console.error('Not enough vocabulary for lesson. Found:', allVocab.length, 'words');
-    showNotification(`Error: Not enough vocabulary for this lesson (found ${allVocab.length}, need at least 4)`, 'error');
-    return;
-  }
-  
-  // Generate questions based on settings
+
+  // Find the specific objective to check for lessonId
+  const objective = quest.objectives?.find(o => o.id === objectiveId);
+
   const questionCount = GameState.settings?.questionCount || 5;
-  const questions = generateQuestionsFromVocab(allVocab, questionCount, vocabCategories);
+  let questions = [];
+  let allVocab = [];
+  let lessonData = null;
+
+  // Check if objective or quest uses new lesson system (lessonId)
+  // Objective-level lessonId takes priority over quest-level
+  const lessonId = objective?.lessonId || quest.lessonId;
+
+  if (lessonId && LESSONS[lessonId]) {
+    lessonData = LESSONS[lessonId];
+    allVocab = lessonData.words;
+
+    console.log('Starting structured lesson:', lessonId, '-', lessonData.title);
+
+    // Generate questions from the lesson
+    questions = generateLessonQuestions(lessonId, questionCount);
+
+    // Mark questions with lesson metadata for pattern display
+    questions.forEach(q => {
+      q.lessonTitle = lessonData.title;
+      q.lessonPattern = lessonData.pattern;
+      q.patternExplanation = lessonData.patternExplanation;
+    });
+  } else {
+    // Fall back to old vocabulary category system
+    const vocabCategories = quest.vocabulary || [];
+
+    console.log('Starting lesson for quest:', questId, 'with vocabulary categories:', vocabCategories);
+
+    vocabCategories.forEach(cat => {
+      const [category, subcategory] = cat.split('.');
+      const vocab = VOCABULARY[category]?.[subcategory] || [];
+      console.log(`Vocabulary category ${cat}: found ${vocab.length} words`);
+      allVocab = allVocab.concat(vocab);
+    });
+
+    // Check if we have enough vocabulary
+    if (allVocab.length < 4) {
+      console.error('Not enough vocabulary for lesson. Found:', allVocab.length, 'words');
+      showNotification(`Error: Not enough vocabulary for this lesson (found ${allVocab.length}, need at least 4)`, 'error');
+      return;
+    }
+
+    questions = generateQuestionsFromVocab(allVocab, questionCount, vocabCategories);
+  }
   
   console.log('Generated', questions.length, 'questions');
   
@@ -2411,7 +3211,10 @@ function startLesson(questId, objectiveId) {
     totalBonusGold: 0,
     hintCharges: hintInfo.charges,
     maxHintCharges: hintInfo.maxCharges,
-    isBossExam: false
+    isBossExam: false,
+    // New lesson system data
+    lessonData: lessonData,
+    isStructuredLesson: !!lessonData
   };
 
   // Show lesson modal first
@@ -2798,6 +3601,91 @@ function showExamInfo(locationId) {
 function showLessonModal() {
   const modal = document.getElementById('lesson-modal');
   modal.classList.add('active');
+
+  const state = GameState.lessonState;
+
+  // For structured lessons, show intro first
+  if (state.isStructuredLesson && state.lessonData) {
+    renderLessonIntro();
+  } else {
+    renderQuestion();
+    renderStreakDisplay();
+  }
+}
+
+function renderLessonIntro() {
+  const state = GameState.lessonState;
+  const lesson = state.lessonData;
+
+  // Update lesson title
+  const lessonTitle = document.querySelector('.lesson-title');
+  if (lessonTitle) {
+    lessonTitle.innerHTML = `📚 ${lesson.title}`;
+  }
+
+  // Hide streak display during intro
+  const streakDisplay = document.querySelector('.streak-display');
+  if (streakDisplay) streakDisplay.style.display = 'none';
+
+  // Hide progress dots during intro
+  const progressBar = document.querySelector('.lesson-progress');
+  if (progressBar) progressBar.style.display = 'none';
+
+  // Render intro content in the question container
+  const questionContainer = document.querySelector('.question-container');
+
+  // Handle "none" pattern - show friendly text for non-cognate lessons
+  const patternDisplay = lesson.pattern === 'none' ? 'Core Vocabulary' : lesson.pattern.toUpperCase();
+
+  questionContainer.innerHTML = `
+    <div class="lesson-intro">
+      <div class="lesson-intro-pattern">${patternDisplay}</div>
+      <p class="lesson-intro-description">${lesson.description}</p>
+      <div class="lesson-intro-explanation">${lesson.patternExplanation}</div>
+      <div class="lesson-intro-preview">
+        <span class="preview-label">Words you'll learn:</span>
+        <span class="preview-words">${lesson.words.slice(0, 4).map(w => w.french).join(', ')}...</span>
+      </div>
+      <button class="pixel-btn lesson-start-btn" onclick="startLessonQuestions()">Begin Lesson</button>
+    </div>
+  `;
+
+  // Hide other elements during intro
+  const feedback = document.querySelector('.lesson-feedback');
+  if (feedback) feedback.style.display = 'none';
+
+  const answerOptions = document.querySelector('.answer-options');
+  if (answerOptions) answerOptions.style.display = 'none';
+
+  const hintBox = document.querySelector('.hint-box');
+  if (hintBox) hintBox.style.display = 'none';
+}
+
+function startLessonQuestions() {
+  // Show elements hidden during intro
+  const streakDisplay = document.querySelector('.streak-display');
+  if (streakDisplay) streakDisplay.style.display = '';
+
+  const progressBar = document.querySelector('.lesson-progress');
+  if (progressBar) progressBar.style.display = '';
+
+  const feedback = document.querySelector('.lesson-feedback');
+  if (feedback) feedback.style.display = '';
+
+  const answerOptions = document.querySelector('.answer-options');
+  if (answerOptions) answerOptions.style.display = '';
+
+  const hintBox = document.querySelector('.hint-box');
+  if (hintBox) hintBox.style.display = '';
+
+  // Restore question container structure (was replaced by intro)
+  const questionContainer = document.querySelector('.question-container');
+  questionContainer.innerHTML = `
+    <div class="question-prompt">What does this mean?</div>
+    <div class="question-word">le mot</div>
+  `;
+
+  // Start questions
   renderQuestion();
   renderStreakDisplay();
 }
@@ -3246,15 +4134,20 @@ function handleAnswer(answer, isCorrectOverride = null) {
     question.wasCorrect = false;
     
     // Build feedback message
-    let feedbackMsg = `✗ Wrong! The answer was: <strong>${question.correctAnswer}</strong>`;
-    
+    let feedbackMsg = `✗ The answer was: <strong>${question.correctAnswer}</strong>`;
+
     if (streakProtected) {
-      feedbackMsg = `✗ Wrong! <span class="streak-protected">💨 Agility saved your streak!</span> The answer was: <strong>${question.correctAnswer}</strong>`;
+      feedbackMsg = `✗ <span class="streak-protected">💨 Agility saved your streak!</span> The answer was: <strong>${question.correctAnswer}</strong>`;
     } else if (hadStreak) {
       animateStreakBreak();
-      feedbackMsg = `✗ Wrong! Streak lost! The answer was: <strong>${question.correctAnswer}</strong>`;
+      feedbackMsg = `✗ Streak lost! The answer was: <strong>${question.correctAnswer}</strong>`;
     }
-    
+
+    // Add pattern explanation for structured lessons (fail-then-learn)
+    if (question.patternExplanation) {
+      feedbackMsg += `<div class="pattern-hint">${question.patternExplanation}</div>`;
+    }
+
     feedback.innerHTML = feedbackMsg;
     feedback.className = 'lesson-feedback wrong';
 
@@ -3399,8 +4292,9 @@ function completeLessonSession() {
       GameState.player.perfectLessons++;
     }
 
-    // Check achievements
+    // Check achievements and milestones
     checkAchievements();
+    checkMilestones();
 
     renderHUD();
     autoSave();
@@ -3437,23 +4331,31 @@ function completeLessonSession() {
   const levelBefore = GameState.player.level;
 
   let totalXP = 0;
-  let bonusXP = 0;
+  let xpCalculation = null;
   let essenceEarned = null;
 
   if (passed) {
     // Update quest progress
     updateQuestProgress(state.questId, state.objectiveId);
 
+    // Auto-complete any task objectives in the same quest
+    autoCompleteTaskObjectives(state.questId);
+
     // Calculate base XP
     const baseXP = 25 + Math.floor(successRate * 50);
 
-    // Calculate average multiplier earned (simplified: use final streak's worth)
-    const bestMultiplier = getMultiplierForStreak(state.correctAnswers);
-    bonusXP = Math.floor(baseXP * (bestMultiplier - 1));
-    totalXP = baseXP + bonusXP;
+    // Use BonusCalculator for full breakdown
+    xpCalculation = BonusCalculator.calculateXP(baseXP, {
+      streak: state.correctAnswers,
+      isPerfect
+    });
+    totalXP = xpCalculation.total;
 
-    // Award XP
-    addXP(totalXP);
+    // Award XP (without double-applying account multipliers since BonusCalculator handles it)
+    GameState.player.xp += totalXP;
+    while (GameState.player.xp >= GameState.player.xpToNext) {
+      levelUpSilent();
+    }
 
     // Update player lesson stats
     GameState.player.lessonsCompleted++;
@@ -3466,8 +4368,9 @@ function completeLessonSession() {
     // Check for hidden quest triggers
     checkHiddenQuestTriggers();
 
-    // Check achievements
+    // Check achievements and milestones
     checkAchievements();
+    checkMilestones();
 
     // Award linguistic essence based on performance
     if (typeof alchemyManager !== 'undefined' && alchemyManager) {
@@ -3503,7 +4406,7 @@ function completeLessonSession() {
     wrongAnswers: state.wrongAnswers,
     totalQuestions: state.questions.length,
     xpEarned: totalXP,
-    bonusXP,
+    xpBreakdown: xpCalculation, // Full breakdown for display
     hpRecovered: 0,
     hpLost,
     isPerfect,
@@ -3581,14 +4484,16 @@ function showNotification(message, type = 'info') {
   const notification = document.createElement('div');
   notification.className = `notification ${type}`;
   notification.style.cssText = `
-    padding: 12px 24px;
+    padding: 16px 32px;
     background: ${type === 'success' ? 'var(--accent-green)' : type === 'error' ? 'var(--accent-red)' : 'var(--bg-light)'};
     border: 3px solid var(--border-pixel);
     font-family: var(--font-display);
-    font-size: 10px;
+    font-size: 18px;
     color: var(--text-light);
     animation: slideUp 0.3s ease;
     pointer-events: auto;
+    min-width: 200px;
+    text-align: center;
   `;
   notification.textContent = message;
   container.appendChild(notification);
@@ -3596,7 +4501,81 @@ function showNotification(message, type = 'info') {
   setTimeout(() => {
     notification.style.animation = 'fadeIn 0.3s ease reverse';
     setTimeout(() => notification.remove(), 300);
-  }, 3000);
+  }, 5000);
+}
+
+/**
+ * WoW-style Achievement Toast - Special dramatic notification for achievements
+ */
+function showAchievementToast(achievement, rewards = []) {
+  // Remove any existing achievement toast
+  const existing = document.getElementById('achievement-toast');
+  if (existing) existing.remove();
+
+  // Format rewards text
+  let rewardsHtml = '';
+  if (rewards.length > 0) {
+    const rewardTexts = rewards.map(r => {
+      if (r.type === 'stat') return `+${r.amount} ${r.statName}`;
+      if (r.type === 'title') return `Title: ${r.title}`;
+      if (r.type === 'gold') return `+${r.amount} Gold`;
+      return '';
+    }).filter(Boolean);
+    if (rewardTexts.length > 0) {
+      rewardsHtml = `<div class="achievement-toast-rewards">${rewardTexts.join(' • ')}</div>`;
+    }
+  }
+
+  const toast = document.createElement('div');
+  toast.id = 'achievement-toast';
+  toast.className = 'achievement-toast';
+  toast.innerHTML = `
+    <div class="achievement-toast-glow"></div>
+    <div class="achievement-toast-frame">
+      <div class="achievement-toast-header">
+        <span class="achievement-toast-label">Achievement Unlocked</span>
+      </div>
+      <div class="achievement-toast-content">
+        <div class="achievement-toast-icon">${achievement.icon || '🏆'}</div>
+        <div class="achievement-toast-info">
+          <div class="achievement-toast-name">${achievement.name}</div>
+          <div class="achievement-toast-desc">${achievement.description || ''}</div>
+          ${rewardsHtml}
+        </div>
+      </div>
+      <div class="achievement-toast-shine"></div>
+    </div>
+  `;
+
+  document.body.appendChild(toast);
+
+  // Play sound if available
+  if (typeof AudioManager !== 'undefined' && AudioManager.playSFX) {
+    AudioManager.playSFX('achievement');
+  }
+
+  // Auto-remove after animation
+  setTimeout(() => {
+    toast.classList.add('achievement-toast-exit');
+    setTimeout(() => toast.remove(), 500);
+  }, 5000);
+
+  // Click to dismiss
+  toast.addEventListener('click', () => {
+    toast.classList.add('achievement-toast-exit');
+    setTimeout(() => toast.remove(), 500);
+  });
+}
+
+/**
+ * Show title unlock toast - similar to achievement but for titles
+ */
+function showTitleUnlockToast(titleName, effects = null) {
+  showAchievementToast({
+    icon: '👑',
+    name: titleName,
+    description: effects ? `${formatTitleEffects(effects)}` : 'New title available!'
+  }, []);
 }
 
 // =====================================================
@@ -3631,13 +4610,25 @@ const TutorialTips = {
   wrongAnswer: {
     icon: '❤️',
     title: 'Watch Your Health!',
-    content: 'Wrong answers cost HP. If you run out, you\'ll need to rest at an inn or review words to recover.',
+    content: 'Wrong answers cost HP. If you run out, you\'ll need to review words to recover.',
     position: 'top'
   },
   questComplete: {
     icon: '🎉',
     title: 'Quest Complete!',
     content: 'You earned XP, gold, and reputation. Keep completing quests to level up and unlock new areas!',
+    position: 'bottom'
+  },
+  viewStats: {
+    icon: '📊',
+    title: 'Your Stats',
+    content: 'Stats affect your gameplay! Wisdom gives more XP, Charisma improves shop prices, Constitution grants more HP. Equipment and level ups boost your stats.',
+    position: 'bottom'
+  },
+  viewReputation: {
+    icon: '🏛️',
+    title: 'Reputation',
+    content: 'Build reputation with factions by completing quests. Higher standing unlocks shop discounts, special quests, unique items, and titles!',
     position: 'bottom'
   }
 };
@@ -4072,53 +5063,104 @@ function renderShopSelection(npcId, shops) {
   `);
 }
 
-function renderShopScreen(shopId) {
+// Track current shop tab (buy or sell)
+let currentShopTab = 'buy';
+
+function renderShopScreen(shopId, tab = 'buy') {
   const shop = shopManager.getShop(shopId);
   if (!shop) return;
-  
-  const inventory = shopManager.getShopInventory(shopId);
+
+  currentShopTab = tab;
   const playerGold = shopManager.getPlayerGold();
-  
-  let inventoryHtml = '';
-  
+
   // Calculate discount from Luck stat
   let discount = 0;
   if (typeof statsManager !== 'undefined' && statsManager) {
     discount = statsManager.calculateShopDiscount();
   }
 
-  if (inventory.length === 0) {
-    inventoryHtml = '<p style="color: var(--text-muted); text-align: center;">No items available.</p>';
-  } else {
-    inventoryHtml = inventory.map(entry => {
-      const item = entry.item;
-      const discountedPrice = Math.floor(entry.price * (1 - discount));
-      const canAfford = playerGold >= discountedPrice;
-      const rarityInfo = ItemRarityInfo[item.rarity] || { color: '#ffffff', name: 'Common' };
-      const hasDiscount = discount > 0;
+  // Build tab buttons
+  const tabsHtml = `
+    <div class="shop-tabs">
+      <button class="shop-tab ${tab === 'buy' ? 'active' : ''}" onclick="renderShopScreen('${shopId}', 'buy')">
+        🛒 Buy
+      </button>
+      <button class="shop-tab ${tab === 'sell' ? 'active' : ''}" onclick="renderShopScreen('${shopId}', 'sell')">
+        💰 Sell
+      </button>
+    </div>
+  `;
 
-      return `
-        <div class="shop-item ${canAfford ? '' : 'cannot-afford'}">
-          <div class="shop-item-icon">${item.icon || '❓'}</div>
-          <div class="shop-item-info">
-            <div class="shop-item-name" style="color: ${rarityInfo.color};">${item.name}</div>
-            <div class="shop-item-desc">${item.description || ''}</div>
+  let contentHtml = '';
+
+  if (tab === 'buy') {
+    // BUY TAB - existing shop inventory
+    const inventory = shopManager.getShopInventory(shopId);
+
+    if (inventory.length === 0) {
+      contentHtml = '<p style="color: var(--text-muted); text-align: center;">No items available.</p>';
+    } else {
+      contentHtml = inventory.map(entry => {
+        const item = entry.item;
+        const discountedPrice = Math.floor(entry.price * (1 - discount));
+        const canAfford = playerGold >= discountedPrice;
+        const rarityInfo = ItemRarityInfo[item.rarity] || { color: '#ffffff', name: 'Common' };
+        const hasDiscount = discount > 0;
+
+        return `
+          <div class="shop-item ${canAfford ? '' : 'cannot-afford'}">
+            <div class="shop-item-icon">${item.icon || '❓'}</div>
+            <div class="shop-item-info">
+              <div class="shop-item-name" style="color: ${rarityInfo.color};">${item.name}</div>
+              <div class="shop-item-desc">${item.description || ''}</div>
+            </div>
+            <div class="shop-item-price">
+              ${hasDiscount ? `<span class="price-original" style="text-decoration: line-through; color: var(--text-muted); font-size: 10px;">${entry.price}</span> ` : ''}
+              <span class="price-value">${discountedPrice}</span>
+              <span class="price-icon">💰</span>
+            </div>
+            <button class="pixel-btn shop-buy-btn"
+                    onclick="buyFromShop('${shopId}', '${entry.itemId}')"
+                    ${canAfford ? '' : 'disabled'}>
+              Buy
+            </button>
           </div>
-          <div class="shop-item-price">
-            ${hasDiscount ? `<span class="price-original" style="text-decoration: line-through; color: var(--text-muted); font-size: 10px;">${entry.price}</span> ` : ''}
-            <span class="price-value">${discountedPrice}</span>
-            <span class="price-icon">💰</span>
+        `;
+      }).join('');
+    }
+  } else {
+    // SELL TAB - player's sellable items
+    const sellableItems = getSellableItems();
+
+    if (sellableItems.length === 0) {
+      contentHtml = '<p style="color: var(--text-muted); text-align: center;">You have no items to sell.</p>';
+    } else {
+      contentHtml = sellableItems.map(entry => {
+        const sellPrice = Math.floor(entry.value * 0.5); // Sell at 50% of value
+        const rarityInfo = ItemRarityInfo[entry.item.rarity] || { color: '#ffffff', name: 'Common' };
+
+        return `
+          <div class="shop-item sellable">
+            <div class="shop-item-icon">${entry.item.icon || '❓'}</div>
+            <div class="shop-item-info">
+              <div class="shop-item-name" style="color: ${rarityInfo.color};">${entry.item.name}</div>
+              <div class="shop-item-desc">${entry.item.description || ''}</div>
+              <div class="shop-item-count">Owned: ${entry.count}</div>
+            </div>
+            <div class="shop-item-price sell-price">
+              <span class="price-value">+${sellPrice}</span>
+              <span class="price-icon">💰</span>
+            </div>
+            <button class="pixel-btn shop-sell-btn"
+                    onclick="sellItem('${shopId}', '${entry.itemId}')">
+              Sell
+            </button>
           </div>
-          <button class="pixel-btn shop-buy-btn"
-                  onclick="buyFromShop('${shopId}', '${entry.itemId}')"
-                  ${canAfford ? '' : 'disabled'}>
-            Buy
-          </button>
-        </div>
-      `;
-    }).join('');
+        `;
+      }).join('');
+    }
   }
-  
+
   showModal('shop-modal', `
     <div class="shop-screen">
       <div class="shop-header">
@@ -4132,16 +5174,83 @@ function renderShopScreen(shopId) {
           <span class="gold-value">${playerGold}</span>
         </div>
       </div>
-      
+
+      ${tabsHtml}
+
       <div class="shop-inventory">
-        ${inventoryHtml}
+        ${contentHtml}
       </div>
-      
+
       <div class="shop-footer">
         <button class="pixel-btn" onclick="closeShopScreen()">Close</button>
       </div>
     </div>
   `);
+}
+
+// Get items player can sell (resources and consumables with value)
+function getSellableItems() {
+  const sellable = [];
+
+  if (!GameState.player.inventory) return sellable;
+
+  GameState.player.inventory.forEach(invItem => {
+    const item = GAME_DATA.items[invItem.id];
+    if (!item) return;
+
+    // Can sell resources and consumables that have a value
+    if ((item.type === 'resource' || item.type === 'consumable') && item.value > 0) {
+      sellable.push({
+        itemId: invItem.id,
+        item: item,
+        count: invItem.count || 1,
+        value: item.value
+      });
+    }
+  });
+
+  return sellable;
+}
+
+// Sell an item for gold
+function sellItem(shopId, itemId) {
+  const item = GAME_DATA.items[itemId];
+  if (!item || !item.value) {
+    showNotification('Cannot sell this item', 'error');
+    return;
+  }
+
+  // Find item in inventory
+  const invItem = GameState.player.inventory.find(i => i.id === itemId);
+  if (!invItem || invItem.count < 1) {
+    showNotification('Item not in inventory', 'error');
+    return;
+  }
+
+  // Calculate sell price (50% of value)
+  const sellPrice = Math.floor(item.value * 0.5);
+
+  // Remove item from inventory
+  if (invItem.count > 1) {
+    invItem.count--;
+  } else {
+    const index = GameState.player.inventory.indexOf(invItem);
+    GameState.player.inventory.splice(index, 1);
+  }
+
+  // Add gold
+  GameState.player.gold += sellPrice;
+
+  showNotification(`Sold ${item.name} for ${sellPrice} gold`, 'success');
+
+  // Refresh shop UI
+  renderShopScreen(shopId, 'sell');
+
+  // Update HUD
+  renderHUD();
+
+  // Auto-save
+  autoSave();
 }
 
 function buyFromShop(shopId, itemId) {
@@ -4983,11 +6092,15 @@ function showProfileScreen() {
     showNotification('Player data not available', 'error');
     return;
   }
-  
+
   const stats = statsManager ? statsManager.getAllStats() : {};
   const majorStats = statsManager ? statsManager.getMajorStats() : [];
   const minorStats = statsManager ? statsManager.getMinorStats() : [];
   const activeTitle = statsManager ? statsManager.getActiveTitle() : null;
+
+  // Get earned titles for dropdown
+  const earnedTitles = titleManager ? titleManager.getEarnedTitles() : [];
+  const equippedTitleId = titleManager ? titleManager.getEquippedTitleId() : null;
   
   // Equipment display
   const equipSlots = ['helm', 'armor', 'weapon', 'accessory', 'ring'];
@@ -5023,16 +6136,35 @@ function showProfileScreen() {
   `).join('');
   
   // Class icon
-  const classIcons = { scholar: '📚', warrior: '⚔️', traveler: '🗺️' };
+  const classIcons = { sage: '📚', protector: '🛡️', pathfinder: '🧭', cleric: '✝️' };
   const classIcon = classIcons[player.class] || '👤';
   
+  // Build title dropdown options
+  const defaultTitle = player.class?.charAt(0).toUpperCase() + player.class?.slice(1) || 'Adventurer';
+  let titleOptionsHtml = `<option value="">< ${defaultTitle} ></option>`;
+  earnedTitles.forEach(title => {
+    const selected = title.id === equippedTitleId ? 'selected' : '';
+    const effectText = title.effects ? ` (${formatTitleEffects(title.effects)})` : '';
+    titleOptionsHtml += `<option value="${title.id}" ${selected}>${title.name}${effectText}</option>`;
+  });
+
+  const hasTitles = earnedTitles.length > 0;
+
   showModal('profile-modal', `
     <div class="profile-screen">
       <div class="profile-header">
         <div class="profile-avatar">${classIcon}</div>
         <div class="profile-identity">
           <div class="profile-name">${player.name}</div>
-          <div class="profile-title">${activeTitle || player.class?.charAt(0).toUpperCase() + player.class?.slice(1) || 'Adventurer'}</div>
+          <div class="profile-title-container">
+            ${hasTitles ? `
+              <select class="profile-title-dropdown" id="title-dropdown" onchange="changeActiveTitle(this.value)">
+                ${titleOptionsHtml}
+              </select>
+            ` : `
+              <div class="profile-title">${activeTitle || defaultTitle}</div>
+            `}
+          </div>
           <div class="profile-level">Level ${player.level}</div>
         </div>
       </div>
@@ -5073,6 +6205,64 @@ function showProfileScreen() {
       TooltipSystem.bindStats(modal);
     }
   }, 0);
+
+  // Tutorial: First time viewing stats
+  if (shouldShowTutorial('viewedStats')) {
+    markTutorialComplete('viewedStats');
+    setTimeout(() => {
+      showTutorialTip('viewStats', '.profile-stats-grid', () => {});
+    }, 300);
+  }
+}
+
+/**
+ * Change the player's active title
+ */
+function changeActiveTitle(titleId) {
+  if (!titleManager) {
+    showNotification('Title system not available', 'error');
+    return;
+  }
+
+  const result = titleManager.equipTitle(titleId || null);
+
+  if (result.success) {
+    const titleName = titleId ? titleManager.getTitle(titleId)?.name : 'default title';
+    showNotification(titleId ? `Equipped: ${titleName}` : 'Title unequipped', 'success');
+    renderHUD(); // Update HUD if title is shown there
+    autoSave();
+  } else {
+    showNotification(result.message || 'Failed to change title', 'error');
+  }
+}
+
+/**
+ * Format title effects for display in dropdown
+ */
+function formatTitleEffects(effects) {
+  if (!effects) return '';
+
+  const parts = [];
+
+  if (effects.xpBonus) {
+    parts.push(`+${Math.floor(effects.xpBonus * 100)}% XP`);
+  }
+  if (effects.goldBonus) {
+    parts.push(`+${Math.floor(effects.goldBonus * 100)}% Gold`);
+  }
+  if (effects.reputationBonus) {
+    parts.push(`+${Math.floor(effects.reputationBonus * 100)}% Rep`);
+  }
+  if (effects.hintBonus) {
+    parts.push(`+${effects.hintBonus} Hints`);
+  }
+  if (effects.statBonus) {
+    Object.entries(effects.statBonus).forEach(([stat, value]) => {
+      parts.push(`+${value} ${stat.charAt(0).toUpperCase() + stat.slice(1)}`);
+    });
+  }
+
+  return parts.join(', ');
 }
 
 // =====================================================
@@ -5096,12 +6286,13 @@ function renderProgressScreen() {
       <button class="progress-tab ${progressTab === 'milestones' ? 'active' : ''}" onclick="setProgressTab('milestones')">Milestones</button>
       <button class="progress-tab ${progressTab === 'achievements' ? 'active' : ''}" onclick="setProgressTab('achievements')">Achievements</button>
       <button class="progress-tab ${progressTab === 'reputation' ? 'active' : ''}" onclick="setProgressTab('reputation')">Reputation</button>
+      <button class="progress-tab ${progressTab === 'skills' ? 'active' : ''}" onclick="setProgressTab('skills')">Skills</button>
       <button class="progress-tab ${progressTab === 'learning' ? 'active' : ''}" onclick="setProgressTab('learning')">Learning</button>
     </div>
   `;
-  
+
   let contentHtml = '';
-  
+
   switch (progressTab) {
     case 'milestones':
       contentHtml = renderMilestonesTab();
@@ -5111,6 +6302,9 @@ function renderProgressScreen() {
       break;
     case 'reputation':
       contentHtml = renderReputationTab();
+      break;
+    case 'skills':
+      contentHtml = renderSkillsTab();
       break;
     case 'learning':
       contentHtml = renderLearningTab();
@@ -5136,6 +6330,14 @@ function renderProgressScreen() {
 function setProgressTab(tab) {
   progressTab = tab;
   renderProgressScreen();
+
+  // Tutorial: First time viewing reputation tab
+  if (tab === 'reputation' && shouldShowTutorial('viewedReputation')) {
+    markTutorialComplete('viewedReputation');
+    setTimeout(() => {
+      showTutorialTip('viewReputation', '.reputation-item', () => {});
+    }, 300);
+  }
 }
 
 function renderMilestonesTab() {
@@ -5252,6 +6454,77 @@ function renderLearningTab() {
   `;
 }
 
+function renderSkillsTab() {
+  const player = GameState.player;
+  const MAX_SKILL_LEVEL = 50;
+
+  // Define all skills with their icons and categories
+  const gatheringSkills = [
+    { id: 'mining', name: 'Mining', icon: '⛏️' },
+    { id: 'woodcutting', name: 'Woodcutting', icon: '🪓' },
+    { id: 'herbalism', name: 'Herbalism', icon: '🌿' },
+    { id: 'fishing', name: 'Fishing', icon: '🎣' },
+    { id: 'hunting', name: 'Hunting', icon: '🏹' }
+  ];
+
+  const craftingSkills = [
+    { id: 'alchemy', name: 'Alchemy', icon: '⚗️' },
+    { id: 'smithing', name: 'Smithing', icon: '🔨' },
+    { id: 'enchanting', name: 'Enchanting', icon: '✨' }
+  ];
+
+  const renderSkillRow = (skill) => {
+    const skillData = player.skills?.[skill.id] || { level: 1, xp: 0 };
+    const level = skillData.level || 1;
+    const xp = skillData.xp || 0;
+    const isMaxed = level >= MAX_SKILL_LEVEL;
+    const progressPercent = isMaxed ? 100 : Math.min(100, (xp / getSkillXPForLevel(level)) * 100);
+
+    return `
+      <div class="skill-row ${isMaxed ? 'maxed' : ''}">
+        <div class="skill-row-icon">${skill.icon}</div>
+        <div class="skill-row-info">
+          <div class="skill-row-name">${skill.name}</div>
+          <div class="skill-row-progress">
+            <div class="skill-row-bar">
+              <div class="skill-row-fill" style="width: ${progressPercent}%"></div>
+            </div>
+          </div>
+        </div>
+        <div class="skill-row-level ${isMaxed ? 'maxed' : ''}">
+          ${isMaxed ? '★ ' : ''}${level}
+        </div>
+      </div>
+    `;
+  };
+
+  return `
+    <div class="skills-section">
+      <div class="skills-category-title">⛏️ GATHERING</div>
+      <div class="skills-list">
+        ${gatheringSkills.map(renderSkillRow).join('')}
+      </div>
+    </div>
+
+    <div class="skills-section">
+      <div class="skills-category-title">🔨 CRAFTING</div>
+      <div class="skills-list">
+        ${craftingSkills.map(renderSkillRow).join('')}
+      </div>
+    </div>
+
+    <div class="skills-note">
+      Skills increase as you practice. Max level: ${MAX_SKILL_LEVEL}
+    </div>
+  `;
+}
+
+// Helper for skill XP requirements
+function getSkillXPForLevel(level) {
+  // Same formula as crafting skills: 100 * level
+  return 100 * level;
+}
+
 function renderReputationTab() {
   if (!reputationManager) return '<p>Reputation system not initialized.</p>';
 
@@ -5357,6 +6630,7 @@ function addReputationWithNotification(factionId, amount) {
 
       // Check if this triggers any achievements or milestones
       checkAchievements();
+      checkMilestones();
     }
 
     // Check for reputation-based artifact unlocks
@@ -5372,33 +6646,30 @@ function addReputationWithNotification(factionId, amount) {
 
 function showCharacterCreation() {
   document.getElementById('title-screen').style.display = 'none';
-  
-  const classOptions = Object.values(GAME_DATA.classes).map(cls => `
-    <div class="class-card" data-class="${cls.id}">
-      <div class="class-icon">${cls.icon || '🗡️'}</div>
-      <div class="class-name">${cls.name}</div>
-      <div class="class-desc">${cls.description}</div>
-      <div class="class-flavor">${cls.flavor || ''}</div>
-      <div class="class-stats">
-        <span class="stat-hp">❤️ ${cls.startingStats.maxHp} HP</span>
-        <span class="stat-atk">⚔️ ${cls.startingStats.attack} ATK</span>
-      </div>
-      <div class="class-bonus">✨ ${cls.bonusDesc || cls.bonus}</div>
-    </div>
-  `).join('');
-  
+
+  // Get base cleric class info
+  const clericClass = GAME_DATA.classes.cleric;
+
   showModal('character-creation', `
-    <h2 style="font-family: var(--font-display); font-size: 16px; color: var(--accent-gold); margin-bottom: 24px; text-align: center;">
+    <h2 style="font-family: var(--font-display); font-size: 16px; color: var(--accent-gold); margin-bottom: 16px; text-align: center;">
       Create Your Character
     </h2>
+    <div style="text-align: center; margin-bottom: 20px; padding: 16px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+      <div style="font-size: 32px; margin-bottom: 8px;">${clericClass.icon}</div>
+      <div style="font-family: var(--font-display); font-size: 14px; color: var(--accent-gold);">${clericClass.name}</div>
+      <div style="font-size: 11px; color: var(--text-dim); margin-top: 8px; font-style: italic;">
+        ${clericClass.flavor}
+      </div>
+    </div>
     <div style="margin-bottom: 24px; text-align: center;">
       <label style="display: block; font-family: var(--font-display); font-size: 14px; margin-bottom: 8px;">Your Name</label>
       <input type="text" class="name-input" id="player-name-input" placeholder="Enter name..." maxlength="20">
-      <div id="name-error" style="color: #e63946; font-size: 16px; margin-top: 8px; display: none;">Please enter a name to continue</div>
+      <div id="name-error" class="validation-message" style="display: none;">
+        <span class="validation-icon">⚠️</span> Please enter a name to continue
+      </div>
     </div>
-    <label style="display: block; font-family: var(--font-display); font-size: 14px; margin-bottom: 8px; text-align: center;">Choose Your Path</label>
-    <div class="class-options">
-      ${classOptions}
+    <div style="text-align: center; font-size: 11px; color: var(--text-dim); margin-bottom: 16px;">
+      Your Order specialization will be chosen later in your journey.
     </div>
     <div style="text-align: center; margin-top: 24px; display: flex; flex-direction: column; align-items: center; gap: 12px;">
       <button class="art-btn art-btn-large art-btn-gold" id="start-adventure-btn" disabled>
@@ -5416,44 +6687,21 @@ function showCharacterCreation() {
     document.getElementById('title-screen').style.display = 'flex';
   });
 
-  // Add class selection handlers
-  let selectedClass = null;
   const nameInput = document.getElementById('player-name-input');
   const nameError = document.getElementById('name-error');
 
-  document.querySelectorAll('.class-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const name = nameInput.value.trim();
-
-      // Show error if no name entered when selecting a class
-      if (!name) {
-        nameError.style.display = 'block';
-        nameInput.focus();
-        // Still allow class selection visually
-      }
-
-      document.querySelectorAll('.class-card').forEach(c => c.classList.remove('selected'));
-      card.classList.add('selected');
-      selectedClass = card.dataset.class;
-      checkCanStart();
-    });
-  });
-
-  nameInput.addEventListener('input', checkCanStart);
-  nameInput.addEventListener('focus', () => {
-    nameError.style.display = 'none';
-  });
-
-  function checkCanStart() {
+  nameInput.addEventListener('input', () => {
     const name = nameInput.value.trim();
     const btn = document.getElementById('start-adventure-btn');
-    btn.disabled = !name || !selectedClass;
-
-    // Hide error when user starts typing
+    btn.disabled = !name;
     if (name) {
       nameError.style.display = 'none';
     }
-  }
+  });
+
+  nameInput.addEventListener('focus', () => {
+    nameError.style.display = 'none';
+  });
 
   document.getElementById('start-adventure-btn').addEventListener('click', () => {
     const name = nameInput.value.trim();
@@ -5462,11 +6710,119 @@ function showCharacterCreation() {
       nameInput.focus();
       return;
     }
-    if (name && selectedClass) {
-      hideModal('character-creation');
-      showLanguageSelection(name, selectedClass);
-    }
+    hideModal('character-creation');
+    // Default to cleric class - specialization chosen later
+    showLanguageSelection(name, 'cleric');
   });
+}
+
+// =====================================================
+// Order Selection (Mid-game class choice)
+// =====================================================
+
+function showOrderSelection() {
+  // Get the specialization classes (not the base cleric)
+  const orders = Object.values(GAME_DATA.classes).filter(cls => !cls.isBaseClass);
+
+  const orderCards = orders.map(order => `
+    <div class="order-card" data-order="${order.id}">
+      <div class="order-icon">${order.icon}</div>
+      <div class="order-name">${order.name}</div>
+      <div class="order-desc">${order.description}</div>
+      <div class="order-flavor">${order.flavor}</div>
+      <div class="order-bonus">
+        <span class="bonus-label">Blessing:</span> ${order.bonus}
+      </div>
+    </div>
+  `).join('');
+
+  showModal('order-selection', `
+    <h2 style="font-family: var(--font-display); font-size: 16px; color: var(--accent-gold); margin-bottom: 8px; text-align: center;">
+      Choose Your Order
+    </h2>
+    <p style="text-align: center; font-size: 11px; color: var(--text-dim); margin-bottom: 20px;">
+      This choice will shape your abilities and your role in the Light's service.
+    </p>
+    <div class="order-options">
+      ${orderCards}
+    </div>
+    <div style="text-align: center; margin-top: 20px;">
+      <button class="art-btn art-btn-large art-btn-gold" id="confirm-order-btn" disabled>
+        Commit to This Path
+      </button>
+    </div>
+  `);
+
+  let selectedOrder = null;
+
+  document.querySelectorAll('.order-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.order-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      selectedOrder = card.dataset.order;
+      document.getElementById('confirm-order-btn').disabled = false;
+    });
+  });
+
+  document.getElementById('confirm-order-btn').addEventListener('click', () => {
+    if (!selectedOrder) return;
+    applyOrderSelection(selectedOrder);
+    hideModal('order-selection');
+  });
+}
+
+function applyOrderSelection(orderId) {
+  const orderData = GAME_DATA.classes[orderId];
+  if (!orderData) {
+    console.error('Order not found:', orderId);
+    return;
+  }
+
+  const baseStats = GAME_DATA.classes.cleric.startingStats;
+  const orderStats = orderData.startingStats;
+
+  // Calculate HP difference from base cleric
+  const hpDiff = orderStats.maxHp - baseStats.maxHp;
+
+  // Apply stat changes
+  GameState.player.maxHp += hpDiff;
+  GameState.player.hp = Math.min(GameState.player.hp + Math.max(0, hpDiff), GameState.player.maxHp);
+
+  // Update player class
+  GameState.player.class = orderId;
+
+  // Grant starting items for the order
+  if (orderData.startingItems && orderData.startingItems.length > 0) {
+    orderData.startingItems.forEach(itemId => {
+      addItemToInventory(itemId);
+    });
+  }
+
+  // Complete the quest objective
+  const activeQuest = GameState.player.activeQuests.find(q => q.id === 'choose_your_path');
+  if (activeQuest) {
+    const objective = activeQuest.objectives.find(o => o.id === 'choose_order');
+    if (objective) {
+      objective.completed = true;
+      showNotification(`Objective Complete: Choose your Order`);
+      checkQuestCompletion('choose_your_path');
+    }
+  }
+
+  // Show confirmation
+  showNotification(`You have joined the ${orderData.name}!`, 'success');
+
+  // Update UI
+  renderHUD();
+  renderQuestPanel();
+
+  // Save
+  autoSave();
+}
+
+// Check if player needs to choose an order (for quest system)
+function playerNeedsOrderSelection() {
+  return GameState.player.class === 'cleric';
 }
 
 // Language Selection Screen
@@ -5526,10 +6882,16 @@ function showLanguageSelection(playerName, classId) {
 function startNewGame(name, classId, language = 'french') {
   const classData = GAME_DATA.classes[classId];
 
+  // Reset permanent upgrades for new game
+  if (typeof accountProgression !== 'undefined' && accountProgression.resetForTesting) {
+    accountProgression.resetForTesting();
+  }
+
   GameState.player.name = name;
   GameState.player.class = classId;
   GameState.player.language = language;
   GameState.player.createdAt = Date.now();
+  GameState.player.freeReviveUsed = false; // First death is free
   
   // Initialize stats system
   if (statsManager) {
@@ -5572,27 +6934,20 @@ function startGame() {
   renderQuestPanel();
   updateNavButtonVisibility();
 
-  // Only show intro dialog for new games (intro not yet completed)
+  // Only show intro cutscene for new games (intro not yet completed)
   if (shouldShowTutorial('intro')) {
     setTimeout(() => {
-      showDialog('Narrator',
-        `You arrive at the small settlement of Dawnmere, a frontier town built along the trade routes of the river. The people here seek opportunity and a fresh start, far from the politics of the great cities. Perhaps you will find what you seek here as well...`,
-        [{
-          text: "Begin exploring",
-          action: () => {
-            hideDialog();
-            markTutorialComplete('intro');
-            // Show first tutorial tip after a brief delay
-            if (shouldShowTutorial('clickedNpc')) {
-              setTimeout(() => {
-                showTutorialTip('clickNpc', '.npc-sprite', () => {
-                  // Highlight stays until they click an NPC
-                });
-              }, 800);
-            }
-          }
-        }]
-      );
+      CutsceneManager.play('intro_dawnmere', () => {
+        markTutorialComplete('intro');
+        // Show first tutorial tip after a brief delay
+        if (shouldShowTutorial('clickedNpc')) {
+          setTimeout(() => {
+            showTutorialTip('clickNpc', '.npc-sprite', () => {
+              // Highlight stays until they click an NPC
+            });
+          }, 800);
+        }
+      });
     }, 500);
   }
 }
@@ -5649,6 +7004,11 @@ function initGame() {
   // Initialize Enchanting Manager
   if (typeof EnchantingManager !== 'undefined') {
     enchantingManager = new EnchantingManager(GameState);
+  }
+
+  // Initialize Village Projects Manager
+  if (typeof VillageProjectsManager !== 'undefined') {
+    villageProjectsManager = new VillageProjectsManager(GameState);
   }
 
   // Initialize Spellbook Manager
@@ -5875,6 +7235,9 @@ function handleNavigation(screen) {
     case 'crafting':
       openCrafting('alchemy');
       break;
+    case 'projects':
+      showVillageProjectsScreen();
+      break;
   }
 }
 
@@ -5887,80 +7250,71 @@ function showQuestsScreen() {
   const completedQuests = questManager ? questManager.getCompletedQuests() : [];
 
   // Build filter tabs
-  let filterHtml = `
-    <div class="quest-filters">
-      <button class="filter-btn ${filter === 'all' ? 'active' : ''}" data-filter="all">All</button>
-      <button class="filter-btn ${filter === 'active' ? 'active' : ''}" data-filter="active">Active</button>
-      <button class="filter-btn ${filter === 'available' ? 'active' : ''}" data-filter="available">New</button>
-      <button class="filter-btn ${filter === 'daily' ? 'active' : ''}" data-filter="daily">Daily</button>
-      <button class="filter-btn ${filter === 'completed' ? 'active' : ''}" data-filter="completed">Done</button>
+  const filterHtml = `
+    <div class="ql-filters">
+      <button class="ql-filter-btn ${filter === 'all' ? 'active' : ''}" data-filter="all">All</button>
+      <button class="ql-filter-btn ${filter === 'active' ? 'active' : ''}" data-filter="active">Active</button>
+      <button class="ql-filter-btn ${filter === 'available' ? 'active' : ''}" data-filter="available">Available</button>
+      <button class="ql-filter-btn ${filter === 'completed' ? 'active' : ''}" data-filter="completed">Completed</button>
     </div>
   `;
-
-  let questsHtml = '';
 
   // Filter logic
   const showActive = filter === 'all' || filter === 'active';
   const showAvailable = filter === 'all' || filter === 'available';
   const showCompleted = filter === 'completed';
-  const showDaily = filter === 'daily';
 
-  // Active quests
+  // Build quest list (left panel)
+  let questListHtml = '';
+
   if (showActive && activeQuests.length > 0) {
-    questsHtml += '<div class="quest-section"><h3 class="quest-section-header">⚔️ ACTIVE</h3>';
+    questListHtml += '<div class="ql-section"><div class="ql-section-header">⚔️ Active</div>';
     activeQuests.forEach(quest => {
-      questsHtml += renderQuestItem(quest, QuestStatus.ACTIVE);
+      questListHtml += renderQuestListItem(quest, QuestStatus.ACTIVE);
     });
-    questsHtml += '</div>';
+    questListHtml += '</div>';
   }
 
-  // Available quests
   if (showAvailable && availableQuests.length > 0) {
-    questsHtml += '<div class="quest-section"><h3 class="quest-section-header">❗ AVAILABLE</h3>';
+    questListHtml += '<div class="ql-section"><div class="ql-section-header">❗ Available</div>';
     availableQuests.forEach(quest => {
-      questsHtml += renderQuestItem(quest, QuestStatus.AVAILABLE);
+      questListHtml += renderQuestListItem(quest, QuestStatus.AVAILABLE);
     });
-    questsHtml += '</div>';
+    questListHtml += '</div>';
   }
 
-  // Daily quests
-  if (showDaily) {
-    const dailyQuests = [...activeQuests, ...availableQuests].filter(q =>
-      q.type === QuestType.DAILY || q.type === QuestType.WEEKLY
-    );
-    if (dailyQuests.length > 0) {
-      questsHtml += '<div class="quest-section"><h3 class="quest-section-header">📅 DAILY & WEEKLY</h3>';
-      dailyQuests.forEach(quest => {
-        questsHtml += renderQuestItem(quest, quest.status || QuestStatus.AVAILABLE);
-      });
-      questsHtml += '</div>';
-    } else {
-      questsHtml += '<div class="quest-section"><p class="no-quests">No daily or weekly quests available</p></div>';
-    }
-  }
-
-  // Completed quests
   if (showCompleted && completedQuests.length > 0) {
-    questsHtml += '<div class="quest-section"><h3 class="quest-section-header">✅ COMPLETED</h3>';
-    completedQuests.slice(0, 10).forEach(quest => {
-      questsHtml += renderQuestItem(quest, QuestStatus.COMPLETED);
+    questListHtml += '<div class="ql-section"><div class="ql-section-header">✅ Completed</div>';
+    completedQuests.slice(0, 20).forEach(quest => {
+      questListHtml += renderQuestListItem(quest, QuestStatus.COMPLETED);
     });
-    questsHtml += '</div>';
+    questListHtml += '</div>';
   }
 
-  // No quests message
-  if (!questsHtml) {
-    questsHtml = '<div class="quest-section"><p class="no-quests">No quests to display</p></div>';
+  if (!questListHtml) {
+    questListHtml = '<div class="ql-empty">No quests to display</div>';
   }
+
+  // Build detail panel (right side)
+  const detailHtml = GameState.selectedQuest
+    ? renderQuestDetail(GameState.selectedQuest)
+    : '<div class="ql-detail-empty"><div class="ql-detail-empty-icon">📜</div><div>Select a quest to view details</div></div>';
 
   const content = `
-    <div class="screen-content quests-screen">
-      <h2 class="screen-title">📜 Quest Log</h2>
-      ${filterHtml}
-      <div class="quests-list">
-        ${questsHtml}
+    <div class="quest-log-container">
+      <div class="ql-header">
+        <h2 class="ql-title">📜 Quest Log</h2>
+        ${filterHtml}
       </div>
-      <div style="text-align: right; margin-top: 16px;">
+      <div class="ql-body">
+        <div class="ql-list-panel">
+          ${questListHtml}
+        </div>
+        <div class="ql-detail-panel">
+          ${detailHtml}
+        </div>
+      </div>
+      <div class="ql-footer">
         <button class="pixel-btn" onclick="hideModal('quests-modal')">Close</button>
       </div>
     </div>
@@ -5969,7 +7323,7 @@ function showQuestsScreen() {
   showModal('quests-modal', content);
 
   // Add filter button handlers
-  document.querySelectorAll('.quest-filters .filter-btn').forEach(btn => {
+  document.querySelectorAll('.ql-filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       GameState.questFilter = btn.dataset.filter;
       showQuestsScreen();
@@ -5977,15 +7331,205 @@ function showQuestsScreen() {
   });
 
   // Add quest click handlers
-  document.querySelectorAll('.quest-item').forEach(item => {
+  document.querySelectorAll('.ql-quest-item').forEach(item => {
     item.addEventListener('click', () => {
-      const questId = item.dataset.questId;
-      toggleQuestDetails(questId);
+      const questId = item.dataset.quest;
+      GameState.selectedQuest = questId;
+      showQuestsScreen();
+    });
+  });
+
+  // Add action button handlers
+  document.querySelectorAll('.ql-action-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const questId = btn.dataset.quest;
+      const action = btn.dataset.action;
+      if (action === 'accept') {
+        acceptQuest(questId);
+        showQuestsScreen();
+      } else if (action === 'abandon') {
+        abandonQuest(questId);
+        showQuestsScreen();
+      }
     });
   });
 }
 
+// Render a compact quest item for the list (left panel)
+function renderQuestListItem(quest, status) {
+  const questData = getQuest(quest.id) || quest;
+  const isSelected = GameState.selectedQuest === quest.id;
+  const typeInfo = getQuestTypeInfo(questData.type);
+
+  // Calculate completion for active quests
+  let progressHtml = '';
+  if (status === QuestStatus.ACTIVE && quest.objectives) {
+    const total = quest.objectives.length;
+    const completed = quest.objectives.filter(o => o.completed).length;
+    const percent = Math.round((completed / total) * 100);
+    progressHtml = `<div class="ql-progress"><div class="ql-progress-bar" style="width: ${percent}%"></div></div>`;
+  }
+
+  // Status indicator
+  let statusIcon = '';
+  if (status === QuestStatus.ACTIVE) {
+    const allComplete = quest.objectives?.every(o => o.completed);
+    statusIcon = allComplete ? '✓' : '';
+  } else if (status === QuestStatus.AVAILABLE) {
+    statusIcon = '!';
+  } else if (status === QuestStatus.COMPLETED) {
+    statusIcon = '✓';
+  }
+
+  return `
+    <div class="ql-quest-item ${status} ${isSelected ? 'selected' : ''}" data-quest="${quest.id}">
+      <span class="ql-quest-icon" style="color: ${typeInfo.color}">${typeInfo.icon}</span>
+      <span class="ql-quest-name">${questData.name}</span>
+      ${statusIcon ? `<span class="ql-quest-status ${status}">${statusIcon}</span>` : ''}
+      ${progressHtml}
+    </div>
+  `;
+}
+
+// Render detailed quest info (right panel)
+function renderQuestDetail(questId) {
+  const activeQuest = GameState.player.activeQuests.find(q => q.id === questId);
+  const questData = getQuest(questId);
+
+  if (!questData) {
+    return '<div class="ql-detail-empty">Quest not found</div>';
+  }
+
+  const isActive = !!activeQuest;
+  const isCompleted = GameState.player.completedQuests.includes(questId);
+  const isAvailable = !isActive && !isCompleted;
+
+  const typeInfo = getQuestTypeInfo(questData.type);
+  const categoryInfo = getQuestCategoryInfo(questData.category);
+
+  // Quest giver info
+  const giver = questData.giver ? (typeof getNPC === 'function' ? getNPC(questData.giver) : null) : null;
+  const giverName = giver?.name || questData.giver || 'Unknown';
+
+  // Build objectives HTML
+  let objectivesHtml = '<div class="ql-objectives">';
+  if (questData.objectives) {
+    questData.objectives.forEach(obj => {
+      const progress = activeQuest?.objectives?.find(o => o.id === obj.id);
+      const completed = progress?.completed || isCompleted;
+      const count = progress?.count || 0;
+
+      let objText = obj.text;
+      if (obj.target && !isCompleted) {
+        objText += ` (${count}/${obj.target})`;
+      }
+
+      objectivesHtml += `
+        <div class="ql-objective ${completed ? 'completed' : ''}">
+          <span class="ql-obj-check">${completed ? '✓' : '○'}</span>
+          <span class="ql-obj-text">${objText}</span>
+        </div>
+      `;
+    });
+  }
+  objectivesHtml += '</div>';
+
+  // Build rewards HTML
+  let rewardsHtml = '';
+  if (questData.rewards) {
+    rewardsHtml = '<div class="ql-rewards"><div class="ql-rewards-title">Rewards</div><div class="ql-rewards-list">';
+    if (questData.rewards.xp) {
+      rewardsHtml += `<span class="ql-reward">⭐ ${questData.rewards.xp} XP</span>`;
+    }
+    if (questData.rewards.gold) {
+      rewardsHtml += `<span class="ql-reward">💰 ${questData.rewards.gold} Gold</span>`;
+    }
+    if (questData.rewards.items?.length > 0) {
+      questData.rewards.items.forEach(itemId => {
+        const item = GAME_DATA.items[itemId];
+        if (item) {
+          rewardsHtml += `<span class="ql-reward">${item.icon} ${item.name}</span>`;
+        }
+      });
+    }
+    if (questData.rewards.reputation) {
+      Object.entries(questData.rewards.reputation).forEach(([faction, amount]) => {
+        rewardsHtml += `<span class="ql-reward">🏛️ +${amount} Rep</span>`;
+      });
+    }
+    rewardsHtml += '</div></div>';
+  }
+
+  // Chain info
+  let chainHtml = '';
+  if (questData.chainId && questManager) {
+    const chainProgress = questManager.getChainProgress(questData.chainId);
+    if (chainProgress) {
+      chainHtml = `<div class="ql-chain">🔗 Part ${questData.chainOrder} of ${chainProgress.total}</div>`;
+    }
+  }
+
+  // Action buttons
+  let actionsHtml = '<div class="ql-actions">';
+  if (isAvailable) {
+    actionsHtml += `<button class="pixel-btn pixel-btn-gold ql-action-btn" data-quest="${questId}" data-action="accept">Accept Quest</button>`;
+  } else if (isActive) {
+    const allComplete = activeQuest.objectives?.every(o => o.completed);
+    if (allComplete) {
+      actionsHtml += `<div class="ql-ready">✓ Ready to turn in - speak to ${giverName}</div>`;
+    }
+    if (!questData.cannotAbandon) {
+      actionsHtml += `<button class="pixel-btn ql-action-btn ql-abandon-btn" data-quest="${questId}" data-action="abandon">Abandon Quest</button>`;
+    }
+  } else if (isCompleted) {
+    actionsHtml += `<div class="ql-completed-badge">✓ Quest Completed</div>`;
+  }
+  actionsHtml += '</div>';
+
+  return `
+    <div class="ql-detail">
+      <div class="ql-detail-header">
+        <span class="ql-detail-type" style="background: ${typeInfo.color}">${typeInfo.icon} ${typeInfo.label}</span>
+        <span class="ql-detail-category">${categoryInfo.icon} ${categoryInfo.label}</span>
+      </div>
+      <h3 class="ql-detail-title">${questData.name}</h3>
+      <div class="ql-detail-giver">Quest Giver: <span>${giverName}</span></div>
+      ${chainHtml}
+      <div class="ql-detail-desc">${questData.description}</div>
+      <div class="ql-detail-section">
+        <div class="ql-section-label">Objectives</div>
+        ${objectivesHtml}
+      </div>
+      ${rewardsHtml}
+      ${actionsHtml}
+    </div>
+  `;
+}
+
+function abandonQuest(questId) {
+  const questData = getQuest(questId);
+  if (questData?.cannotAbandon) {
+    showNotification("This quest cannot be abandoned", 'error');
+    return;
+  }
+
+  const index = GameState.player.activeQuests.findIndex(q => q.id === questId);
+  if (index > -1) {
+    GameState.player.activeQuests.splice(index, 1);
+    GameState.selectedQuest = null;
+    showNotification(`Quest abandoned: ${questData?.name || questId}`);
+    renderQuestPanel();
+    autoSave();
+  }
+}
+
 function showInventoryScreen() {
+  // Hide any lingering tooltips when refreshing inventory
+  if (typeof TooltipSystem !== 'undefined') {
+    TooltipSystem.hide();
+  }
+
   const equipment = GameState.player.equipment;
   const inventory = GameState.player.inventory;
 
@@ -6003,9 +7547,15 @@ function showInventoryScreen() {
     `;
   }).join('');
 
+  // Filter out resources from inventory grid (they display in separate section)
+  const nonResourceItems = inventory.filter(item => {
+    const itemData = GAME_DATA.items[item.id];
+    return itemData && itemData.type !== 'resource';
+  });
+
   let inventoryHtml = '';
   for (let i = 0; i < 24; i++) {
-    const item = inventory[i];
+    const item = nonResourceItems[i];
     if (item) {
       const itemData = GAME_DATA.items[item.id];
       inventoryHtml += `
@@ -6163,6 +7713,9 @@ function showSellScreen() {
     `).join('');
   }
 
+  // Calculate total value if selling everything
+  const totalValue = sellableItems.reduce((sum, entry) => sum + (entry.sellPrice * entry.count), 0);
+
   showModal('sell-modal', `
     <div class="sell-screen">
       <div class="sell-header">
@@ -6173,6 +7726,12 @@ function showSellScreen() {
         </div>
       </div>
       <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">Items sell for 50% of their value.</p>
+      ${sellableItems.length > 0 ? `
+        <div style="margin-bottom: 12px; padding: 8px; background: var(--bg-dark); border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 12px; color: var(--text-muted);">Sell all items for <span style="color: var(--accent-gold);">${totalValue} gold</span></span>
+          <button class="pixel-btn pixel-btn-small" onclick="sellAllItems()">Sell All Items</button>
+        </div>
+      ` : ''}
       <div class="sell-items-list">
         ${itemsHtml}
       </div>
@@ -6208,9 +7767,87 @@ function sellItemFromScreen(itemId, quantity) {
   }
 }
 
+function sellAllItems() {
+  if (!shopManager) return;
+
+  const sellableItems = shopManager.getSellableItems();
+  if (sellableItems.length === 0) {
+    showNotification("No items to sell!", 'error');
+    return;
+  }
+
+  let totalGold = 0;
+  let itemsSold = 0;
+
+  // Sell each item stack
+  for (const entry of sellableItems) {
+    const result = shopManager.sellItem(entry.itemId, entry.count);
+    if (result.success) {
+      totalGold += entry.sellPrice * entry.count;
+      itemsSold += entry.count;
+    }
+  }
+
+  if (itemsSold > 0) {
+    showNotification(`Sold ${itemsSold} items for ${totalGold} gold!`, 'success');
+    renderHUD();
+    autoSave();
+    showSellScreen(); // Refresh
+  } else {
+    showNotification("Failed to sell items!", 'error');
+  }
+}
+
 // =====================================================
 // Gather Screen (Resource Minigames)
 // =====================================================
+
+// Zone-based gathering configuration
+// Each zone has specific gathering types available at specific tiers
+const ZONE_GATHERING_CONFIG = {
+  dawnmere: {
+    tier: 1,
+    name: "Dawnmere",
+    gathering: {
+      mining: { available: true, tierName: "Copper Vein" },
+      woodcutting: { available: true, tierName: "Pine Forest" },
+      hunting: { available: true, tierName: "Boar Territory" },
+      herbalism: { available: true, tierName: "Meadow" },
+      fishing: { available: true, tierName: "River" }
+    }
+  },
+  haari_fields: {
+    tier: 2,
+    name: "Haari Fields",
+    gathering: {
+      mining: { available: true, tierName: "Iron Deposit" },
+      woodcutting: { available: true, tierName: "Oak Grove" },
+      hunting: { available: true, tierName: "Wolf Den" },
+      herbalism: { available: true, tierName: "Wild Garden" },
+      fishing: { available: true, tierName: "Lake" }
+    }
+  },
+  lurenium: {
+    tier: 3,
+    name: "Lurenium",
+    gathering: {
+      mining: { available: true, tierName: "Silver Mine" },
+      woodcutting: { available: true, tierName: "Ironwood Stand" },
+      hunting: { available: true, tierName: "Bear Grounds" },
+      herbalism: { available: true, tierName: "Moonlit Grove" },
+      fishing: { available: true, tierName: "Deep Sea" }
+    }
+  }
+};
+
+// Base minigame definitions
+const GATHERING_MINIGAMES = [
+  { id: 'mining', name: 'Mining', icon: '⛏️', desc: 'Timed Quiz - Answer quickly!', resource: 'ore' },
+  { id: 'woodcutting', name: 'Woodcutting', icon: '🪓', desc: 'Streak Challenge - Build combos!', resource: 'wood' },
+  { id: 'hunting', name: 'Hunting', icon: '🏹', desc: 'Speed Round - Race the clock!', resource: 'hide' },
+  { id: 'herbalism', name: 'Herbalism', icon: '🌿', desc: 'Matching Pairs - Find matches!', resource: 'herb' },
+  { id: 'fishing', name: 'Fishing', icon: '🎣', desc: 'Reaction Game - Quick reflexes!', resource: 'fish' }
+];
 
 function showGatherScreen() {
   if (typeof resourceMinigameManager === 'undefined') {
@@ -6218,23 +7855,37 @@ function showGatherScreen() {
     return;
   }
 
-  const minigameTypes = [
-    { id: 'mining', name: 'Mining', icon: '⛏️', desc: 'Timed Quiz - Answer quickly!', resource: 'ore' },
-    { id: 'woodcutting', name: 'Woodcutting', icon: '🪓', desc: 'Streak Challenge - Build combos!', resource: 'wood' },
-    { id: 'hunting', name: 'Hunting', icon: '🏹', desc: 'Speed Round - Race the clock!', resource: 'hide' },
-    { id: 'herbalism', name: 'Herbalism', icon: '🌿', desc: 'Matching Pairs - Find matches!', resource: 'herb' },
-    { id: 'fishing', name: 'Fishing', icon: '🎣', desc: 'Reaction Game - Quick reflexes!', resource: 'fish' },
-    { id: 'scramble', name: 'Word Scramble', icon: '🔤', desc: 'Unscramble letters to spell words', resource: 'knowledge' },
-    { id: 'memory', name: 'Memory Cards', icon: '🃏', desc: 'Match French/English pairs', resource: 'knowledge' },
-    { id: 'hangman', name: 'Hangman', icon: '📝', desc: 'Guess the word letter by letter', resource: 'knowledge' }
-  ];
+  // Get current location and zone config
+  const currentLocation = GameState.currentLocation || 'dawnmere';
+  const zoneConfig = ZONE_GATHERING_CONFIG[currentLocation] || ZONE_GATHERING_CONFIG.dawnmere;
+  const zoneTier = zoneConfig.tier;
 
-  const minigamesHtml = minigameTypes.map(mg => `
+  // Filter and enhance minigames based on location
+  const availableMinigames = GATHERING_MINIGAMES.filter(mg => {
+    const gatherConfig = zoneConfig.gathering[mg.id];
+    return gatherConfig && gatherConfig.available;
+  }).map(mg => {
+    const gatherConfig = zoneConfig.gathering[mg.id];
+    return {
+      ...mg,
+      tierName: gatherConfig.tierName,
+      tier: zoneTier
+    };
+  });
+
+  // Tier indicator colors
+  const tierColors = { 1: '#cd7f32', 2: '#c0c0c0', 3: '#ffd700' }; // bronze, silver, gold
+  const tierLabels = { 1: 'Tier I', 2: 'Tier II', 3: 'Tier III' };
+
+  const minigamesHtml = availableMinigames.map(mg => `
     <div class="gather-option" onclick="startGatherMinigame('${mg.id}')">
       <div class="gather-icon">${mg.icon}</div>
       <div class="gather-info">
         <div class="gather-name">${mg.name}</div>
         <div class="gather-desc">${mg.desc}</div>
+        <div class="gather-tier" style="font-size: 10px; color: ${tierColors[mg.tier]}; margin-top: 2px;">
+          ${mg.tierName} (${tierLabels[mg.tier]})
+        </div>
       </div>
     </div>
   `).join('');
@@ -6244,8 +7895,11 @@ function showGatherScreen() {
       <h2 style="font-family: var(--font-display); color: var(--accent-gold); margin-bottom: 8px;">
         ⛏️ GATHER RESOURCES
       </h2>
-      <p style="color: var(--text-muted); font-size: 12px; margin-bottom: 16px;">
+      <p style="color: var(--text-muted); font-size: 12px; margin-bottom: 4px;">
         Practice French vocabulary while gathering crafting materials!
+      </p>
+      <p style="color: ${tierColors[zoneTier]}; font-size: 11px; margin-bottom: 16px;">
+        Location: ${zoneConfig.name} - ${tierLabels[zoneTier]} Resources
       </p>
       <div class="gather-options">
         ${minigamesHtml}
@@ -6266,14 +7920,15 @@ function startGatherMinigame(type) {
     woodcutting: 'wood',
     hunting: 'hide',
     herbalism: 'herb',
-    fishing: 'fish',
-    scramble: 'ore',  // Word games use mining vocab by default
-    memory: 'herb',   // Memory uses herbalism vocab
-    hangman: 'wood'   // Hangman uses woodcutting vocab
+    fishing: 'fish'
   };
 
   const resourceType = resourceMap[type] || 'ore';
-  const tier = 1; // Start with tier 1
+
+  // Get tier from current location
+  const currentLocation = GameState.currentLocation || 'dawnmere';
+  const zoneConfig = ZONE_GATHERING_CONFIG[currentLocation] || ZONE_GATHERING_CONFIG.dawnmere;
+  const tier = zoneConfig.tier;
 
   if (typeof resourceMinigameManager !== 'undefined') {
     resourceMinigameManager.startMinigame(type, resourceType, tier);
@@ -6382,19 +8037,35 @@ function showMapScreen() {
 
 function travelToLocation(locationId) {
   if (!locationManager) return;
-  
+
   const result = locationManager.travelTo(locationId);
-  
+
   if (result.success) {
     hideModal('map-modal');
     showNotification(result.message, 'success');
-    
+
+    // Update travel quest objectives
+    checkTravelObjectives(locationId);
+
     // Update game view for new location
     renderLocation();
     renderQuestPanel();
     autoSave();
   } else {
     showNotification(result.message, 'error');
+  }
+}
+
+function checkTravelObjectives(locationId) {
+  if (!questSystem) return;
+
+  const activeQuests = questSystem.getActiveQuests();
+  for (const quest of activeQuests) {
+    for (const obj of quest.objectives) {
+      if (obj.type === 'travel' && obj.target === locationId && !obj.completed) {
+        updateQuestProgress(quest.id, obj.id, 1);
+      }
+    }
   }
 }
 
@@ -6508,6 +8179,195 @@ function unequipTitle() {
     renderHUD();
     autoSave();
   }
+}
+
+// =====================================================
+// Village Projects Screen
+// =====================================================
+
+function showVillageProjectsScreen() {
+  if (!villageProjectsManager) {
+    showNotification("Village projects not available yet!", 'error');
+    return;
+  }
+
+  const locationId = GameState.currentLocation;
+  const projects = villageProjectsManager.getProjectsForLocation(locationId);
+  const turnins = RESOURCE_TURNINS[locationId];
+
+  // Build projects list
+  let projectsHtml = '';
+  if (projects.length === 0) {
+    projectsHtml = '<div class="vp-empty">No projects available in this location.</div>';
+  } else {
+    projects.forEach(project => {
+      const status = villageProjectsManager.getProjectStatus(project.id);
+      const progress = villageProjectsManager.getProjectProgress(project.id);
+
+      let statusClass = '';
+      let statusIcon = '';
+      if (status === ProjectStatus.COMPLETED) {
+        statusClass = 'completed';
+        statusIcon = '✅';
+      } else if (status === ProjectStatus.LOCKED) {
+        statusClass = 'locked';
+        statusIcon = '🔒';
+      } else {
+        statusClass = 'available';
+        statusIcon = '🔨';
+      }
+
+      // Build requirements list
+      let requirementsHtml = '';
+      if (status !== ProjectStatus.COMPLETED) {
+        requirementsHtml = '<div class="vp-requirements">';
+        progress.requirements.forEach(req => {
+          const playerCount = villageProjectsManager.getPlayerItemCount(req.item);
+          const isComplete = req.contributed >= req.required;
+          requirementsHtml += `
+            <div class="vp-requirement ${isComplete ? 'complete' : ''}">
+              <span class="vp-req-label">${req.label}</span>
+              <span class="vp-req-progress">${req.contributed}/${req.required}</span>
+              ${!isComplete && playerCount > 0 ? `
+                <button class="pixel-btn pixel-btn-small vp-contribute-btn"
+                  data-project="${project.id}"
+                  data-item="${req.item}"
+                  data-max="${Math.min(playerCount, req.required - req.contributed)}">
+                  + (${playerCount})
+                </button>
+              ` : ''}
+            </div>
+          `;
+        });
+        requirementsHtml += '</div>';
+      }
+
+      projectsHtml += `
+        <div class="vp-project ${statusClass}">
+          <div class="vp-project-header">
+            <span class="vp-project-icon">${project.icon}</span>
+            <span class="vp-project-name">${project.name}</span>
+            <span class="vp-project-status">${statusIcon}</span>
+          </div>
+          <div class="vp-project-desc">${project.description}</div>
+          ${status !== ProjectStatus.COMPLETED ? `
+            <div class="vp-progress-bar">
+              <div class="vp-progress-fill" style="width: ${progress.percentage}%"></div>
+              <span class="vp-progress-text">${progress.percentage}%</span>
+            </div>
+          ` : `
+            <div class="vp-completion-text">${project.completionText}</div>
+          `}
+          ${requirementsHtml}
+        </div>
+      `;
+    });
+  }
+
+  // Build turn-ins section
+  let turninsHtml = '';
+  if (turnins && turnins.turnins.length > 0) {
+    turninsHtml = `
+      <div class="vp-turnins-section">
+        <h3 class="vp-section-title">📦 Resource Contributions</h3>
+        <p class="vp-section-desc">${turnins.description}</p>
+        <div class="vp-turnins-list">
+    `;
+
+    turnins.turnins.forEach(turnin => {
+      const count = villageProjectsManager.state.player.villageProjects?.turnins?.[turnin.id] || 0;
+      const remaining = turnin.maxTurnins - count;
+      const playerAmount = villageProjectsManager.getPlayerItemCount(turnin.resource);
+      const canTurnIn = remaining > 0 && playerAmount >= turnin.amountPer;
+
+      turninsHtml += `
+        <div class="vp-turnin ${remaining <= 0 ? 'maxed' : ''}">
+          <div class="vp-turnin-header">
+            <span class="vp-turnin-icon">${turnin.icon}</span>
+            <span class="vp-turnin-name">${turnin.resourceName}</span>
+            <span class="vp-turnin-npc">→ ${turnin.npcName}</span>
+          </div>
+          <div class="vp-turnin-info">
+            <span class="vp-turnin-rate">${turnin.amountPer}x for +${turnin.reputationPer} rep</span>
+            <span class="vp-turnin-progress">${count}/${turnin.maxTurnins} done</span>
+          </div>
+          ${remaining > 0 ? `
+            <div class="vp-turnin-flavor">"${turnin.flavor}"</div>
+            ${canTurnIn ? `
+              <button class="pixel-btn pixel-btn-small vp-turnin-btn"
+                data-turnin="${turnin.id}"
+                data-location="${locationId}">
+                Turn In (have ${playerAmount})
+              </button>
+            ` : `
+              <span class="vp-turnin-need">Need ${turnin.amountPer} ${turnin.resourceName}</span>
+            `}
+          ` : `
+            <div class="vp-turnin-maxed">Maximum contributions reached!</div>
+          `}
+        </div>
+      `;
+    });
+
+    turninsHtml += '</div></div>';
+  }
+
+  const locationName = GAME_DATA.locations[locationId]?.name || locationId;
+
+  const content = `
+    <div class="village-projects-container">
+      <div class="vp-header">
+        <h2 class="vp-title">🏘️ ${locationName} Projects</h2>
+      </div>
+      <div class="vp-body">
+        <div class="vp-projects-section">
+          <h3 class="vp-section-title">🔨 Building Projects</h3>
+          ${projectsHtml}
+        </div>
+        ${turninsHtml}
+      </div>
+      <div class="vp-footer">
+        <button class="pixel-btn" onclick="hideModal('village-projects-modal')">Close</button>
+      </div>
+    </div>
+  `;
+
+  showModal('village-projects-modal', content);
+
+  // Bind contribution buttons
+  document.querySelectorAll('.vp-contribute-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const projectId = btn.dataset.project;
+      const itemId = btn.dataset.item;
+      const maxAmount = parseInt(btn.dataset.max);
+
+      // Contribute max by default, or hold shift for 1 at a time
+      const amount = event.shiftKey ? 1 : maxAmount;
+      const result = villageProjectsManager.contribute(projectId, itemId, amount);
+
+      if (result.success) {
+        showNotification(result.message, 'success');
+        showVillageProjectsScreen(); // Refresh
+      } else {
+        showNotification(result.message, 'error');
+      }
+    });
+  });
+
+  // Bind turn-in buttons
+  document.querySelectorAll('.vp-turnin-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const turninId = btn.dataset.turnin;
+      const result = villageProjectsManager.performTurnin(turninId);
+
+      if (result.success) {
+        showNotification(`${result.npc}: "${result.message}" (+${result.reputation} rep)`, 'success');
+        showVillageProjectsScreen(); // Refresh
+      } else {
+        showNotification(result.message, 'error');
+      }
+    });
+  });
 }
 
 // =====================================================
@@ -7042,6 +8902,282 @@ function confirmDeleteAllData() {
       }, 1500);
     }
   }
+}
+
+// =====================================================
+// Cutscene System
+// =====================================================
+
+const CutsceneManager = {
+  isPlaying: false,
+  currentCutscene: null,
+  currentSlide: 0,
+  onComplete: null,
+
+  // Play a cutscene by ID or with custom data
+  play(cutsceneIdOrData, onComplete = null) {
+    const cutscene = typeof cutsceneIdOrData === 'string'
+      ? CUTSCENES[cutsceneIdOrData]
+      : cutsceneIdOrData;
+
+    if (!cutscene) {
+      console.warn('Cutscene not found:', cutsceneIdOrData);
+      if (onComplete) onComplete();
+      return;
+    }
+
+    this.isPlaying = true;
+    this.currentCutscene = cutscene;
+    this.currentSlide = 0;
+    this.onComplete = onComplete;
+
+    this.render();
+    this.bindEvents();
+  },
+
+  render() {
+    const slide = this.currentCutscene.slides[this.currentSlide];
+    if (!slide) {
+      this.end();
+      return;
+    }
+
+    const totalSlides = this.currentCutscene.slides.length;
+    const isLastSlide = this.currentSlide === totalSlides - 1;
+
+    // Character portrait (if specified)
+    let portraitHtml = '';
+    if (slide.speaker) {
+      const npc = typeof getNPC === 'function' ? getNPC(slide.speaker) : null;
+      const speakerName = npc?.name || slide.speaker;
+      const speakerIcon = slide.icon || npc?.icon || '👤';
+
+      portraitHtml = `
+        <div class="cs-portrait">
+          <div class="cs-portrait-icon">${speakerIcon}</div>
+          <div class="cs-portrait-name">${speakerName}</div>
+        </div>
+      `;
+    }
+
+    // Scene description (if any)
+    let sceneHtml = '';
+    if (slide.scene) {
+      sceneHtml = `<div class="cs-scene">${slide.scene}</div>`;
+    }
+
+    const html = `
+      <div class="cutscene-overlay" id="cutscene-overlay">
+        <div class="cs-container">
+          ${this.currentCutscene.title ? `<div class="cs-title">${this.currentCutscene.title}</div>` : ''}
+
+          <div class="cs-content">
+            ${portraitHtml}
+            <div class="cs-dialogue-box">
+              ${sceneHtml}
+              <div class="cs-text">${slide.text}</div>
+            </div>
+          </div>
+
+          <div class="cs-controls">
+            <div class="cs-progress">${this.currentSlide + 1} / ${totalSlides}</div>
+            <div class="cs-buttons">
+              <button class="cs-skip-btn" id="cs-skip">Skip</button>
+              <button class="cs-continue-btn" id="cs-continue">
+                ${isLastSlide ? 'Finish' : 'Continue'} ▶
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="cs-hint">Click or press Space to continue</div>
+      </div>
+    `;
+
+    // Remove existing overlay if any
+    const existing = document.getElementById('cutscene-overlay');
+    if (existing) existing.remove();
+
+    document.body.insertAdjacentHTML('beforeend', html);
+
+    // Animate text in
+    const textEl = document.querySelector('.cs-text');
+    if (textEl) {
+      textEl.style.opacity = '0';
+      textEl.style.transform = 'translateY(10px)';
+      setTimeout(() => {
+        textEl.style.transition = 'all 0.4s ease';
+        textEl.style.opacity = '1';
+        textEl.style.transform = 'translateY(0)';
+      }, 50);
+    }
+  },
+
+  bindEvents() {
+    const overlay = document.getElementById('cutscene-overlay');
+    if (!overlay) return;
+
+    const continueBtn = document.getElementById('cs-continue');
+    const skipBtn = document.getElementById('cs-skip');
+
+    const advance = (e) => {
+      e?.stopPropagation();
+      this.nextSlide();
+    };
+
+    const skip = (e) => {
+      e?.stopPropagation();
+      this.end();
+    };
+
+    continueBtn?.addEventListener('click', advance);
+    skipBtn?.addEventListener('click', skip);
+    overlay.addEventListener('click', advance);
+
+    // Keyboard support
+    this.keyHandler = (e) => {
+      if (!this.isPlaying) return;
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        this.nextSlide();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        this.end();
+      }
+    };
+    document.addEventListener('keydown', this.keyHandler);
+  },
+
+  nextSlide() {
+    this.currentSlide++;
+    if (this.currentSlide >= this.currentCutscene.slides.length) {
+      this.end();
+    } else {
+      this.render();
+      this.bindEvents();
+    }
+  },
+
+  end() {
+    this.isPlaying = false;
+    const overlay = document.getElementById('cutscene-overlay');
+    if (overlay) {
+      overlay.style.opacity = '0';
+      setTimeout(() => overlay.remove(), 300);
+    }
+
+    if (this.keyHandler) {
+      document.removeEventListener('keydown', this.keyHandler);
+      this.keyHandler = null;
+    }
+
+    // Mark cutscene as viewed
+    if (this.currentCutscene?.id) {
+      if (!GameState.viewedCutscenes) GameState.viewedCutscenes = [];
+      if (!GameState.viewedCutscenes.includes(this.currentCutscene.id)) {
+        GameState.viewedCutscenes.push(this.currentCutscene.id);
+      }
+    }
+
+    if (this.onComplete) {
+      this.onComplete();
+      this.onComplete = null;
+    }
+
+    this.currentCutscene = null;
+    this.currentSlide = 0;
+  },
+
+  // Check if a cutscene has been viewed
+  hasViewed(cutsceneId) {
+    return GameState.viewedCutscenes?.includes(cutsceneId) || false;
+  }
+};
+
+// Cutscene definitions
+const CUTSCENES = {
+  // Opening cutscene when starting a new game
+  intro_dawnmere: {
+    id: 'intro_dawnmere',
+    title: 'Welcome to Dawnmere',
+    slides: [
+      {
+        scene: 'The morning mist rises from the river...',
+        text: 'You arrive at Dawnmere, a small settlement on the trade routes. The wooden buildings are simple but sturdy, built by folk who know hard winters.'
+      },
+      {
+        scene: 'Villagers go about their morning routines...',
+        text: 'This far from the great cities, people speak the old tongue freely. To survive here, you will need to learn their ways—and their words.'
+      },
+      {
+        speaker: 'urma',
+        icon: '👵',
+        text: 'Ah, a new face! We don\'t get many travelers these days. Come, let me introduce you to our little family here in Dawnmere.'
+      }
+    ]
+  },
+
+  // After completing first quest
+  first_quest_complete: {
+    id: 'first_quest_complete',
+    slides: [
+      {
+        scene: 'You\'ve taken your first steps...',
+        text: 'The villagers nod approvingly as you complete your first task. Perhaps this outsider will fit in after all.'
+      },
+      {
+        speaker: 'urma',
+        icon: '👵',
+        text: 'You learn quickly! There is much more to discover here. Speak with the others—Rega knows the land, and the Merchant has seen much of the world.'
+      }
+    ]
+  },
+
+  // Discovering something mysterious
+  river_mystery: {
+    id: 'river_mystery',
+    slides: [
+      {
+        scene: 'By the riverbank at dusk...',
+        text: 'Strange lights flicker beneath the water\'s surface. The locals avoid this stretch of river after dark.'
+      },
+      {
+        speaker: 'yris',
+        icon: '🌊',
+        text: 'You see them too? Most pretend they don\'t. The river remembers things... things from before Dawnmere existed.'
+      },
+      {
+        text: 'Something stirs in the depths. Whatever secrets this land holds, they run deeper than the river itself.'
+      }
+    ]
+  },
+
+  // Leaving for Haari Fields
+  departure_haari: {
+    id: 'departure_haari',
+    slides: [
+      {
+        scene: 'At the edge of Dawnmere...',
+        text: 'The road stretches north toward golden fields. Beyond them, the spires of Lurenium catch the morning light.'
+      },
+      {
+        speaker: 'merchant',
+        icon: '🧳',
+        text: 'Ready? The Haari Fields are a day\'s journey. Stick close—the roads aren\'t as safe as they once were.'
+      },
+      {
+        text: 'With one last look at Dawnmere, you set off toward new horizons. This is just the beginning of your journey.'
+      }
+    ]
+  }
+};
+
+// Helper function to trigger cutscenes from quests
+function triggerCutscene(cutsceneId, onComplete) {
+  if (CutsceneManager.hasViewed(cutsceneId)) {
+    if (onComplete) onComplete();
+    return;
+  }
+  CutsceneManager.play(cutsceneId, onComplete);
 }
 
 // Get difficulty settings for gameplay
