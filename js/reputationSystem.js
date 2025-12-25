@@ -193,6 +193,54 @@ const FACTION_DEFINITIONS = {
       2: [],
       3: []
     }
+  },
+
+  order_of_dawn: {
+    id: 'order_of_dawn',
+    name: 'Order of Dawn',
+    type: FactionType.MINOR,
+    description: 'A religious order dedicated to the light, serving the people of Dawnmere.',
+    icon: '☀️',
+    color: '#f4d03f',
+    locations: ['dawnmere'],
+    themes: ['faith', 'service', 'protection'],
+    unlocks: {
+      1: [],
+      2: [],
+      3: []
+    }
+  },
+
+  lurenium_citizens: {
+    id: 'lurenium_citizens',
+    name: 'Citizens of Lurenium',
+    type: FactionType.MINOR,
+    description: 'The proud inhabitants of the ancient golden city, keepers of forgotten traditions.',
+    icon: '🏛️',
+    color: '#ffd700',
+    locations: ['lurenium'],
+    themes: ['history', 'tradition', 'pride'],
+    unlocks: {
+      1: [],
+      2: [],
+      3: []
+    }
+  },
+
+  see_of_lurenium: {
+    id: 'see_of_lurenium',
+    name: 'See of Lurenium',
+    type: FactionType.MINOR,
+    description: 'The religious authority of Lurenium, guardians of ancient rites and scriptures.',
+    icon: '📿',
+    color: '#9b59b6',
+    locations: ['lurenium'],
+    themes: ['religion', 'ancient rites', 'authority'],
+    unlocks: {
+      1: [],
+      2: [],
+      3: []
+    }
   }
 };
 

@@ -464,18 +464,31 @@ const TooltipSystem = {
   },
   
   updatePosition(e) {
-    if (!this.element) return;
-    
-    const x = e.clientX + this.config.offsetX;
-    const y = e.clientY + this.config.offsetY;
-    
-    // Keep tooltip on screen
+    if (!this.element || this.element.style.display === 'none') return;
+
     const rect = this.element.getBoundingClientRect();
-    const maxX = window.innerWidth - rect.width - 10;
-    const maxY = window.innerHeight - rect.height - 10;
-    
-    this.element.style.left = `${Math.min(x, maxX)}px`;
-    this.element.style.top = `${Math.min(y, maxY)}px`;
+    const tooltipWidth = rect.width || 200;  // Fallback width
+    const tooltipHeight = rect.height || 100; // Fallback height
+
+    let x = e.clientX + this.config.offsetX;
+    let y = e.clientY + this.config.offsetY;
+
+    // Keep tooltip on screen - adjust if it would overflow right edge
+    if (x + tooltipWidth > window.innerWidth - 10) {
+      x = e.clientX - tooltipWidth - this.config.offsetX;
+    }
+
+    // Keep tooltip on screen - adjust if it would overflow bottom edge
+    if (y + tooltipHeight > window.innerHeight - 10) {
+      y = e.clientY - tooltipHeight - this.config.offsetY;
+    }
+
+    // Ensure it doesn't go off left or top edge
+    x = Math.max(10, x);
+    y = Math.max(10, y);
+
+    this.element.style.left = `${x}px`;
+    this.element.style.top = `${y}px`;
   },
   
   // =====================================================

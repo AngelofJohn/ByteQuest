@@ -2397,6 +2397,11 @@ class ResourceMinigameManager {
 
     this.setupKeyboardShortcuts();
     this.currentMinigame.start();
+
+    // Show tutorial on first gathering minigame
+    if (typeof showTutorialTip === 'function') {
+      showTutorialTip('gathering', '.minigame-container', () => {});
+    }
   }
 
   setupKeyboardShortcuts() {

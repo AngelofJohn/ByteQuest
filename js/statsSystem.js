@@ -158,10 +158,10 @@ const MILESTONE_DEFINITIONS = {
     description: 'Master vocabulary words',
     icon: '📝',
     tiers: [
-      { threshold: 25, reward: { stat: StatType.KNOWLEDGE, amount: 1 }, label: 'Novice' },
-      { threshold: 50, reward: { stat: StatType.KNOWLEDGE, amount: 1 }, label: 'Apprentice' },
-      { threshold: 100, reward: { stat: StatType.KNOWLEDGE, amount: 1 }, label: 'Adept' },
-      { threshold: 200, reward: { stat: StatType.KNOWLEDGE, amount: 1 }, label: 'Expert' }
+      { threshold: 25, reward: { stat: StatType.KNOWLEDGE, amount: 1, title: 'vocabulary_apprentice' }, label: 'Novice' },
+      { threshold: 50, reward: { stat: StatType.KNOWLEDGE, amount: 1, title: 'word_collector' }, label: 'Apprentice' },
+      { threshold: 100, reward: { stat: StatType.KNOWLEDGE, amount: 1, title: 'linguist' }, label: 'Adept' },
+      { threshold: 200, reward: { stat: StatType.KNOWLEDGE, amount: 1, title: 'polyglot' }, label: 'Expert' }
     ],
     getValue: (state) => {
       if (!state.player.vocabulary) return 0;
@@ -174,10 +174,10 @@ const MILESTONE_DEFINITIONS = {
     description: 'Complete lessons',
     icon: '🎓',
     tiers: [
-      { threshold: 10, reward: { stat: StatType.KNOWLEDGE, amount: 1 }, label: 'Beginner' },
-      { threshold: 25, reward: { stat: StatType.KNOWLEDGE, amount: 1 }, label: 'Student' },
-      { threshold: 50, reward: { stat: StatType.KNOWLEDGE, amount: 1 }, label: 'Scholar' },
-      { threshold: 100, reward: { stat: StatType.KNOWLEDGE, amount: 1 }, label: 'Sage' }
+      { threshold: 1, reward: { title: 'novice_learner' }, label: 'First Steps' },
+      { threshold: 10, reward: { stat: StatType.KNOWLEDGE, amount: 1, title: 'dedicated_student' }, label: 'Beginner' },
+      { threshold: 25, reward: { stat: StatType.KNOWLEDGE, amount: 1, title: 'scholar' }, label: 'Student' },
+      { threshold: 50, reward: { stat: StatType.KNOWLEDGE, amount: 1, title: 'master_student' }, label: 'Scholar' }
     ],
     getValue: (state) => state.player.lessonsCompleted || 0
   },
@@ -216,7 +216,7 @@ const MILESTONE_DEFINITIONS = {
     description: 'Achieve answer streaks',
     icon: '🔥',
     tiers: [
-      { threshold: 10, reward: { stat: StatType.AGILITY, amount: 1 }, label: 'Warm' },
+      { threshold: 10, reward: { stat: StatType.AGILITY, amount: 1, title: 'streak_master' }, label: 'Warm' },
       { threshold: 25, reward: { stat: StatType.AGILITY, amount: 1 }, label: 'Hot' },
       { threshold: 50, reward: { stat: StatType.AGILITY, amount: 1 }, label: 'Blazing' }
     ],
@@ -681,9 +681,10 @@ class StatsManager {
       nextTier,
       nextTierIndex,
       claimedTier,
-      hasUnclaimedReward: currentTierIndex > claimedTier,
+      // Must have reached at least one tier AND have unclaimed tiers
+      hasUnclaimedReward: currentTierIndex >= 0 && currentTierIndex > claimedTier,
       isMaxed: currentTierIndex === milestone.tiers.length - 1,
-      progressToNext: nextTier 
+      progressToNext: nextTier
         ? Math.min(100, (currentValue / nextTier.threshold) * 100)
         : 100
     };
@@ -826,9 +827,18 @@ class StatsManager {
   // Titles
   // ===================================================
 
-  unlockTitle(title) {
-    if (!this.state.player.titles.includes(title)) {
-      this.state.player.titles.push(title);
+  unlockTitle(titleId) {
+    // Use titleManager if available (preferred method)
+    if (typeof titleManager !== 'undefined' && titleManager) {
+      titleManager.awardTitle(titleId);
+    } else {
+      // Fallback to legacy array (for backwards compatibility)
+      if (!this.state.player.titles) {
+        this.state.player.titles = [];
+      }
+      if (!this.state.player.titles.includes(titleId)) {
+        this.state.player.titles.push(titleId);
+      }
     }
   }
 

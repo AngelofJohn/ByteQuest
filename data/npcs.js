@@ -42,6 +42,7 @@ const NPC_DATA = {
     title: "Village Elder",
     location: "dawnmere",
     disposition: "friendly",
+    faction: "dawnmere_settlers",
     tags: ["elder", "quest_giver", "main_story"],
     dialogue: {
       greeting: "Ah, a traveler! Welcome to Dawnmere. We don't get many visitors from beyond the known kingdoms.",
@@ -53,7 +54,7 @@ const NPC_DATA = {
         "Hermeau's banners fly in the cities, but we simple folk just want peace."
       ]
     },
-    quests: ["meeting_family", "weekly_challenge"]
+    quests: ["meeting_family", "weekly_challenge", "gear_up"]
   },
 
   rega: {
@@ -61,6 +62,7 @@ const NPC_DATA = {
     title: "Farmer",
     location: "dawnmere",
     disposition: "worried",
+    faction: "dawnmere_settlers",
     tags: ["farmer", "quest_giver", "vocabulary"],
     dialogue: {
       greeting: "Oh! You startled me. These old bones aren't what they used to be.",
@@ -72,13 +74,14 @@ const NPC_DATA = {
         "My family farmed near Renque once. That was before the war."
       ]
     },
-    quests: ["slime_farming", "gathering_basics", "farm_defense", "daily_practice"]
+    quests: ["slime_farming", "farm_defense", "daily_practice"]
   },
 
   merchant: {
     name: "Traveling Merchant",
     title: "Wanderer",
     location: "dawnmere",
+    faction: "merchant_coalition",
     tags: ["merchant", "shop", "quest_giver"],
     dialogue: {
       greeting: "Looking to trade? I've got wares from across Turuem!",
@@ -88,66 +91,11 @@ const NPC_DATA = {
         "I heard strange rumors from the Haari Fields..."
       ]
     },
-    quests: ["road_to_haari", "haari_arrival", "merchant_thanks"],
+    quests: ["first_purchase"],
     shop: {
       items: ["health_potion", "bread", "basic_helm"],
       currency: "gold"
-    },
-    // Merchant travels to Haari Fields during quest chain
-    stateOverrides: [
-      {
-        // During active travel quest - still in Dawnmere preparing
-        when: { questActive: "road_to_haari" },
-        dialogue: {
-          greeting: "Ready to set out? I've packed what we need.",
-          idle: [
-            "The journey shouldn't take long if we're careful.",
-            "I hope the farmers there need supplies.",
-            "Together we'll be safer on the road."
-          ]
-        }
-      },
-      {
-        // After road_to_haari complete but before haari_arrival accepted - stay in Dawnmere
-        // Player needs to talk to merchant to accept the travel quest
-        when: { quest: "road_to_haari", questNotStarted: "haari_arrival" },
-        dialogue: {
-          greeting: "We made it through the journey prep! Now we're ready to travel to the Haari Fields together. What do you say?",
-          idle: [
-            "The road awaits! Let's set out for the Fields.",
-            "I've heard good things about the farmers there.",
-            "Are you ready to continue our journey?"
-          ]
-        }
-      },
-      {
-        // During haari_arrival quest - traveling/arrived at Haari
-        when: { questActive: "haari_arrival" },
-        location: "haari_fields",
-        dialogue: {
-          greeting: "Ah, the fresh air of the fields! Much better than dusty roads.",
-          idle: [
-            "These farmers seem like honest folk.",
-            "Good soil here. Good for business too!",
-            "Thank you again for the safe journey."
-          ]
-        }
-      },
-      {
-        // After haari_arrival complete - settled in Haari
-        when: { quest: "haari_arrival" },
-        location: "haari_fields",
-        title: "Field Merchant",
-        dialogue: {
-          greeting: "My friend! What can I get you today? Special prices for my traveling companion!",
-          idle: [
-            "Business is good here. The farmers needed a proper merchant.",
-            "I think I'll stay a while. These fields feel like home now.",
-            "You should visit Dave - he's been asking about you."
-          ]
-        }
-      }
-    ]
+    }
   },
 
   baker: {
@@ -155,6 +103,7 @@ const NPC_DATA = {
     title: "Baker",
     location: "dawnmere",
     disposition: "friendly",
+    faction: "dawnmere_settlers",
     tags: ["villager", "quest_giver"],
     dialogue: {
       greeting: "Welcome! The bread is fresh, and so is the gossip!",
@@ -172,10 +121,9 @@ const NPC_DATA = {
   sage_aldric: {
     name: "Sage Aldric",
     title: "Grammar Teacher",
-    location: "dawnmere",
+    location: "haari_fields",
     disposition: "wise",
     tags: ["teacher", "grammar", "quest_giver"],
-    appearsWhen: { quest: "meeting_family" },
     dialogue: {
       greeting: "Ah, a seeker of knowledge. The patterns of language hold great power for those who understand them.",
       quest_intro: "The verb 'être' - to be - is the foundation of all expression. Are you ready to learn?",
@@ -184,7 +132,8 @@ const NPC_DATA = {
         "Words are like spells - use them correctly, and you can accomplish anything.",
         "The verb 'être'... to be. Such a small word, yet it carries the weight of existence.",
         "In our tongue, even the moon and sun have different natures.",
-        "Study the patterns, and the language will reveal itself to you."
+        "Study the patterns, and the language will reveal itself to you.",
+        "I travel between settlements, sharing knowledge. The fields here are peaceful for study."
       ]
     },
     quests: [
@@ -264,8 +213,9 @@ const NPC_DATA = {
     title: "Farmhand",
     location: "dawnmere",
     disposition: "eager",
+    faction: "dawnmere_settlers",
     tags: ["villager", "flavor", "young", "quest_giver"],
-    quests: ["big_dreams"],
+    quests: ["big_dreams", "learn_woodcutting"],
     dialogue: {
       greeting: "Oh! A traveler! Are you an adventurer? You look like one!",
       idle: [
@@ -282,11 +232,11 @@ const NPC_DATA = {
     title: "Settlers' Representative",
     location: "dawnmere",
     disposition: "proud",
-    faction: "dawnmere",
-    tags: ["villager", "faction_rep", "shop"],
+    faction: "dawnmere_settlers",
+    tags: ["villager", "faction_rep", "shop", "quest_giver"],
     shop: {
       type: "faction",
-      faction: "dawnmere",
+      faction: "dawnmere_settlers",
       items: ["settlers_hat"],
       currency: "gold"
     },
@@ -297,7 +247,8 @@ const NPC_DATA = {
         "The settlers trust those who've proven themselves.",
         "We reward our friends with special wares from the frontier."
       ]
-    }
+    },
+    quests: ["learn_hunting", "community_spirit"]
   },
 
   widow_senna: {
@@ -322,7 +273,8 @@ const NPC_DATA = {
     title: "Village Drunk",
     location: "dawnmere",
     disposition: "melancholy",
-    tags: ["villager", "flavor", "lore", "hidden_hints"],
+    faction: "dawnmere_settlers",
+    tags: ["villager", "flavor", "lore", "hidden_hints", "quest_giver"],
     dialogue: {
       greeting: "*hic* Another new face... we get so many these days...",
       idle: [
@@ -331,7 +283,7 @@ const NPC_DATA = {
         "They say Hermeau saved us. Saved us! *laughs bitterly*"
       ]
     },
-    quests: ["rounds_on_me", "memories_of_renque"]
+    quests: ["rounds_on_me", "memories_of_renque", "learn_fishing"]
   },
 
   // -------------------------------------------------
@@ -375,7 +327,7 @@ const NPC_DATA = {
         "The Haari Fields have the best soil in the region."
       ]
     },
-    quests: ["lyras_garden"]
+    quests: ["lyras_garden", "first_brew"]
   },
 
   // -------------------------------------------------
@@ -466,7 +418,8 @@ function createNPC(id, data) {
       idle: data.dialogue?.idle ?? NPC_DEFAULTS.dialogue.idle
     },
     quests: data.quests ?? NPC_DEFAULTS.quests,
-    shop: data.shop ?? NPC_DEFAULTS.shop
+    shop: data.shop ?? NPC_DEFAULTS.shop,
+    stateOverrides: data.stateOverrides ?? NPC_DEFAULTS.stateOverrides
   };
 }
 

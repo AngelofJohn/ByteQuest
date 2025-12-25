@@ -1,5 +1,5 @@
 // ByteQuest Grammar Quests
-// Phase 1: Dawnmere Grammar Quest Chain
+// Grammar Quest Chain - Located in Haari Fields (Sage Aldric)
 
 const GRAMMAR_QUESTS = {
   
@@ -12,7 +12,7 @@ const GRAMMAR_QUESTS = {
     id: "grammar_etre_intro",
     name: "The Essence of Being",
     giver: "sage_aldric",
-    location: "dawnmere",
+    location: "haari_fields",
     
     type: "lesson",
     category: "lesson",
@@ -71,7 +71,7 @@ const GRAMMAR_QUESTS = {
     id: "grammar_avoir_intro",
     name: "The Art of Having",
     giver: "sage_aldric",
-    location: "dawnmere",
+    location: "haari_fields",
     
     type: "lesson",
     category: "lesson",
@@ -129,7 +129,7 @@ const GRAMMAR_QUESTS = {
     id: "grammar_gender_intro",
     name: "The Nature of Things",
     giver: "sage_aldric",
-    location: "dawnmere",
+    location: "haari_fields",
     
     type: "lesson",
     category: "lesson",
@@ -187,7 +187,7 @@ const GRAMMAR_QUESTS = {
     id: "grammar_aller_intro",
     name: "The Path Forward",
     giver: "sage_aldric",
-    location: "dawnmere",
+    location: "haari_fields",
     
     type: "lesson",
     category: "lesson",
@@ -245,7 +245,7 @@ const GRAMMAR_QUESTS = {
     id: "grammar_regular_er",
     name: "The Common Tongue",
     giver: "sage_aldric",
-    location: "dawnmere",
+    location: "haari_fields",
     
     type: "lesson",
     category: "lesson",
@@ -307,7 +307,7 @@ const GRAMMAR_QUESTS = {
     id: "grammar_mixed_practice_1",
     name: "Trial of Words",
     giver: "sage_aldric",
-    location: "dawnmere",
+    location: "haari_fields",
     
     type: "lesson",
     category: "lesson",
@@ -374,7 +374,7 @@ const GRAMMAR_NPCS = {
     id: "sage_aldric",
     name: "Sage Aldric",
     role: "Grammar Teacher",
-    location: "dawnmere",
+    location: "haari_fields",
     
     dialogue: {
       greeting: "Ah, a seeker of knowledge. The patterns of language hold great power for those who understand them.",

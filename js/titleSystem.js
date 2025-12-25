@@ -6,6 +6,15 @@
 // =====================================================
 
 const TITLE_DEFINITIONS = {
+  // Achievement titles - early game
+  apprentice: {
+    id: 'apprentice',
+    name: 'Apprentice',
+    description: 'Completed your first quest',
+    source: 'achievement',
+    color: '#ffffff'
+  },
+
   // Milestone titles
   novice_learner: {
     id: 'novice_learner',

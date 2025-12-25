@@ -31,7 +31,7 @@ const GAME_DATA = {
       level: 1,
       discovered: true,
       hasBossExam: true,  // Zone mastery test
-      npcs: ["urma", "rega", "merchant", "baker", "sage_aldric", "old_pieron", "yris", "brother_varek", "tommen", "widow_senna", "old_jorel", "settlers_rep"],
+      npcs: ["urma", "rega", "merchant", "baker", "brother_varek", "tommen", "old_jorel", "settlers_rep"],
       hotspots: [
         {
           id: "shrine_alcove",
@@ -62,33 +62,25 @@ const GAME_DATA = {
         "meeting_family",
         "choose_your_path",
         "slime_farming",
-        "gathering_basics",
         "bakers_dozen",
         "daily_practice",
         "weekly_challenge",
         "herb_delivery",
-        "secret_student",
         "festival_feast",
-        // Grammar quests
-        "grammar_etre_intro",
-        "grammar_avoir_intro",
-        "grammar_gender_intro",
-        "grammar_aller_intro",
-        "grammar_regular_er",
-        "grammar_mixed_practice_1",
-        // Travel quests - Merchant journey chain (starts here)
-        "road_to_haari",
-        "haari_arrival",  // Continues in Dawnmere, travel objective discovers Haari Fields
-        // Filler quests - NPC mini-arcs
-        "river_whispers",
-        "lights_below",
+        // NPC mini-arcs
         "tending_the_flame",
         "doubt_and_faith",
         "big_dreams",
-        "village_threads",
-        "secrets_and_stitches",
         "rounds_on_me",
-        "memories_of_renque"
+        "memories_of_renque",
+        // Gathering skill quests
+        "learn_woodcutting",
+        "learn_fishing",
+        "learn_hunting",
+        // System tutorial quests
+        "first_purchase",
+        "gear_up",
+        "community_spirit"
       ],
       connectedTo: ["haari_fields"],
       atmosphere: "hopeful",
@@ -102,7 +94,7 @@ const GAME_DATA = {
       level: 2,
       discovered: false,
       hasBossExam: true,  // Zone mastery test
-      npcs: ["dave", "lyra", "venn", "rask", "the_veiled_one"],
+      npcs: ["dave", "lyra", "venn", "rask", "the_veiled_one", "sage_aldric"],
       hotspots: [
         {
           id: "old_battlefield",
@@ -135,15 +127,21 @@ const GAME_DATA = {
         "lyras_garden",
         "secrets_of_the_soil",  // Alchemy unlock quest
         "corruption_rises",
-        // Travel quests - Merchant journey chain (continues here)
-        "haari_arrival",
-        "merchant_thanks",
+        // Grammar quests (Sage Aldric)
+        "grammar_etre_intro",
+        "grammar_avoir_intro",
+        "grammar_gender_intro",
+        "grammar_aller_intro",
+        "grammar_regular_er",
+        "grammar_mixed_practice_1",
         // Filler quests - NPC mini-arcs
         "songs_of_the_road",
         "the_rhyming_trick",
         "signs_in_the_grass",
         "what_stalks_the_fields",
-        "shadows_of_light"
+        "shadows_of_light",
+        // System tutorial quests
+        "first_brew"
       ],
       connectedTo: ["dawnmere", "lurenium"],
       atmosphere: "pastoral",
@@ -278,7 +276,7 @@ const GAME_DATA = {
         xp: 70,  // was 100
         gold: 15,
         items: ["traveler_cloak"],
-        reputation: { dawnmere: 50 }
+        reputation: { dawnmere_settlers: 50 }
       },
       repeatRewardMultiplier: null, // Not repeatable
       
@@ -403,80 +401,12 @@ const GAME_DATA = {
         xp: 105,  // was 150
         gold: 25,
         items: ["broken_shovel"],
-        reputation: { dawnmere: 75 }
+        reputation: { dawnmere_settlers: 75 }
       },
       repeatRewardMultiplier: null,
       
       vocabulary: ["farming.beginner", "farming.creatures", "farming.phrases"],
       
-      cannotAbandon: false,
-      hiddenTrigger: null
-    },
-
-    // Gathering Tutorial - Introduces the Gather menu
-    gathering_basics: {
-      id: "gathering_basics",
-      name: "Tools of the Trade",
-      giver: "rega",
-      location: "dawnmere",
-
-      type: "main",
-      category: "gathering",
-      status: "locked",
-
-      levelRequired: 1,
-      prerequisites: ["slime_farming"],
-      classRequired: null,
-      reputationRequired: null,
-
-      chainId: "dawnmere_intro",
-      chainOrder: 3,
-      chainNext: null,
-
-      timeLimit: null,
-      cooldown: null,
-      seasonalWindow: null,
-
-      description: "Rega teaches you to gather resources from the land.",
-      objectives: [
-        {
-          id: "learn_ment_pattern",
-          type: "lesson",
-          text: "Learn the -ment pattern",
-          lessonId: "lesson_3",
-          target: null
-        },
-        {
-          id: "gather_ore",
-          type: "gather",
-          text: "Gather 2 ore from mining",
-          target: 2,
-          itemCategory: "ore"
-        },
-        {
-          id: "gather_herbs",
-          type: "gather",
-          text: "Gather 2 herbs from herbalism",
-          target: 2,
-          itemCategory: "herb"
-        }
-      ],
-      dialogue: {
-        intro: "Now that the slimes are gone, it's time for some equipment! But first, another language pattern - words ending in -ment. Document, instrument, moment... these work the same in French! A useful development for your vocabulary.",
-        progress: "The -ment pattern is your second big shortcut. Use the Gather menu to practice!",
-        complete: "Excellent! You've made good progress - and that's not just a compliment, it's a fact!"
-      },
-
-      rewards: {
-        xp: 75,
-        gold: 15,
-        items: ["gathering_pouch"],
-        reputation: { dawnmere: 50 }
-      },
-      repeatRewardMultiplier: null,
-
-      vocabulary: ["nature.beginner"],
-
       cannotAbandon: false,
       hiddenTrigger: null
     },
@@ -497,7 +427,7 @@ const GAME_DATA = {
       status: "locked",
 
       levelRequired: 2,
-      prerequisites: ["gathering_basics"],
+      prerequisites: ["slime_farming"],
       classRequired: null,
       reputationRequired: null,
 
@@ -536,7 +466,7 @@ const GAME_DATA = {
         xp: 50,
         gold: 20,
         items: ["empty_bottle", "empty_bottle"],
-        reputation: { dawnmere: 30 },
+        reputation: { dawnmere_settlers: 30 },
         unlocks: ["basic_smithing_tutorial"]
       },
       repeatRewardMultiplier: null,
@@ -590,7 +520,7 @@ const GAME_DATA = {
         xp: 35,  // was 50  // was 75
         gold: 10,
         items: ["bread", "bread", "bread"],
-        reputation: { dawnmere: 25 }
+        reputation: { dawnmere_settlers: 25 }
       },
       repeatRewardMultiplier: null,
       
@@ -646,7 +576,7 @@ const GAME_DATA = {
         xp: 20,  // was 25
         gold: 5,
         items: [],
-        reputation: { dawnmere: 5 }
+        reputation: { dawnmere_settlers: 5 }
       },
       repeatRewardMultiplier: 1.0, // Full rewards each day
       
@@ -708,7 +638,7 @@ const GAME_DATA = {
         xp: 140,  // was 200
         gold: 50,
         items: ["health_potion", "health_potion"],
-        reputation: { dawnmere: 100 }
+        reputation: { dawnmere_settlers: 100 }
       },
       repeatRewardMultiplier: 1.0,
       
@@ -734,7 +664,7 @@ const GAME_DATA = {
       status: "locked",
 
       levelRequired: 1,
-      prerequisites: ["gathering_basics"],
+      prerequisites: ["slime_farming"],
       classRequired: null,
       reputationRequired: null,
 
@@ -772,7 +702,7 @@ const GAME_DATA = {
         xp: 25,
         gold: 15,
         items: ["bread", "bread"],
-        reputation: { dawnmere: 15 }
+        reputation: { dawnmere_settlers: 15 }
       },
       repeatRewardMultiplier: 0.8, // 80% rewards on repeat
 
@@ -833,7 +763,7 @@ const GAME_DATA = {
         xp: 105,  // was 150
         gold: 0,
         items: ["scholars_note"],
-        reputation: { dawnmere: 50 }
+        reputation: { dawnmere_settlers: 50 }
       },
       repeatRewardMultiplier: null,
       
@@ -895,7 +825,7 @@ const GAME_DATA = {
         xp: 85,  // was 125
         gold: 30,
         items: [],
-        reputation: { dawnmere: 75 }
+        reputation: { dawnmere_settlers: 75 }
       },
       repeatRewardMultiplier: null,
 
@@ -961,7 +891,7 @@ const GAME_DATA = {
         xp: 70,  // was 100
         gold: 25,
         items: ["solstice_lantern"],
-        reputation: { dawnmere: 50 },
+        reputation: { dawnmere_settlers: 50 },
         spellbookUnlock: ["founding"]
       },
       repeatRewardMultiplier: null,
@@ -1027,7 +957,7 @@ const GAME_DATA = {
         xp: 35,  // was 50
         gold: 10,
         items: [],
-        reputation: { dawnmere: 25 },
+        reputation: { dawnmere_settlers: 25 },
         spellbookUnlock: ["silence"]
       },
       repeatRewardMultiplier: null,
@@ -1087,7 +1017,7 @@ const GAME_DATA = {
         xp: 35,  // was 50  // was 75
         gold: 15,
         items: ["river_stone"],
-        reputation: { dawnmere: 50 },
+        reputation: { dawnmere_settlers: 50 },
         spellbookUnlock: ["ancients"],
         artifactUnlock: "ancient_warning_stone"
       },
@@ -1149,7 +1079,7 @@ const GAME_DATA = {
         xp: 35,  // was 50
         gold: 5,
         items: [],
-        reputation: { dawnmere: 25, order_of_dawn: 25 },
+        reputation: { dawnmere_settlers: 25, order_of_dawn: 25 },
         spellbookUnlock: ["faith"]
       },
       repeatRewardMultiplier: null,
@@ -1208,7 +1138,7 @@ const GAME_DATA = {
         xp: 70,  // was 100
         gold: 0,
         items: ["shrine_blessing"],
-        reputation: { dawnmere: 50, order_of_dawn: 50 },
+        reputation: { dawnmere_settlers: 50, order_of_dawn: 50 },
         spellbookUnlock: ["golden_age"],
         artifactUnlock: "faith_schism_letter"
       },
@@ -1269,7 +1199,7 @@ const GAME_DATA = {
         xp: 20,  // was 30  // was 40
         gold: 5,
         items: [],
-        reputation: { dawnmere: 20 }
+        reputation: { dawnmere_settlers: 20 }
       },
       repeatRewardMultiplier: null,
 
@@ -1279,7 +1209,414 @@ const GAME_DATA = {
       hiddenTrigger: null
     },
 
-    // WIDOW SENNA - Seamstress (gossipy, observant)
+    // -------------------------------------------------
+    // GATHERING SKILL QUESTS - Unlocks remaining skills
+    // -------------------------------------------------
+
+    // TOMMEN teaches Woodcutting (eager farmhand)
+    learn_woodcutting: {
+      id: "learn_woodcutting",
+      name: "A Cut Above",
+      giver: "tommen",
+      location: "dawnmere",
+
+      type: "side",
+      category: "gathering",
+      status: "locked",
+
+      levelRequired: 2,
+      prerequisites: ["slime_farming"],
+      classRequired: null,
+      reputationRequired: null,
+
+      chainId: null,
+      chainOrder: null,
+      chainNext: null,
+
+      timeLimit: null,
+      cooldown: null,
+      seasonalWindow: null,
+
+      description: "Tommen wants to show you his woodcutting skills.",
+
+      onAccept: {
+        gatheringUnlock: ["woodcutting"]
+      },
+
+      objectives: [
+        {
+          id: "gather_wood",
+          type: "gather",
+          text: "Gather 3 wood from woodcutting",
+          target: 3,
+          itemCategory: "wood"
+        }
+      ],
+      dialogue: {
+        intro: "Hey! I saw you learning to mine and gather herbs. Want to try woodcutting? Rega makes me do it ALL the time, but it's actually pretty fun!",
+        progress: "Keep swinging! The wood words will stick if you practice while chopping.",
+        complete: "See? You're a natural! Now we both know woodcutting. Maybe someday we can travel together and build our own camp in the wild!"
+      },
+
+      rewards: {
+        xp: 40,
+        gold: 10,
+        items: [],
+        reputation: { dawnmere_settlers: 25 }
+      },
+      repeatRewardMultiplier: null,
+
+      cannotAbandon: false,
+      hiddenTrigger: null
+    },
+
+    // OLD JOREL teaches Fishing (village drunk, surprising skill)
+    learn_fishing: {
+      id: "learn_fishing",
+      name: "Old Timer's Secret",
+      giver: "old_jorel",
+      location: "dawnmere",
+
+      type: "side",
+      category: "gathering",
+      status: "locked",
+
+      levelRequired: 2,
+      prerequisites: ["slime_farming"],
+      classRequired: null,
+      reputationRequired: null,
+
+      chainId: null,
+      chainOrder: null,
+      chainNext: null,
+
+      timeLimit: null,
+      cooldown: null,
+      seasonalWindow: null,
+
+      description: "Old Jorel offers to teach you an unexpected skill.",
+
+      onAccept: {
+        gatheringUnlock: ["fishing"]
+      },
+
+      objectives: [
+        {
+          id: "catch_fish",
+          type: "gather",
+          text: "Catch 3 fish",
+          target: 3,
+          itemCategory: "fish"
+        }
+      ],
+      dialogue: {
+        intro: "*hic* Before I was... this... I was the best fisherman in Renque. You want to learn? Patience, timing, and knowing the right words. The fish respond to French, you know. *laughs* Just kidding. But learning while fishing... that works.",
+        progress: "Feel the line... wait for the tug... and practice your vocabulary while you wait.",
+        complete: "Not bad! *actually smiles* That's the first time I've fished since... well. Thank you for reminding this old drunk he still knows a few things."
+      },
+
+      rewards: {
+        xp: 40,
+        gold: 5,
+        items: ["old_fishing_lure"],
+        reputation: { dawnmere_settlers: 25 }
+      },
+      repeatRewardMultiplier: null,
+
+      cannotAbandon: false,
+      hiddenTrigger: null
+    },
+
+    // BRAM teaches Hunting (settlers rep, practical skills)
+    learn_hunting: {
+      id: "learn_hunting",
+      name: "Frontier Skills",
+      giver: "settlers_rep",
+      location: "dawnmere",
+
+      type: "side",
+      category: "gathering",
+      status: "locked",
+
+      levelRequired: 3,
+      prerequisites: ["slime_farming"],
+      classRequired: null,
+      reputationRequired: null,
+
+      chainId: null,
+      chainOrder: null,
+      chainNext: null,
+
+      timeLimit: null,
+      cooldown: null,
+      seasonalWindow: null,
+
+      description: "Bram offers to teach you hunting skills essential for frontier life.",
+
+      onAccept: {
+        gatheringUnlock: ["hunting"]
+      },
+
+      objectives: [
+        {
+          id: "gather_hides",
+          type: "gather",
+          text: "Obtain 3 hides from hunting",
+          target: 3,
+          itemCategory: "hide"
+        }
+      ],
+      dialogue: {
+        intro: "Friend of the settlers! On the frontier, everyone needs to contribute. Hunting keeps us fed and clothed. I'll teach you the proper way. Knowledge is survival out here.",
+        progress: "Track your prey... and practice those animal names. The words and the hunt go together.",
+        complete: "Excellent work! You've proven yourself capable. The settlers will remember your contribution. These hides will serve the village well."
+      },
+
+      rewards: {
+        xp: 50,
+        gold: 15,
+        items: [],
+        reputation: { dawnmere_settlers: 40 }
+      },
+      repeatRewardMultiplier: null,
+
+      cannotAbandon: false,
+      hiddenTrigger: null
+    },
+
+    // -------------------------------------------------
+    // SYSTEM TUTORIAL QUESTS - Hands-on learning
+    // -------------------------------------------------
+
+    // MERCHANT teaches shopping - First purchase tutorial
+    first_purchase: {
+      id: "first_purchase",
+      name: "Trading Basics",
+      giver: "merchant",
+      location: "dawnmere",
+
+      type: "side",
+      category: "tutorial",
+      status: "locked",
+
+      levelRequired: 1,
+      prerequisites: ["meeting_family"],
+      classRequired: null,
+      reputationRequired: null,
+
+      chainId: "system_tutorials",
+      chainOrder: 1,
+      chainNext: "gear_up",
+
+      timeLimit: null,
+      cooldown: null,
+      seasonalWindow: null,
+
+      description: "The Traveling Merchant offers to teach you about trading and shops.",
+
+      objectives: [
+        {
+          id: "buy_bread",
+          type: "buy",
+          text: "Purchase bread from the merchant",
+          itemId: "bread"
+        },
+        {
+          id: "use_bread",
+          type: "use_item",
+          text: "Eat the bread to restore HP",
+          itemId: "bread"
+        }
+      ],
+      dialogue: {
+        intro: "Traveler! You look like you could use some supplies. Let me show you how trading works in these parts. First, buy some bread from my shop - you'll need food to keep your strength up on your journey!",
+        progress: "Did you buy the bread? Now eat it! Click the bread in your inventory to use it. Food restores your health when you make mistakes in lessons.",
+        complete: "Perfect! Now you know how to shop and use items. Remember: bread heals a little, potions heal more. Come back anytime you need supplies!"
+      },
+
+      rewards: {
+        xp: 30,
+        gold: 20,
+        items: ["health_potion"],
+        reputation: { dawnmere_settlers: 15 }
+      },
+      repeatRewardMultiplier: null,
+
+      cannotAbandon: false,
+      hiddenTrigger: null
+    },
+
+    // URMA teaches equipment - Equip your first gear
+    gear_up: {
+      id: "gear_up",
+      name: "Gear Up",
+      giver: "urma",
+      location: "dawnmere",
+
+      type: "side",
+      category: "tutorial",
+      status: "locked",
+
+      levelRequired: 1,
+      prerequisites: ["first_purchase"],
+      classRequired: null,
+      reputationRequired: null,
+
+      chainId: "system_tutorials",
+      chainOrder: 2,
+      chainNext: "community_spirit",
+
+      timeLimit: null,
+      cooldown: null,
+      seasonalWindow: null,
+
+      description: "Urma wants to make sure you're properly equipped for your journey.",
+
+      objectives: [
+        {
+          id: "equip_cloak",
+          type: "equip",
+          text: "Equip your Traveler's Cloak",
+          itemId: "traveler_cloak"
+        },
+        {
+          id: "check_profile",
+          type: "task",
+          text: "View your Profile to see your stats",
+          target: null
+        }
+      ],
+      dialogue: {
+        intro: "That cloak I gave you - have you put it on yet? Equipment makes you stronger! Open your Inventory and click the cloak to equip it. Then check your Profile to see how it boosts your stats.",
+        progress: "Click the cloak in your inventory to wear it. Then visit your Profile screen to see your stats!",
+        complete: "Much better! Equipment gives you stat bonuses that help in lessons and exploration. As you find better gear, you'll grow stronger. Now you're ready for real adventures!"
+      },
+
+      rewards: {
+        xp: 25,
+        gold: 10,
+        items: ["wooden_sword"],
+        reputation: { dawnmere_settlers: 15 }
+      },
+      repeatRewardMultiplier: null,
+
+      cannotAbandon: false,
+      hiddenTrigger: null
+    },
+
+    // SETTLERS_REP teaches village projects - First contribution
+    community_spirit: {
+      id: "community_spirit",
+      name: "Community Spirit",
+      giver: "settlers_rep",
+      location: "dawnmere",
+
+      type: "side",
+      category: "tutorial",
+      status: "locked",
+
+      levelRequired: 2,
+      prerequisites: ["gear_up"],
+      classRequired: null,
+      reputationRequired: null,
+
+      chainId: "system_tutorials",
+      chainOrder: 3,
+      chainNext: "first_brew",
+
+      timeLimit: null,
+      cooldown: null,
+      seasonalWindow: null,
+
+      description: "Bram explains how settlers work together on village projects.",
+
+      objectives: [
+        {
+          id: "contribute_any",
+          type: "contribute",
+          text: "Contribute to any village project",
+          target: null
+        }
+      ],
+      dialogue: {
+        intro: "Ah, a fellow contributor! Here in Dawnmere, we work together on big projects. Open the Village Projects menu - you'll see what we're building. Contribute any resources you've gathered to help!",
+        progress: "Check the Village Projects from the main menu. Any resources you contribute help the whole settlement!",
+        complete: "That's the spirit! Village projects unlock special bonuses for everyone when completed. The more you contribute, the stronger our settlement becomes. Keep gathering and helping out!"
+      },
+
+      rewards: {
+        xp: 40,
+        gold: 15,
+        items: [],
+        reputation: { dawnmere_settlers: 35 }
+      },
+      repeatRewardMultiplier: null,
+
+      cannotAbandon: false,
+      hiddenTrigger: null
+    },
+
+    // LYRA teaches alchemy basics - First potion craft
+    first_brew: {
+      id: "first_brew",
+      name: "The Alchemist's Art",
+      giver: "lyra",
+      location: "haari_fields",
+
+      type: "side",
+      category: "tutorial",
+      status: "locked",
+
+      levelRequired: 3,
+      prerequisites: ["secrets_of_the_soil"],
+      classRequired: null,
+      reputationRequired: null,
+
+      chainId: "system_tutorials",
+      chainOrder: 4,
+      chainNext: null,
+
+      timeLimit: null,
+      cooldown: null,
+      seasonalWindow: null,
+
+      description: "Lyra offers to teach you how to brew your first potion.",
+
+      objectives: [
+        {
+          id: "gather_herbs",
+          type: "gather",
+          text: "Gather 3 herbs for the potion",
+          target: 3,
+          itemCategory: "herb"
+        },
+        {
+          id: "craft_potion",
+          type: "craft",
+          text: "Craft a Health Potion",
+          profession: "alchemy",
+          recipeId: "health_potion"
+        }
+      ],
+      dialogue: {
+        intro: "You've learned about herbs, but do you know what to DO with them? Alchemy transforms raw ingredients into potions! First, gather some herbs. Then open the Crafting menu and brew a Health Potion.",
+        progress: "Collect herbs from herbalism, then visit the Crafting screen to brew your potion. Alchemy is under the Crafting menu!",
+        complete: "Your first potion! Alchemy is essential for any adventurer. You can brew potions that heal, boost XP, protect against mistakes, and more. Keep gathering herbs and experimenting!"
+      },
+
+      rewards: {
+        xp: 50,
+        gold: 20,
+        items: ["empty_bottle", "empty_bottle"],
+        reputation: { dawnmere_settlers: 25, order_of_dawn: 15 }
+      },
+      repeatRewardMultiplier: null,
+
+      cannotAbandon: false,
+      hiddenTrigger: null
+    },
+
+    // WIDOW SENNA - Seamstress (gossipy, observant) - DEFERRED TO LATER ZONE
     village_threads: {
       id: "village_threads",
       name: "Village Threads",
@@ -1328,7 +1665,7 @@ const GAME_DATA = {
         xp: 35,  // was 50
         gold: 10,
         items: ["mended_clothes"],
-        reputation: { dawnmere: 30 }
+        reputation: { dawnmere_settlers: 30 }
       },
       repeatRewardMultiplier: null,
 
@@ -1386,7 +1723,7 @@ const GAME_DATA = {
         xp: 35,  // was 50  // was 75
         gold: 15,
         items: [],
-        reputation: { dawnmere: 50 }
+        reputation: { dawnmere_settlers: 50 }
       },
       repeatRewardMultiplier: null,
 
@@ -1445,7 +1782,7 @@ const GAME_DATA = {
         xp: 20,  // was 30  // was 40
         gold: 0,
         items: ["jorels_flask"],
-        reputation: { dawnmere: 20 }
+        reputation: { dawnmere_settlers: 20 }
       },
       repeatRewardMultiplier: null,
 
@@ -1503,7 +1840,7 @@ const GAME_DATA = {
         xp: 70,  // was 100
         gold: 0,
         items: ["renque_medal"],
-        reputation: { dawnmere: 75 },
+        reputation: { dawnmere_settlers: 75 },
         spellbookUnlock: ["king_dran"],
         artifactUnlock: "dran_private_letter"
       },
@@ -1575,7 +1912,7 @@ const GAME_DATA = {
         xp: 70,  // was 100
         gold: 25,
         items: ["fresh_vegetables"],
-        reputation: { haari_fields: 50 }
+        reputation: { horticulturists: 50 }
       },
       repeatRewardMultiplier: null,
 
@@ -1635,7 +1972,7 @@ const GAME_DATA = {
         xp: 55,  // was 80
         gold: 20,
         items: ["herb_bundle"],
-        reputation: { haari_fields: 30 }
+        reputation: { horticulturists: 30 }
       },
       repeatRewardMultiplier: null,
 
@@ -1696,7 +2033,7 @@ const GAME_DATA = {
         xp: 60,
         gold: 20,
         items: ["health_potion"],
-        reputation: { haari_fields: 40 },
+        reputation: { horticulturists: 40 },
         unlocks: ["alchemy"]
       },
       repeatRewardMultiplier: null,
@@ -1761,7 +2098,7 @@ const GAME_DATA = {
         xp: 20,  // was 30  // was 40  // was 60
         gold: 15,
         items: [],
-        reputation: { haari_fields: 30 }
+        reputation: { horticulturists: 30 }
       },
       repeatRewardMultiplier: null,
 
@@ -1820,7 +2157,7 @@ const GAME_DATA = {
         xp: 70,  // was 100
         gold: 25,
         items: ["bards_token"],
-        reputation: { haari_fields: 50 }
+        reputation: { horticulturists: 50 }
       },
       repeatRewardMultiplier: null,
 
@@ -1880,7 +2217,7 @@ const GAME_DATA = {
         xp: 35,  // was 50  // was 75
         gold: 20,
         items: [],
-        reputation: { haari_fields: 40 }
+        reputation: { horticulturists: 40 }
       },
       repeatRewardMultiplier: null,
 
@@ -1939,7 +2276,7 @@ const GAME_DATA = {
         xp: 70,  // was 100
         gold: 0,
         items: ["corrupted_sample"],
-        reputation: { haari_fields: 75 },
+        reputation: { horticulturists: 75 },
         spellbookUnlock: ["exile"],
         artifactUnlock: "war_commanders_confession"
       },
@@ -2023,195 +2360,6 @@ const GAME_DATA = {
     },
 
     // -------------------------------------------------
-    // TRAVEL QUESTS - Cross-zone journeys
-    // -------------------------------------------------
-
-    // MERCHANT JOURNEY - Escort quest from Dawnmere to Haari Fields
-    // Tests the stateOverrides system for NPC movement
-    road_to_haari: {
-      id: "road_to_haari",
-      name: "The Road to Haari",
-      giver: "merchant",
-      location: "dawnmere",
-
-      type: "travel",
-      category: "exploration",
-      status: "available",
-
-      levelRequired: 2,
-      prerequisites: ["meeting_family"],
-      classRequired: null,
-      reputationRequired: null,
-
-      chainId: "merchant_journey",
-      chainOrder: 1,
-      chainNext: "haari_arrival",
-
-      timeLimit: null,
-      cooldown: null,
-      seasonalWindow: null,
-
-      description: "The Traveling Merchant needs an escort to the Haari Fields. The roads have grown dangerous.",
-      objectives: [
-        {
-          id: "learn_travel",
-          type: "lesson",
-          text: "Learn travel vocabulary",
-          target: null
-        },
-        {
-          id: "learn_directions",
-          type: "lesson",
-          text: "Learn direction words",
-          target: null
-        },
-        {
-          id: "prepare_journey",
-          type: "interact",
-          text: "Speak with the Merchant about the journey",
-          target: "merchant"
-        }
-      ],
-      dialogue: {
-        intro: "Ah, you look capable! I need to get my wares to the Haari Fields, but the roads... they're not safe anymore. Strange creatures, bandits maybe. Travel with me? I'll make it worth your while.",
-        progress: "We should prepare properly. Do you know the way? The words for travel?",
-        complete: "Excellent! You know enough to guide us. Let's set out - the Fields await!"
-      },
-
-      rewards: {
-        xp: 35,  // was 50  // was 75
-        gold: 25,
-        items: [],
-        reputation: { dawnmere: 25 }
-      },
-      repeatRewardMultiplier: null,
-
-      vocabulary: ["travel.directions", "travel.journey"],
-
-      cannotAbandon: false,
-      hiddenTrigger: null
-    },
-
-    // STORY-ONLY QUEST - No lesson objectives
-    // Pure narrative moment after travel, before next learning beat
-    haari_arrival: {
-      id: "haari_arrival",
-      name: "Arrival at the Fields",
-      giver: "merchant",
-      location: "dawnmere",  // Quest starts in Dawnmere, travel objective takes player to Haari Fields
-
-      type: "travel",
-      category: "story",  // Changed from exploration - marks as narrative-focused
-      status: "locked",
-
-      levelRequired: 2,
-      prerequisites: ["road_to_haari"],
-      classRequired: null,
-      reputationRequired: null,
-
-      chainId: "merchant_journey",
-      chainOrder: 2,
-      chainNext: "merchant_thanks",
-
-      timeLimit: null,
-      cooldown: null,
-      seasonalWindow: null,
-
-      description: "You've arrived at the Haari Fields with the Merchant. Take in your new surroundings and meet the locals.",
-      objectives: [
-        {
-          id: "travel_to_haari",
-          type: "travel",
-          text: "Travel to the Haari Fields",
-          target: "haari_fields"
-        },
-        {
-          id: "meet_dave",
-          type: "interact",
-          text: "Meet Dave the Herbalist",
-          target: "dave"
-        }
-      ],
-      dialogue: {
-        intro: "We made it! Look at these fields... golden waves stretching to the horizon. The air smells different here - earth and wheat and something wild. Let's find the people who call this place home.",
-        progress: "We should find the locals. I've heard there's a herbalist named Dave who knows everyone.",
-        complete: "Dave seems like good folk. He says I can set up near the old barn - plenty of farmers needing supplies. Thank you, friend. I couldn't have made this journey without you."
-      },
-
-      rewards: {
-        xp: 35,  // was 50  // was 75  // Slightly less XP since no learning component
-        gold: 50,
-        items: ["merchant_map"],
-        reputation: { haari_fields: 50 }
-      },
-      repeatRewardMultiplier: null,
-
-      vocabulary: [],  // Empty - no lesson in this quest
-
-      cannotAbandon: false,
-      hiddenTrigger: null
-    },
-
-    merchant_thanks: {
-      id: "merchant_thanks",
-      name: "A Merchant's Gratitude",
-      giver: "merchant",
-      location: "haari_fields",
-
-      type: "travel",
-      category: "social",
-      status: "locked",
-
-      levelRequired: 2,
-      prerequisites: ["haari_arrival"],
-      classRequired: null,
-      reputationRequired: null,
-
-      chainId: "merchant_journey",
-      chainOrder: 3,
-      chainNext: null,
-
-      timeLimit: null,
-      cooldown: null,
-      seasonalWindow: null,
-
-      description: "The Merchant has settled in and wants to thank you properly.",
-      objectives: [
-        {
-          id: "learn_commerce",
-          type: "lesson",
-          lessonId: "lesson_18",
-          text: "Learn commerce vocabulary",
-          target: null
-        },
-        {
-          id: "receive_thanks",
-          type: "interact",
-          text: "Accept the Merchant's thanks",
-          target: "merchant"
-        }
-      ],
-      dialogue: {
-        intro: "My friend! Business here is... different. But good! The farmers need supplies they can't grow themselves. I have something for you - a thank you for the safe journey.",
-        progress: "Come, let me show my appreciation properly.",
-        complete: "Take this. And remember - you always have a friend in the Traveling Merchant. My prices are fair, and for you? Even fairer. Safe travels, wherever the road takes you next!"
-      },
-
-      rewards: {
-        xp: 35,  // was 50  // was 75
-        gold: 100,
-        items: ["lucky_coin"],
-        reputation: { dawnmere: 25, haari_fields: 25 }
-      },
-      repeatRewardMultiplier: null,
-
-      vocabulary: ["commerce.buying", "commerce.selling"],
-
-      cannotAbandon: false,
-      hiddenTrigger: null
-    },
-
-    // -------------------------------------------------
     // CHAIN QUESTS - Part of larger storyline (Haari Fields)
     // -------------------------------------------------
     corruption_rises: {
@@ -2268,7 +2416,7 @@ const GAME_DATA = {
         xp: 140,  // was 200
         gold: 40,
         items: ["herbalist_pouch"],
-        reputation: { dawnmere: 50, old_guard: 25 },
+        reputation: { dawnmere_settlers: 50, old_guard: 25 },
         artifactUnlock: "exile_spread_of_corruption"
       },
       repeatRewardMultiplier: null,
@@ -2333,7 +2481,7 @@ const GAME_DATA = {
         xp: 120,
         gold: 50,
         items: ["archivist_seal"],
-        reputation: { lurenium: 50, see_of_lurenium: 25 }
+        reputation: { lurenium_citizens: 50, see_of_lurenium: 25 }
       },
       repeatRewardMultiplier: null,
 
@@ -2393,7 +2541,7 @@ const GAME_DATA = {
         xp: 100,
         gold: 60,
         items: [],
-        reputation: { lurenium: 40 }
+        reputation: { lurenium_citizens: 40 }
       },
       repeatRewardMultiplier: null,
 
@@ -2453,7 +2601,7 @@ const GAME_DATA = {
         xp: 80,
         gold: 30,
         items: ["jorels_pendant"],
-        reputation: { lurenium: 30 },
+        reputation: { lurenium_citizens: 30 },
         spellbookUnlock: ["founding_before_the_light"]
       },
       repeatRewardMultiplier: null,
@@ -2521,7 +2669,7 @@ const GAME_DATA = {
         xp: 130,
         gold: 100,
         items: ["guild_recommendation"],
-        reputation: { lurenium: 50, merchants_guild: 75 }
+        reputation: { lurenium_citizens: 50, merchant_coalition: 75 }
       },
       repeatRewardMultiplier: null,
 
@@ -2581,7 +2729,7 @@ const GAME_DATA = {
         xp: 150,
         gold: 75,
         items: ["military_commendation"],
-        reputation: { lurenium: 60, old_guard: 50 },
+        reputation: { lurenium_citizens: 60, old_guard: 50 },
         artifactUnlock: "war_border_intelligence"
       },
       repeatRewardMultiplier: null,

@@ -78,6 +78,12 @@ const GameState = {
       smithing: { level: 1, xp: 0 },
       enchanting: { level: 1, xp: 0 }
     },
+    // Unlocked gathering/crafting professions per location
+    // Format: { location: [skills] } - skills must be unlocked in each zone
+    unlockedGathering: {
+      dawnmere: ["mining", "herbalism"]
+    },
+    unlockedCrafting: [],
     // Meta
     createdAt: null,
     playTime: 0
@@ -629,8 +635,10 @@ function renderLocation() {
   let location;
   if (locationManager) {
     location = locationManager.getCurrentLocation();
+    console.log('[renderLocation] Using locationManager, got:', location?.id, location?.name);
   } else {
     location = GAME_DATA.locations[GameState.currentLocation];
+    console.log('[renderLocation] Using GAME_DATA fallback, got:', location?.id, location?.name);
   }
 
   if (!location) {
@@ -1359,6 +1367,29 @@ function acceptQuest(questId) {
   GameState.player.activeQuests.push(questState);
   showNotification(`Quest Accepted: ${quest.name}`);
 
+  // Handle onAccept rewards (things unlocked immediately when quest starts)
+  if (quest.onAccept) {
+    // Unlock gathering skills on accept (needed for quests that require gathering)
+    if (quest.onAccept.gatheringUnlock) {
+      const skills = Array.isArray(quest.onAccept.gatheringUnlock)
+        ? quest.onAccept.gatheringUnlock
+        : [quest.onAccept.gatheringUnlock];
+
+      skills.forEach(skill => {
+        if (unlockGatheringSkill(skill)) {
+          const skillNames = {
+            mining: 'Mining',
+            woodcutting: 'Woodcutting',
+            herbalism: 'Herbalism',
+            fishing: 'Fishing',
+            hunting: 'Hunting'
+          };
+          showNotification(`Learned: ${skillNames[skill] || skill}!`, 'success');
+        }
+      });
+    }
+  }
+
   // Discover travel destinations so player can travel to complete objectives
   if (quest.objectives && locationManager) {
     quest.objectives.forEach(obj => {
@@ -1436,6 +1467,57 @@ function autoCompleteTaskObjectives(questId) {
   }
 
   checkQuestCompletion(questId);
+}
+
+/**
+ * Start an encounter from a quest objective
+ * @param {string} questId - Quest ID
+ * @param {string} objectiveId - Objective ID with encounter config
+ */
+function startQuestEncounter(questId, objectiveId) {
+  const quest = GameState.player.activeQuests.find(q => q.id === questId);
+  const questData = getQuest(questId);
+
+  if (!quest || !questData) {
+    console.error('Quest not found for encounter:', questId);
+    return;
+  }
+
+  const objDef = questData.objectives.find(o => o.id === objectiveId);
+  if (!objDef || objDef.type !== 'encounter') {
+    console.error('Invalid encounter objective:', objectiveId);
+    return;
+  }
+
+  if (typeof encounterManager === 'undefined') {
+    console.error('Encounter manager not loaded');
+    showNotification('Error: Encounter system not available', 'error');
+    return;
+  }
+
+  // Start the encounter
+  encounterManager.startEncounter(
+    objDef.encounterType,
+    objDef.encounterId,
+    (result) => {
+      // Encounter completed - update quest progress
+      if (result.success) {
+        updateQuestProgress(questId, objectiveId);
+
+        // Show summary based on results
+        if (result.results) {
+          const { correct, wrong } = result.results;
+          const total = correct + wrong;
+          if (total > 0) {
+            const accuracy = Math.round((correct / total) * 100);
+            showNotification(`Encounter complete! ${accuracy}% accuracy`, accuracy >= 80 ? 'success' : 'info');
+          }
+        }
+      }
+
+      renderQuestPanel();
+    }
+  );
 }
 
 function completeQuest(questId) {
@@ -1604,6 +1686,27 @@ function completeQuest(questId) {
       // Update nav buttons visibility
       updateNavButtonVisibility();
     }
+
+    // Gathering skill unlocks (e.g., mining, herbalism, fishing)
+    if (questData.rewards.gatheringUnlock) {
+      const skills = Array.isArray(questData.rewards.gatheringUnlock)
+        ? questData.rewards.gatheringUnlock
+        : [questData.rewards.gatheringUnlock];
+
+      skills.forEach(skill => {
+        if (unlockGatheringSkill(skill)) {
+          const skillNames = {
+            mining: 'Mining',
+            woodcutting: 'Woodcutting',
+            herbalism: 'Herbalism',
+            fishing: 'Fishing',
+            hunting: 'Hunting'
+          };
+          showNotification(`Learned: ${skillNames[skill] || skill}! Check the Gather menu.`, 'success');
+        }
+      });
+      rewardData.gatheringSkills = skills;
+    }
   }
 
   // Show rewards screen
@@ -1731,6 +1834,12 @@ function levelUpSilent() {
   // Restore HP on level up
   GameState.player.hp = GameState.player.maxHp;
 
+  // Check for newly unlockable locations
+  if (locationManager) {
+    locationManager.checkQuestBasedDiscovery();
+    locationManager.checkLevelUnlocks();
+  }
+
   // Store level up data to show later
   pendingLevelUps.push({
     level: GameState.player.level,
@@ -1783,6 +1892,9 @@ function addItemToInventorySilent(itemId, count = 1) {
 function checkGatherObjectives(itemId = null) {
   if (!GameState.player.activeQuests) return;
 
+  console.log('[GatherCheck] Checking gather objectives, itemId:', itemId);
+  console.log('[GatherCheck] Active quests:', GameState.player.activeQuests.map(q => q.id));
+
   for (const questProgress of GameState.player.activeQuests) {
     const questData = getQuest(questProgress.id);
     if (!questData) continue;
@@ -1792,15 +1904,27 @@ function checkGatherObjectives(itemId = null) {
       const objData = questData.objectives[i];
 
       // Skip non-gather objectives or already completed ones
-      if (objData.type !== 'gather' || objProgress.completed) continue;
+      if (!objData || objData.type !== 'gather' || objProgress.completed) continue;
 
-      // Skip if we're checking a specific item and it doesn't match
-      if (itemId && objData.itemId !== itemId) continue;
-
-      // Count how many of the required item we have
-      const targetItem = objData.itemId;
+      let currentCount = 0;
       const targetCount = objData.target || 1;
-      const currentCount = getItemCount(targetItem);
+
+      // Handle category-based gathering (e.g., itemCategory: "ore")
+      if (objData.itemCategory) {
+        // Count all items in this category
+        for (const invItem of GameState.player.inventory) {
+          const itemData = GAME_DATA.items[invItem.id];
+          if (itemData && itemData.category === objData.itemCategory) {
+            currentCount += invItem.count || 1;
+          }
+        }
+        console.log(`[GatherCheck] Quest ${questProgress.id}, objective ${objData.id}: category=${objData.itemCategory}, count=${currentCount}/${targetCount}`);
+      } else if (objData.itemId) {
+        // Skip if we're checking a specific item and it doesn't match
+        if (itemId && objData.itemId !== itemId) continue;
+        currentCount = getItemCount(objData.itemId);
+        console.log(`[GatherCheck] Quest ${questProgress.id}, objective ${objData.id}: itemId=${objData.itemId}, count=${currentCount}/${targetCount}`);
+      }
 
       // Update progress
       objProgress.count = Math.min(currentCount, targetCount);
@@ -1820,6 +1944,223 @@ function checkGatherObjectives(itemId = null) {
   }
 
   // Update quest panel to reflect changes
+  renderQuestPanel();
+}
+
+/**
+ * Debug function to verify gather objectives - call from console: debugGatherObjectives()
+ */
+function debugGatherObjectives() {
+  console.log('=== GATHER OBJECTIVES DEBUG ===');
+  console.log('Inventory:', GameState.player.inventory);
+
+  // Count items by category
+  const categoryCount = {};
+  for (const invItem of GameState.player.inventory || []) {
+    const itemData = GAME_DATA.items[invItem.id];
+    if (itemData) {
+      const cat = itemData.category || 'unknown';
+      categoryCount[cat] = (categoryCount[cat] || 0) + (invItem.count || 1);
+      console.log(`  ${invItem.id}: count=${invItem.count}, category=${cat}`);
+    }
+  }
+  console.log('Category totals:', categoryCount);
+
+  // Check active quests with gather objectives
+  console.log('\nActive quests with gather objectives:');
+  for (const questProgress of GameState.player.activeQuests || []) {
+    const questData = getQuest(questProgress.id);
+    if (!questData) continue;
+
+    for (let i = 0; i < questProgress.objectives.length; i++) {
+      const objProgress = questProgress.objectives[i];
+      const objData = questData.objectives[i];
+
+      if (objData && objData.type === 'gather') {
+        console.log(`  Quest: ${questProgress.id}`);
+        console.log(`    Objective: ${objData.text}`);
+        console.log(`    itemId: ${objData.itemId || 'N/A'}, itemCategory: ${objData.itemCategory || 'N/A'}`);
+        console.log(`    Progress: ${objProgress.count || 0}/${objData.target}`);
+        console.log(`    Completed: ${objProgress.completed}`);
+
+        // Calculate what it should be
+        if (objData.itemCategory) {
+          console.log(`    Actual category count: ${categoryCount[objData.itemCategory] || 0}`);
+        } else if (objData.itemId) {
+          console.log(`    Actual item count: ${getItemCount(objData.itemId)}`);
+        }
+      }
+    }
+  }
+  console.log('=== END DEBUG ===');
+}
+
+// Make it globally accessible
+window.debugGatherObjectives = debugGatherObjectives;
+
+/**
+ * Force recalculate all gather objectives - call from console: fixGatherObjectives()
+ */
+function fixGatherObjectives() {
+  console.log('Recalculating all gather objectives...');
+  checkGatherObjectives();
+  console.log('Done. Check quest panel for updated values.');
+}
+window.fixGatherObjectives = fixGatherObjectives;
+
+/**
+ * Check quest objectives for equipping items
+ */
+function checkEquipObjectives(itemId) {
+  if (!GameState.player.activeQuests) return;
+
+  for (const questProgress of GameState.player.activeQuests) {
+    const questData = getQuest(questProgress.id);
+    if (!questData) continue;
+
+    for (let i = 0; i < questProgress.objectives.length; i++) {
+      const objProgress = questProgress.objectives[i];
+      const objData = questData.objectives[i];
+
+      if (objData.type !== 'equip' || objProgress.completed) continue;
+
+      // Check if specific item required or any item in slot
+      if (objData.itemId && objData.itemId !== itemId) continue;
+      if (objData.slot) {
+        const itemData = GAME_DATA.items[itemId];
+        if (!itemData || itemData.type !== objData.slot) continue;
+      }
+
+      objProgress.completed = true;
+      showNotification(`Objective complete: ${objData.text}`, 'success');
+
+      checkQuestCompletion(questProgress.id);
+    }
+  }
+  renderQuestPanel();
+}
+
+/**
+ * Check quest objectives for using consumable items
+ */
+function checkUseItemObjectives(itemId) {
+  if (!GameState.player.activeQuests) return;
+
+  for (const questProgress of GameState.player.activeQuests) {
+    const questData = getQuest(questProgress.id);
+    if (!questData) continue;
+
+    for (let i = 0; i < questProgress.objectives.length; i++) {
+      const objProgress = questProgress.objectives[i];
+      const objData = questData.objectives[i];
+
+      if (objData.type !== 'use_item' || objProgress.completed) continue;
+
+      // Check if specific item or any consumable
+      if (objData.itemId && objData.itemId !== itemId) continue;
+
+      objProgress.completed = true;
+      showNotification(`Objective complete: ${objData.text}`, 'success');
+
+      checkQuestCompletion(questProgress.id);
+    }
+  }
+  renderQuestPanel();
+}
+
+/**
+ * Check quest objectives for crafting items
+ */
+function checkCraftObjectives(profession, recipeId) {
+  if (!GameState.player.activeQuests) return;
+
+  for (const questProgress of GameState.player.activeQuests) {
+    const questData = getQuest(questProgress.id);
+    if (!questData) continue;
+
+    for (let i = 0; i < questProgress.objectives.length; i++) {
+      const objProgress = questProgress.objectives[i];
+      const objData = questData.objectives[i];
+
+      if (objData.type !== 'craft' || objProgress.completed) continue;
+
+      // Check profession match
+      if (objData.profession && objData.profession !== profession) continue;
+
+      // Check recipe match if specified
+      if (objData.recipeId && objData.recipeId !== recipeId) continue;
+
+      objProgress.completed = true;
+      showNotification(`Objective complete: ${objData.text}`, 'success');
+
+      checkQuestCompletion(questProgress.id);
+    }
+  }
+  renderQuestPanel();
+}
+
+/**
+ * Check quest objectives for contributing to village projects
+ */
+function checkContributeObjectives(projectId, itemId, amount) {
+  if (!GameState.player.activeQuests) return;
+
+  for (const questProgress of GameState.player.activeQuests) {
+    const questData = getQuest(questProgress.id);
+    if (!questData) continue;
+
+    for (let i = 0; i < questProgress.objectives.length; i++) {
+      const objProgress = questProgress.objectives[i];
+      const objData = questData.objectives[i];
+
+      if (objData.type !== 'contribute' || objProgress.completed) continue;
+
+      // Check project match if specified
+      if (objData.projectId && objData.projectId !== projectId) continue;
+
+      // Update count if tracking amount
+      if (objData.target) {
+        objProgress.count = (objProgress.count || 0) + amount;
+        if (objProgress.count >= objData.target) {
+          objProgress.completed = true;
+          showNotification(`Objective complete: ${objData.text}`, 'success');
+        }
+      } else {
+        objProgress.completed = true;
+        showNotification(`Objective complete: ${objData.text}`, 'success');
+      }
+
+      checkQuestCompletion(questProgress.id);
+    }
+  }
+  renderQuestPanel();
+}
+
+/**
+ * Check quest objectives for buying from shops
+ */
+function checkBuyObjectives(itemId) {
+  if (!GameState.player.activeQuests) return;
+
+  for (const questProgress of GameState.player.activeQuests) {
+    const questData = getQuest(questProgress.id);
+    if (!questData) continue;
+
+    for (let i = 0; i < questProgress.objectives.length; i++) {
+      const objProgress = questProgress.objectives[i];
+      const objData = questData.objectives[i];
+
+      if (objData.type !== 'buy' || objProgress.completed) continue;
+
+      // Check if specific item required
+      if (objData.itemId && objData.itemId !== itemId) continue;
+
+      objProgress.completed = true;
+      showNotification(`Objective complete: ${objData.text}`, 'success');
+
+      checkQuestCompletion(questProgress.id);
+    }
+  }
   renderQuestPanel();
 }
 
@@ -1919,6 +2260,35 @@ function showRewardsScreen(rewardData, onClose = null) {
       </div>
     `;
   }
+
+  // Build gathering skills HTML
+  let gatheringHtml = '';
+  if (rewardData.gatheringSkills && rewardData.gatheringSkills.length > 0) {
+    const skillNames = {
+      mining: { name: 'Mining', icon: '⛏️' },
+      woodcutting: { name: 'Woodcutting', icon: '🪓' },
+      herbalism: { name: 'Herbalism', icon: '🌿' },
+      fishing: { name: 'Fishing', icon: '🎣' },
+      hunting: { name: 'Hunting', icon: '🏹' }
+    };
+
+    const skillsList = rewardData.gatheringSkills.map(skill => {
+      const info = skillNames[skill] || { name: skill, icon: '✨' };
+      return `<span class="gathering-skill-unlock">${info.icon} ${info.name}</span>`;
+    }).join(', ');
+
+    gatheringHtml = `
+      <div class="rewards-section">
+        <div class="rewards-section-title">🛠️ SKILL LEARNED</div>
+        <div class="rewards-gathering">
+          ${skillsList}
+          <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">
+            Access from the Gather menu
+          </div>
+        </div>
+      </div>
+    `;
+  }
   
   // Build level up HTML
   let levelUpHtml = '';
@@ -1968,6 +2338,7 @@ function showRewardsScreen(rewardData, onClose = null) {
         ${itemsHtml}
         ${reputationHtml}
         ${spellbookHtml}
+        ${gatheringHtml}
       </div>
       
       <div class="rewards-footer">
@@ -2261,6 +2632,14 @@ function levelUp() {
 
   // Restore HP on level up
   GameState.player.hp = GameState.player.maxHp;
+
+  // Check for newly unlockable locations
+  if (locationManager) {
+    // First discover connected locations the player can now access
+    locationManager.checkQuestBasedDiscovery();
+    // Then unlock any discovered locations the player now meets requirements for
+    locationManager.checkLevelUnlocks();
+  }
 
   // Show level up screen
   showLevelUpScreen(GameState.player.level, statResult);
@@ -2600,51 +2979,57 @@ function addItemToInventory(itemId, count = 1) {
 function useItem(itemId) {
   const itemData = GAME_DATA.items[itemId];
   const inventoryItem = GameState.player.inventory.find(i => i.id === itemId);
-  
+
   if (!itemData || !inventoryItem) return;
-  
+
   if (itemData.type === 'consumable') {
     if (itemData.effect.hp) {
       healPlayer(itemData.effect.hp);
       showNotification(`Used ${itemData.name}: +${itemData.effect.hp} HP`);
     }
-    
+
     inventoryItem.count--;
     if (inventoryItem.count <= 0) {
       const index = GameState.player.inventory.indexOf(inventoryItem);
       GameState.player.inventory.splice(index, 1);
     }
+
+    // Check quest objectives for using items
+    checkUseItemObjectives(itemId);
   } else if (['helm', 'armor', 'weapon', 'accessory', 'ring'].includes(itemData.type)) {
     equipItem(itemId);
   }
-  
+
   renderHUD();
 }
 
 function equipItem(itemId) {
   const itemData = GAME_DATA.items[itemId];
   if (!itemData) return;
-  
+
   const slot = itemData.type;
-  
+
   // Unequip current item if any
   if (GameState.player.equipment[slot]) {
     addItemToInventory(GameState.player.equipment[slot]);
   }
-  
+
   // Remove from inventory
   const index = GameState.player.inventory.findIndex(i => i.id === itemId);
   if (index > -1) {
     GameState.player.inventory.splice(index, 1);
   }
-  
+
   // Equip new item
   GameState.player.equipment[slot] = itemId;
-  
+
   // Apply stat bonuses
   recalculateStats();
-  
+
   showNotification(`Equipped: ${itemData.name}`);
+
+  // Check quest objectives for equipping items
+  checkEquipObjectives(itemId);
 }
 
 function unequipItem(slot) {
@@ -2813,7 +3198,7 @@ function interactWithNPC(npcId) {
           const objDef = questData?.objectives?.find(obj => obj.id === o.id);
           return objDef && (objDef.type === 'lesson' || objDef.type === 'grammar_lesson');
         });
-        
+
         if (lessonObjective) {
           const objDef = questData?.objectives?.find(obj => obj.id === lessonObjective.id);
           const isGrammar = objDef?.type === 'grammar_lesson';
@@ -2829,6 +3214,34 @@ function interactWithNPC(npcId) {
               }
             }
           });
+        }
+
+        // Check for encounter objectives (journey encounters)
+        const encounterObjective = activeQuest.objectives.find(o => {
+          if (o.completed) return false;
+          const objDef = questData?.objectives?.find(obj => obj.id === o.id);
+          return objDef && objDef.type === 'encounter';
+        });
+
+        if (encounterObjective && typeof encounterManager !== 'undefined') {
+          const objDef = questData?.objectives?.find(obj => obj.id === encounterObjective.id);
+
+          // Check if previous objectives are complete
+          const objIndex = questData.objectives.findIndex(obj => obj.id === encounterObjective.id);
+          const previousObjectivesComplete = activeQuest.objectives
+            .slice(0, objIndex)
+            .every(o => o.completed);
+
+          if (previousObjectivesComplete) {
+            const encounterLabel = objDef.optional ? `${objDef.text} (Optional)` : objDef.text;
+            options.push({
+              text: `Begin: ${encounterLabel}`,
+              action: () => {
+                hideDialog();
+                startQuestEncounter(activeQuest.id, encounterObjective.id);
+              }
+            });
+          }
         }
 
         // Check for special objectives (like Order selection)
@@ -3233,9 +3646,12 @@ function generateQuestionsFromVocab(vocab, count, categories = []) {
   const questions = [];
   const shuffled = [...vocab].sort(() => Math.random() - 0.5);
 
-  // Determine how many sentence reorder questions to include (~20% of total)
-  const reorderCount = Math.max(1, Math.floor(count * 0.2));
-  const vocabCount = count - reorderCount;
+  // Determine how many special questions to include
+  // ~15% sentence reorder, ~15% syllable reorder, ~70% vocab
+  const specialCount = Math.max(2, Math.floor(count * 0.3));
+  const sentenceReorderCount = Math.ceil(specialCount / 2);
+  const syllableCount = Math.floor(specialCount / 2);
+  const vocabCount = count - sentenceReorderCount - syllableCount;
 
   // Generate vocabulary translation questions
   for (let i = 0; i < Math.min(vocabCount, shuffled.length); i++) {
@@ -3276,13 +3692,22 @@ function generateQuestionsFromVocab(vocab, count, categories = []) {
       }
     }
 
-    for (let i = 0; i < reorderCount; i++) {
+    for (let i = 0; i < sentenceReorderCount; i++) {
       const reorderQ = generateReorderQuestion(reorderCategory);
       questions.push(reorderQ);
     }
   }
 
-  // Shuffle all questions so reorder questions are mixed in
+  // Generate syllable reorder questions if SYLLABLE_WORDS is available
+  if (typeof SYLLABLE_WORDS !== 'undefined' && typeof generateSyllableQuestion === 'function') {
+    for (let i = 0; i < syllableCount; i++) {
+      // Use beginner tier by default, could be enhanced to match lesson difficulty
+      const syllableQ = generateSyllableQuestion('beginner');
+      questions.push(syllableQ);
+    }
+  }
+
+  // Shuffle all questions so special questions are mixed in
   return questions.sort(() => Math.random() - 0.5);
 }
 
@@ -3773,6 +4198,8 @@ function renderQuestion() {
   // Handle sentence reorder questions differently
   if (question.type === 'sentence_reorder') {
     renderSentenceReorderQuestion(question);
+  } else if (question.type === 'syllable_reorder') {
+    renderSyllableReorderQuestion(question);
   } else {
     // Standard multiple choice answers
     const answersHtml = question.options.map(opt =>
@@ -3911,6 +4338,129 @@ function submitReorderAnswer() {
   handleAnswer(userAnswerStr, isCorrect);
 }
 
+// =====================================================
+// Syllable Reorder Question System
+// =====================================================
+
+let syllableState = {
+  selectedSyllables: [],
+  availableSyllables: [],
+  correctOrder: []
+};
+
+function renderSyllableReorderQuestion(question) {
+  // Initialize syllable state
+  syllableState = {
+    selectedSyllables: [],
+    availableSyllables: [...question.shuffledSyllables],
+    correctOrder: question.correctOrder
+  };
+
+  const answersContainer = document.querySelector('.answer-options');
+
+  // Build the syllable reorder UI
+  answersContainer.innerHTML = `
+    <div class="syllable-container">
+      <div class="syllable-selected" id="syllable-selected">
+        <span class="syllable-placeholder">Click syllables to build the word...</span>
+      </div>
+      <div class="syllable-available" id="syllable-available">
+        ${syllableState.availableSyllables.map((syl, idx) =>
+          `<button class="syllable-btn" data-syllable="${syl}" data-index="${idx}">${syl}</button>`
+        ).join('')}
+      </div>
+      <div class="syllable-actions">
+        <button class="pixel-btn syllable-clear-btn" onclick="clearSyllableSelection()">Clear</button>
+        <button class="pixel-btn syllable-submit-btn" onclick="submitSyllableAnswer()">Submit</button>
+      </div>
+    </div>
+  `;
+
+  // Add click handlers for syllable buttons
+  document.querySelectorAll('.syllable-btn').forEach(btn => {
+    btn.addEventListener('click', () => selectSyllable(btn));
+  });
+
+  updateSyllableDisplay();
+
+  // Show tutorial on first syllable question
+  showTutorialTip('syllableQuestion', '.syllable-container', () => {});
+}
+
+function selectSyllable(btn) {
+  const syllable = btn.dataset.syllable;
+  const index = parseInt(btn.dataset.index);
+
+  // Add to selected syllables
+  syllableState.selectedSyllables.push({ syllable, originalIndex: index });
+
+  // Mark as used
+  btn.classList.add('used');
+  btn.disabled = true;
+
+  updateSyllableDisplay();
+}
+
+function removeSyllable(selectedIndex) {
+  // Get the syllable being removed
+  const removed = syllableState.selectedSyllables.splice(selectedIndex, 1)[0];
+
+  // Re-enable the original button
+  const btn = document.querySelector(`.syllable-btn[data-index="${removed.originalIndex}"]`);
+  if (btn) {
+    btn.classList.remove('used');
+    btn.disabled = false;
+  }
+
+  updateSyllableDisplay();
+}
+
+function updateSyllableDisplay() {
+  const selectedContainer = document.getElementById('syllable-selected');
+
+  if (syllableState.selectedSyllables.length === 0) {
+    selectedContainer.innerHTML = '<span class="syllable-placeholder">Click syllables to build the word...</span>';
+  } else {
+    // Show syllables joined together like a word being formed
+    selectedContainer.innerHTML = syllableState.selectedSyllables.map((item, idx) =>
+      `<span class="syllable-selected-part" onclick="removeSyllable(${idx})">${item.syllable}</span>`
+    ).join('<span class="syllable-connector">·</span>');
+  }
+}
+
+function clearSyllableSelection() {
+  // Reset all buttons
+  document.querySelectorAll('.syllable-btn').forEach(btn => {
+    btn.classList.remove('used');
+    btn.disabled = false;
+  });
+
+  // Clear selected syllables
+  syllableState.selectedSyllables = [];
+  updateSyllableDisplay();
+}
+
+function submitSyllableAnswer() {
+  const state = GameState.lessonState;
+  const question = state.questions[state.currentQuestion];
+
+  // Build the answer from selected syllables
+  const userAnswer = syllableState.selectedSyllables.map(item => item.syllable);
+  const userAnswerStr = userAnswer.join(''); // Join without spaces for word
+
+  // Check if all syllables were used
+  if (userAnswer.length !== syllableState.correctOrder.length) {
+    showNotification('Use all the syllables!', 'warning');
+    return;
+  }
+
+  // Check if correct
+  const isCorrect = userAnswer.every((syl, idx) => syl === syllableState.correctOrder[idx]);
+
+  // Use the standard answer handler with the constructed answer
+  handleAnswer(userAnswerStr, isCorrect);
+}
+
 function renderHintBox(question) {
   const hintBox = document.querySelector('.hint-box');
   const showHintsSetting = GameState.settings?.showHints || 'request';
@@ -3966,6 +4516,9 @@ function renderHintBox(question) {
       </button>
     `;
     hintBox.className = 'hint-box hint-available';
+
+    // Show tutorial on first hint availability
+    showTutorialTip('useHint', '.hint-reveal-btn', () => {});
   } else if (!status.unlocked) {
     // Hint locked for this word
     hintBox.innerHTML = `
@@ -4039,6 +4592,20 @@ function handleAnswer(answer, isCorrectOverride = null) {
       selectedContainer.classList.add('wrong');
       // Show correct answer below
       selectedContainer.innerHTML += `<div class="reorder-correct-answer">Correct: ${question.correctAnswer}</div>`;
+    }
+  } else if (question.type === 'syllable_reorder') {
+    // Disable syllable buttons and show result
+    document.querySelectorAll('.syllable-btn').forEach(btn => btn.disabled = true);
+    document.querySelector('.syllable-submit-btn').disabled = true;
+    document.querySelector('.syllable-clear-btn').disabled = true;
+
+    const selectedContainer = document.getElementById('syllable-selected');
+    if (isCorrect) {
+      selectedContainer.classList.add('correct');
+    } else {
+      selectedContainer.classList.add('wrong');
+      // Show correct answer below
+      selectedContainer.innerHTML += `<div class="syllable-correct-answer">Correct: ${question.correctAnswer}</div>`;
     }
   } else {
     // Standard multiple choice - disable all buttons
@@ -4168,17 +4735,18 @@ function handleAnswer(answer, isCorrectOverride = null) {
   
   // Update streak display
   renderStreakDisplay();
-  
-  // Move to next question after delay
+
+  // Move to next question after delay (longer for wrong answers so player can read feedback)
+  const feedbackDelay = isCorrect ? 1500 : 2500;
   setTimeout(() => {
     state.currentQuestion++;
-    
+
     if (state.currentQuestion >= state.questions.length) {
       completeLessonSession();
     } else {
       renderQuestion();
     }
-  }, 1500);
+  }, feedbackDelay);
 }
 
 function completeLessonSession() {
@@ -4474,34 +5042,80 @@ function showNotification(message, type = 'info') {
       right: 20px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
       z-index: 3000;
       pointer-events: none;
     `;
     document.body.appendChild(container);
   }
 
+  // Type-specific styling
+  const typeStyles = {
+    success: {
+      bg: 'linear-gradient(135deg, rgba(42, 157, 143, 0.95), rgba(32, 127, 113, 0.95))',
+      border: 'var(--accent-green)',
+      glow: '0 0 20px rgba(42, 157, 143, 0.4)',
+      icon: '✓'
+    },
+    error: {
+      bg: 'linear-gradient(135deg, rgba(230, 57, 70, 0.95), rgba(180, 47, 60, 0.95))',
+      border: 'var(--accent-red)',
+      glow: '0 0 20px rgba(230, 57, 70, 0.4)',
+      icon: '✗'
+    },
+    info: {
+      bg: 'linear-gradient(135deg, rgba(15, 52, 96, 0.95), rgba(22, 33, 62, 0.95))',
+      border: 'var(--accent-blue)',
+      glow: '0 0 15px rgba(67, 97, 238, 0.3)',
+      icon: 'ℹ'
+    }
+  };
+
+  const style = typeStyles[type] || typeStyles.info;
+
   const notification = document.createElement('div');
   notification.className = `notification ${type}`;
   notification.style.cssText = `
-    padding: 16px 32px;
-    background: ${type === 'success' ? 'var(--accent-green)' : type === 'error' ? 'var(--accent-red)' : 'var(--bg-light)'};
-    border: 3px solid var(--border-pixel);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    background: ${style.bg};
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 2px solid ${style.border};
+    border-radius: 8px;
     font-family: var(--font-display);
-    font-size: 18px;
+    font-size: 14px;
     color: var(--text-light);
-    animation: slideUp 0.3s ease;
+    box-shadow: ${style.glow}, 0 4px 20px rgba(0, 0, 0, 0.3);
     pointer-events: auto;
-    min-width: 200px;
-    text-align: center;
+    min-width: 220px;
+    max-width: 400px;
+    animation: slideInRight 0.3s ease-out;
+    cursor: pointer;
   `;
-  notification.textContent = message;
+
+  notification.innerHTML = `
+    <span style="font-size: 18px; flex-shrink: 0;">${style.icon}</span>
+    <span style="flex: 1;">${message}</span>
+  `;
+
+  // Click to dismiss
+  notification.addEventListener('click', () => {
+    notification.style.animation = 'slideOutRight 0.3s ease-in forwards';
+    setTimeout(() => notification.remove(), 300);
+  });
+
   container.appendChild(notification);
 
+  // Auto-dismiss after 4 seconds
   setTimeout(() => {
-    notification.style.animation = 'fadeIn 0.3s ease reverse';
-    setTimeout(() => notification.remove(), 300);
-  }, 5000);
+    if (notification.parentNode) {
+      notification.style.animation = 'slideOutRight 0.3s ease-in forwards';
+      setTimeout(() => notification.remove(), 300);
+    }
+  }, 4000);
 }
 
 /**
@@ -4622,7 +5236,7 @@ const TutorialTips = {
   viewStats: {
     icon: '📊',
     title: 'Your Stats',
-    content: 'Stats affect your gameplay! Wisdom gives more XP, Charisma improves shop prices, Constitution grants more HP. Equipment and level ups boost your stats.',
+    content: 'Stats affect your gameplay! Stamina adds HP, Strength reduces damage, Agility protects streaks, Insight grants hints, Luck gives shop discounts, Devotion boosts reputation, Knowledge retains mastery.',
     position: 'bottom'
   },
   viewReputation: {
@@ -4630,15 +5244,60 @@ const TutorialTips = {
     title: 'Reputation',
     content: 'Build reputation with factions by completing quests. Higher standing unlocks shop discounts, special quests, unique items, and titles!',
     position: 'bottom'
+  },
+  syllableQuestion: {
+    icon: '🔤',
+    title: 'Syllable Puzzle',
+    content: 'Click the syllables in the correct order to spell the French word. Click a syllable in your answer to remove it.',
+    position: 'top'
+  },
+  encounter: {
+    icon: '🛤️',
+    title: 'Road Encounter',
+    content: 'During your journey, you\'ll face challenges like reading signs and speaking with travelers. Answer correctly to proceed safely!',
+    position: 'bottom'
+  },
+  mapTravel: {
+    icon: '🗺️',
+    title: 'World Map',
+    content: 'Click on unlocked locations to travel. New areas unlock as you complete quests and build reputation.',
+    position: 'bottom'
+  },
+  useHint: {
+    icon: '💡',
+    title: 'Hints Available',
+    content: 'Stuck on a question? Click the hint button to reveal part of the answer. Your Insight stat gives you more hint charges!',
+    position: 'top'
+  },
+  villageProjects: {
+    icon: '🏗️',
+    title: 'The Game Loop',
+    content: 'This is the core of ByteQuest: Complete lessons to practice French, then gather resources using what you learned. Contribute resources to village projects to unlock permanent bonuses for everyone!',
+    position: 'bottom'
+  },
+  gathering: {
+    icon: '⛏️',
+    title: 'Gathering Resources',
+    content: 'Gathering minigames use French vocabulary! The better you know the words, the more resources you collect. Use these resources for crafting and village projects.',
+    position: 'bottom'
   }
 };
 
 function showTutorialTip(tipId, targetSelector, onComplete) {
-  // Skip if tutorials disabled or already completed
+  // Skip if tutorials disabled
   if (GameState.tutorial.skipAll) return;
+
+  // Skip if this tip was already shown (check shownTips array)
+  if (!GameState.tutorial.shownTips) {
+    GameState.tutorial.shownTips = [];
+  }
+  if (GameState.tutorial.shownTips.includes(tipId)) return;
 
   const tip = TutorialTips[tipId];
   if (!tip) return;
+
+  // Mark tip as shown
+  GameState.tutorial.shownTips.push(tipId);
 
   // Remove any existing tip
   hideTutorialTip();
@@ -5255,21 +5914,24 @@ function sellItem(shopId, itemId) {
 
 function buyFromShop(shopId, itemId) {
   if (!shopManager) return;
-  
+
   const result = shopManager.purchaseItem(shopId, itemId, 1);
-  
+
   if (result.success) {
     showNotification(`Purchased: ${result.item.name}`, 'success');
-    
+
+    // Check quest objectives for buying items
+    checkBuyObjectives(itemId);
+
     // Check achievements (for spending gold)
     checkAchievements();
-    
+
     // Refresh shop UI
     renderShopScreen(shopId);
-    
+
     // Update HUD (gold changed)
     renderHUD();
-    
+
     // Save game
     autoSave();
   } else {
@@ -6048,6 +6710,10 @@ function craftItem(profession, recipeId) {
     }
     showNotification(message, 'success');
     renderCraftingScreen(profession);
+
+    // Check quest objectives for crafting
+    checkCraftObjectives(profession, recipeId);
+
     autoSave();
   } else {
     showNotification(result.reason || 'Cannot craft this recipe', 'error');
@@ -7849,6 +8515,78 @@ const GATHERING_MINIGAMES = [
   { id: 'fishing', name: 'Fishing', icon: '🎣', desc: 'Reaction Game - Quick reflexes!', resource: 'fish' }
 ];
 
+// Check if a gathering skill is unlocked for the current location
+function isGatheringUnlocked(skillId, locationId = null) {
+  const location = locationId || GameState.currentLocation || 'dawnmere';
+  const unlockedGathering = GameState.player.unlockedGathering || {};
+
+  // Handle legacy array format (convert to new format)
+  if (Array.isArray(unlockedGathering)) {
+    GameState.player.unlockedGathering = { dawnmere: unlockedGathering };
+    return location === 'dawnmere' && unlockedGathering.includes(skillId);
+  }
+
+  const locationUnlocks = unlockedGathering[location] || [];
+  return locationUnlocks.includes(skillId);
+}
+
+// Unlock a gathering skill for a specific location (called from quest rewards)
+function unlockGatheringSkill(skillId, locationId = null) {
+  const location = locationId || GameState.currentLocation || 'dawnmere';
+
+  if (!GameState.player.unlockedGathering) {
+    GameState.player.unlockedGathering = {};
+  }
+
+  // Handle legacy array format
+  if (Array.isArray(GameState.player.unlockedGathering)) {
+    const legacy = GameState.player.unlockedGathering;
+    GameState.player.unlockedGathering = { dawnmere: legacy };
+  }
+
+  if (!GameState.player.unlockedGathering[location]) {
+    GameState.player.unlockedGathering[location] = [];
+  }
+
+  if (!GameState.player.unlockedGathering[location].includes(skillId)) {
+    GameState.player.unlockedGathering[location].push(skillId);
+    return true;
+  }
+  return false;
+}
+
+// Get which NPC teaches each gathering skill per location
+function getGatheringTeacher(skillId, locationId = null) {
+  const location = locationId || GameState.currentLocation || 'dawnmere';
+
+  const teachers = {
+    dawnmere: {
+      mining: { npc: 'Rega', quest: null },
+      woodcutting: { npc: 'Tommen', quest: 'learn_woodcutting' },
+      herbalism: { npc: 'Rega', quest: null },
+      fishing: { npc: 'Old Jorel', quest: 'learn_fishing' },
+      hunting: { npc: 'Bram', quest: 'learn_hunting' }
+    },
+    haari_fields: {
+      mining: { npc: 'Dave', quest: 'haari_mining' },
+      woodcutting: { npc: 'Venn', quest: 'haari_woodcutting' },
+      herbalism: { npc: 'Lyra', quest: 'secrets_of_the_soil' },
+      fishing: { npc: 'Rask', quest: 'haari_fishing' },
+      hunting: { npc: 'Rask', quest: 'haari_hunting' }
+    },
+    lurenium: {
+      mining: { npc: 'a miner', quest: null },
+      woodcutting: { npc: 'a lumberjack', quest: null },
+      herbalism: { npc: 'an herbalist', quest: null },
+      fishing: { npc: 'a fisherman', quest: null },
+      hunting: { npc: 'a hunter', quest: null }
+    }
+  };
+
+  const locationTeachers = teachers[location] || teachers.dawnmere;
+  return locationTeachers[skillId] || { npc: 'a local expert', quest: null };
+}
+
 function showGatherScreen() {
   if (typeof resourceMinigameManager === 'undefined') {
     showNotification("Gathering system not available!", 'error');
@@ -7860,8 +8598,8 @@ function showGatherScreen() {
   const zoneConfig = ZONE_GATHERING_CONFIG[currentLocation] || ZONE_GATHERING_CONFIG.dawnmere;
   const zoneTier = zoneConfig.tier;
 
-  // Filter and enhance minigames based on location
-  const availableMinigames = GATHERING_MINIGAMES.filter(mg => {
+  // Filter minigames based on location availability
+  const locationMinigames = GATHERING_MINIGAMES.filter(mg => {
     const gatherConfig = zoneConfig.gathering[mg.id];
     return gatherConfig && gatherConfig.available;
   }).map(mg => {
@@ -7869,7 +8607,8 @@ function showGatherScreen() {
     return {
       ...mg,
       tierName: gatherConfig.tierName,
-      tier: zoneTier
+      tier: zoneTier,
+      unlocked: isGatheringUnlocked(mg.id, currentLocation)
     };
   });
 
@@ -7877,18 +8616,40 @@ function showGatherScreen() {
   const tierColors = { 1: '#cd7f32', 2: '#c0c0c0', 3: '#ffd700' }; // bronze, silver, gold
   const tierLabels = { 1: 'Tier I', 2: 'Tier II', 3: 'Tier III' };
 
-  const minigamesHtml = availableMinigames.map(mg => `
-    <div class="gather-option" onclick="startGatherMinigame('${mg.id}')">
-      <div class="gather-icon">${mg.icon}</div>
-      <div class="gather-info">
-        <div class="gather-name">${mg.name}</div>
-        <div class="gather-desc">${mg.desc}</div>
-        <div class="gather-tier" style="font-size: 10px; color: ${tierColors[mg.tier]}; margin-top: 2px;">
-          ${mg.tierName} (${tierLabels[mg.tier]})
+  const minigamesHtml = locationMinigames.map(mg => {
+    if (mg.unlocked) {
+      // Unlocked - show clickable option
+      return `
+        <div class="gather-option" onclick="startGatherMinigame('${mg.id}')">
+          <div class="gather-icon">${mg.icon}</div>
+          <div class="gather-info">
+            <div class="gather-name">${mg.name}</div>
+            <div class="gather-desc">${mg.desc}</div>
+            <div class="gather-tier" style="font-size: 10px; color: ${tierColors[mg.tier]}; margin-top: 2px;">
+              ${mg.tierName} (${tierLabels[mg.tier]})
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  `).join('');
+      `;
+    } else {
+      // Locked - show locked state with hint
+      const teacher = getGatheringTeacher(mg.id, currentLocation);
+      return `
+        <div class="gather-option gather-locked" style="opacity: 0.5; cursor: not-allowed;">
+          <div class="gather-icon" style="filter: grayscale(100%);">🔒</div>
+          <div class="gather-info">
+            <div class="gather-name" style="color: var(--text-muted);">${mg.name}</div>
+            <div class="gather-desc" style="color: var(--text-muted); font-style: italic;">
+              Talk to ${teacher.npc} to learn this skill here
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  }).join('');
+
+  // Check if any skills are unlocked
+  const hasUnlockedSkills = locationMinigames.some(mg => mg.unlocked);
 
   showModal('gather-modal', `
     <div class="gather-screen">
@@ -7901,6 +8662,14 @@ function showGatherScreen() {
       <p style="color: ${tierColors[zoneTier]}; font-size: 11px; margin-bottom: 16px;">
         Location: ${zoneConfig.name} - ${tierLabels[zoneTier]} Resources
       </p>
+      ${!hasUnlockedSkills ? `
+        <div style="background: rgba(255,200,100,0.1); border: 1px solid var(--accent-gold); border-radius: 4px; padding: 12px; margin-bottom: 16px;">
+          <p style="color: var(--accent-gold); font-size: 12px; margin: 0;">
+            💡 <strong>No skills unlocked yet!</strong><br>
+            <span style="color: var(--text-muted);">Talk to villagers in Dawnmere to learn gathering skills.</span>
+          </p>
+        </div>
+      ` : ''}
       <div class="gather-options">
         ${minigamesHtml}
       </div>
@@ -7946,9 +8715,12 @@ function showMapScreen() {
     showNotification("Map system not initialized!", 'error');
     return;
   }
-  
+
   const currentLocation = locationManager.getCurrentLocation();
   const allStatuses = locationManager.getAllLocationStatuses();
+
+  console.log('[Map] Current location:', currentLocation?.id);
+  console.log('[Map] All statuses:', allStatuses.map(s => ({ id: s.location.id, unlocked: s.unlocked, discovered: s.discovered, isCurrent: s.isCurrent })));
   
   // Generate location cards
   const locationsHtml = allStatuses.map(status => {
@@ -8023,31 +8795,35 @@ function showMapScreen() {
       <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 16px;">
         Current Location: <span style="color: var(--accent-gold);">${currentLocation.name}</span>
       </p>
-      
+
       <div class="map-locations">
         ${locationsHtml}
       </div>
-      
+
       <div style="text-align: right; margin-top: 16px;">
         <button class="pixel-btn" onclick="hideModal('map-modal')">Close</button>
       </div>
     </div>
   `);
+
+  // Show tutorial on first map view
+  showTutorialTip('mapTravel', '.map-locations', () => {});
 }
 
-function travelToLocation(locationId) {
+function travelToLocation(locationId, fastTravel = false) {
   if (!locationManager) return;
 
-  const result = locationManager.travelTo(locationId);
+  console.log('[Travel] Starting travel to:', locationId);
+  const result = locationManager.travelTo(locationId, fastTravel);
+  console.log('[Travel] Result:', result);
+  console.log('[Travel] Current location after travel:', locationManager.getCurrentLocationId());
 
   if (result.success) {
     hideModal('map-modal');
+
+    // Immediate travel - no encounters
     showNotification(result.message, 'success');
-
-    // Update travel quest objectives
     checkTravelObjectives(locationId);
-
-    // Update game view for new location
     renderLocation();
     renderQuestPanel();
     autoSave();
@@ -8185,10 +8961,19 @@ function unequipTitle() {
 // Village Projects Screen
 // =====================================================
 
-function showVillageProjectsScreen() {
+function showVillageProjectsScreen(preserveScroll = false) {
   if (!villageProjectsManager) {
     showNotification("Village projects not available yet!", 'error');
     return;
+  }
+
+  // Preserve scroll position if refreshing
+  let scrollTop = 0;
+  if (preserveScroll) {
+    const existingBody = document.querySelector('.vp-body');
+    if (existingBody) {
+      scrollTop = existingBody.scrollTop;
+    }
   }
 
   const locationId = GameState.currentLocation;
@@ -8334,6 +9119,17 @@ function showVillageProjectsScreen() {
 
   showModal('village-projects-modal', content);
 
+  // Restore scroll position after refresh
+  if (preserveScroll && scrollTop > 0) {
+    const newBody = document.querySelector('.vp-body');
+    if (newBody) {
+      newBody.scrollTop = scrollTop;
+    }
+  }
+
+  // Show tutorial on first village projects view
+  showTutorialTip('villageProjects', '.vp-content', () => {});
+
   // Bind contribution buttons
   document.querySelectorAll('.vp-contribute-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -8347,7 +9143,13 @@ function showVillageProjectsScreen() {
 
       if (result.success) {
         showNotification(result.message, 'success');
-        showVillageProjectsScreen(); // Refresh
+
+        // Check quest objectives for contributing to projects
+        checkContributeObjectives(projectId, itemId, amount);
+
+        renderHUD(); // Update gold display
+        showVillageProjectsScreen(true); // Refresh, preserve scroll
+        autoSave();
       } else {
         showNotification(result.message, 'error');
       }
@@ -8362,7 +9164,7 @@ function showVillageProjectsScreen() {
 
       if (result.success) {
         showNotification(`${result.npc}: "${result.message}" (+${result.reputation} rep)`, 'success');
-        showVillageProjectsScreen(); // Refresh
+        showVillageProjectsScreen(true); // Refresh, preserve scroll
       } else {
         showNotification(result.message, 'error');
       }

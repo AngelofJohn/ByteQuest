@@ -16,7 +16,7 @@ const LOCATION_DEFINITIONS = {
     color: '#a0785a',
     bgGradient: ['#1a3a5c', '#2a5a3c', '#3a6a4c'], // Sky to ground colors
     themes: ['community', 'beginnings'],
-    npcs: ['urma', 'rega', 'merchant', 'baker', 'sage_aldric', 'old_pieron', 'yris', 'brother_varek', 'tommen', 'widow_senna', 'old_jorel', 'settlers_rep'],
+    npcs: ['urma', 'rega', 'merchant', 'baker', 'brother_varek', 'tommen', 'old_jorel', 'settlers_rep'],
     quests: ['welcome_to_dawnmere', 'meet_the_settlers', 'learning_basics']
   },
 
@@ -30,7 +30,7 @@ const LOCATION_DEFINITIONS = {
     color: '#c9a227',
     bgGradient: ['#87ceeb', '#f4d03f', '#8b7355'],
     themes: ['agriculture', 'nature'],
-    npcs: ['dave', 'lyra', 'venn', 'rask', 'the_veiled_one'],
+    npcs: ['dave', 'lyra', 'venn', 'rask', 'the_veiled_one', 'sage_aldric'],
     quests: ['harvest_time', 'lyras_garden', 'corruption_rises']
   },
 
@@ -73,8 +73,26 @@ class LocationManager {
       this.state.player.locations = {
         current: 'dawnmere',
         discovered: ['dawnmere'],
-        unlocked: ['dawnmere']
+        unlocked: ['dawnmere'],
+        visitedRoutes: []
       };
+    }
+    // Ensure all required fields exist for older saves
+    if (!this.state.player.locations.discovered) {
+      this.state.player.locations.discovered = ['dawnmere'];
+    }
+    if (!this.state.player.locations.unlocked) {
+      this.state.player.locations.unlocked = ['dawnmere'];
+    }
+    if (!this.state.player.locations.visitedRoutes) {
+      this.state.player.locations.visitedRoutes = [];
+    }
+    // Ensure dawnmere is always unlocked (starting location)
+    if (!this.state.player.locations.unlocked.includes('dawnmere')) {
+      this.state.player.locations.unlocked.push('dawnmere');
+    }
+    if (!this.state.player.locations.discovered.includes('dawnmere')) {
+      this.state.player.locations.discovered.push('dawnmere');
     }
   }
 
@@ -213,6 +231,36 @@ class LocationManager {
   // ===================================================
 
   /**
+   * Generate a route key for two locations (order-independent)
+   */
+  getRouteKey(fromId, toId) {
+    // Sort alphabetically to ensure same key regardless of direction
+    const sorted = [fromId, toId].sort();
+    return `${sorted[0]}->${sorted[1]}`;
+  }
+
+  /**
+   * Check if a route has been traveled before
+   */
+  hasVisitedRoute(fromId, toId) {
+    const routeKey = this.getRouteKey(fromId, toId);
+    return this.state.player.locations.visitedRoutes?.includes(routeKey) || false;
+  }
+
+  /**
+   * Mark a route as visited
+   */
+  markRouteVisited(fromId, toId) {
+    const routeKey = this.getRouteKey(fromId, toId);
+    if (!this.state.player.locations.visitedRoutes) {
+      this.state.player.locations.visitedRoutes = [];
+    }
+    if (!this.state.player.locations.visitedRoutes.includes(routeKey)) {
+      this.state.player.locations.visitedRoutes.push(routeKey);
+    }
+  }
+
+  /**
    * Check if player can travel to a location
    */
   canTravelTo(locationId) {
@@ -220,7 +268,7 @@ class LocationManager {
     if (!this.isUnlocked(locationId)) {
       return { canTravel: false, reason: this.getLockedReason(locationId) };
     }
-    
+
     // Must be connected to current location OR use fast travel (map)
     // For now, allow travel to any unlocked location
     return { canTravel: true };
@@ -228,8 +276,10 @@ class LocationManager {
 
   /**
    * Travel to a location
+   * @param {string} locationId - Destination location ID
+   * @param {boolean} fastTravel - If true, skip encounters (for already-visited routes)
    */
-  travelTo(locationId) {
+  travelTo(locationId, fastTravel = false) {
     const check = this.canTravelTo(locationId);
     if (!check.canTravel) {
       return { success: false, message: check.reason };
@@ -237,6 +287,10 @@ class LocationManager {
 
     const previousLocation = this.getCurrentLocationId();
     const newLocation = this.getLocation(locationId);
+    const isFirstVisit = !this.hasVisitedRoute(previousLocation, locationId);
+
+    // Mark route as visited
+    this.markRouteVisited(previousLocation, locationId);
 
     // Update current location in both places for compatibility
     this.state.player.locations.current = locationId;
@@ -246,7 +300,9 @@ class LocationManager {
       success: true,
       message: `Traveled to ${newLocation.name}`,
       previousLocation,
-      newLocation
+      newLocation,
+      isFirstVisit,
+      fastTravel
     };
   }
 
@@ -411,9 +467,7 @@ class LocationManager {
 
     // Quest -> Location mappings for travel quests
     const questLocationMap = {
-      'road_to_haari': 'haari_fields',
-      'haari_arrival': 'haari_fields'
-      // Add more as needed
+      // Add quest->location mappings as needed
     };
 
     for (const questId of completedQuests) {

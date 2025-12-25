@@ -346,8 +346,193 @@ const QuestionTypes = {
   MULTIPLE_CHOICE: 'multiple_choice',
   FILL_BLANK: 'fill_blank',
   LISTENING: 'listening', // For future audio implementation
-  SENTENCE_REORDER: 'sentence_reorder' // Arrange scrambled words into correct order
+  SENTENCE_REORDER: 'sentence_reorder', // Arrange scrambled words into correct order
+  SYLLABLE_REORDER: 'syllable_reorder' // Arrange scrambled syllables into correct word
 };
+
+// =====================================================
+// SYLLABLE REORDER DATA
+// Words with their syllable breakdowns for reordering practice
+// =====================================================
+
+const SYLLABLE_WORDS = {
+  // Tier 1: 2-3 syllables, common words
+  beginner: [
+    { french: "bonjour", english: "hello", syllables: ["bon", "jour"] },
+    { french: "merci", english: "thank you", syllables: ["mer", "ci"] },
+    { french: "maison", english: "house", syllables: ["mai", "son"] },
+    { french: "jardin", english: "garden", syllables: ["jar", "din"] },
+    { french: "village", english: "village", syllables: ["vil", "lage"] },
+    { french: "rivière", english: "river", syllables: ["ri", "vière"] },
+    { french: "montagne", english: "mountain", syllables: ["mon", "tagne"] },
+    { french: "château", english: "castle", syllables: ["châ", "teau"] },
+    { french: "forêt", english: "forest", syllables: ["fo", "rêt"] },
+    { french: "marché", english: "market", syllables: ["mar", "ché"] },
+    { french: "famille", english: "family", syllables: ["fa", "mille"] },
+    { french: "voyage", english: "journey", syllables: ["voy", "age"] },
+    { french: "chanson", english: "song", syllables: ["chan", "son"] },
+    { french: "parler", english: "to speak", syllables: ["par", "ler"] },
+    { french: "manger", english: "to eat", syllables: ["man", "ger"] },
+    { french: "danser", english: "to dance", syllables: ["dan", "ser"] }
+  ],
+
+  // Tier 2: 3 syllables, moderate difficulty
+  intermediate: [
+    { french: "chocolat", english: "chocolate", syllables: ["cho", "co", "lat"] },
+    { french: "restaurant", english: "restaurant", syllables: ["res", "tau", "rant"] },
+    { french: "éléphant", english: "elephant", syllables: ["é", "lé", "phant"] },
+    { french: "important", english: "important", syllables: ["im", "por", "tant"] },
+    { french: "différent", english: "different", syllables: ["dif", "fé", "rent"] },
+    { french: "aventure", english: "adventure", syllables: ["a", "ven", "ture"] },
+    { french: "commander", english: "to order", syllables: ["com", "man", "der"] },
+    { french: "découvrir", english: "to discover", syllables: ["dé", "cou", "vrir"] },
+    { french: "comprendre", english: "to understand", syllables: ["com", "pren", "dre"] },
+    { french: "appartement", english: "apartment", syllables: ["a", "par", "te", "ment"] },
+    { french: "magnifique", english: "magnificent", syllables: ["ma", "gni", "fique"] },
+    { french: "bibliothèque", english: "library", syllables: ["bi", "blio", "thèque"] },
+    { french: "pharmacie", english: "pharmacy", syllables: ["phar", "ma", "cie"] },
+    { french: "boulangerie", english: "bakery", syllables: ["bou", "lan", "ge", "rie"] },
+    { french: "vocabulaire", english: "vocabulary", syllables: ["vo", "ca", "bu", "laire"] },
+    { french: "grammaire", english: "grammar", syllables: ["gram", "maire"] }
+  ],
+
+  // Tier 3: 4+ syllables, advanced words
+  advanced: [
+    { french: "université", english: "university", syllables: ["u", "ni", "ver", "si", "té"] },
+    { french: "information", english: "information", syllables: ["in", "for", "ma", "tion"] },
+    { french: "communication", english: "communication", syllables: ["com", "mu", "ni", "ca", "tion"] },
+    { french: "extraordinaire", english: "extraordinary", syllables: ["ex", "tra", "or", "di", "naire"] },
+    { french: "internationale", english: "international", syllables: ["in", "ter", "na", "tio", "nale"] },
+    { french: "malheureusement", english: "unfortunately", syllables: ["mal", "heu", "reu", "se", "ment"] },
+    { french: "environnement", english: "environment", syllables: ["en", "vi", "ron", "ne", "ment"] },
+    { french: "développement", english: "development", syllables: ["dé", "ve", "lop", "pe", "ment"] },
+    { french: "gouvernement", english: "government", syllables: ["gou", "ver", "ne", "ment"] },
+    { french: "responsabilité", english: "responsibility", syllables: ["res", "pon", "sa", "bi", "li", "té"] }
+  ],
+
+  // Themed: Travel/Journey words (for escort quest integration)
+  travel: [
+    { french: "direction", english: "direction", syllables: ["di", "rec", "tion"] },
+    { french: "voyageur", english: "traveler", syllables: ["voy", "a", "geur"] },
+    { french: "destination", english: "destination", syllables: ["des", "ti", "na", "tion"] },
+    { french: "chemin", english: "path", syllables: ["che", "min"] },
+    { french: "carrefour", english: "crossroads", syllables: ["car", "re", "four"] },
+    { french: "passage", english: "passage", syllables: ["pas", "sage"] },
+    { french: "auberge", english: "inn", syllables: ["au", "berge"] },
+    { french: "frontière", english: "border", syllables: ["fron", "tière"] }
+  ],
+
+  // Themed: Magic/RPG words
+  magic: [
+    { french: "magicien", english: "magician", syllables: ["ma", "gi", "cien"] },
+    { french: "sorcière", english: "witch", syllables: ["sor", "cière"] },
+    { french: "enchantement", english: "enchantment", syllables: ["en", "chan", "te", "ment"] },
+    { french: "mystérieux", english: "mysterious", syllables: ["mys", "té", "rieux"] },
+    { french: "sortilège", english: "spell", syllables: ["sor", "ti", "lège"] },
+    { french: "potion", english: "potion", syllables: ["po", "tion"] },
+    { french: "grimoire", english: "spellbook", syllables: ["gri", "moire"] },
+    { french: "alchimie", english: "alchemy", syllables: ["al", "chi", "mie"] }
+  ],
+
+  // =====================================================
+  // LESSON-SPECIFIC SYLLABLE SETS
+  // Match the cognate patterns being taught in each lesson
+  // =====================================================
+
+  // Lesson 1: Identical cognates (simple 2-3 syllable words)
+  lesson_1: [
+    { french: "animal", english: "animal", syllables: ["a", "ni", "mal"] },
+    { french: "orange", english: "orange", syllables: ["o", "range"] },
+    { french: "restaurant", english: "restaurant", syllables: ["res", "tau", "rant"] },
+    { french: "piano", english: "piano", syllables: ["pi", "a", "no"] },
+    { french: "radio", english: "radio", syllables: ["ra", "di", "o"] },
+    { french: "hotel", english: "hotel", syllables: ["hô", "tel"] }
+  ],
+
+  // Lesson 2: -tion pattern words
+  lesson_2: [
+    { french: "nation", english: "nation", syllables: ["na", "tion"] },
+    { french: "attention", english: "attention", syllables: ["at", "ten", "tion"] },
+    { french: "question", english: "question", syllables: ["ques", "tion"] },
+    { french: "solution", english: "solution", syllables: ["so", "lu", "tion"] },
+    { french: "situation", english: "situation", syllables: ["si", "tu", "a", "tion"] },
+    { french: "information", english: "information", syllables: ["in", "for", "ma", "tion"] },
+    { french: "destination", english: "destination", syllables: ["des", "ti", "na", "tion"] },
+    { french: "conversation", english: "conversation", syllables: ["con", "ver", "sa", "tion"] }
+  ],
+
+  // Lesson 3: -ment pattern words
+  lesson_3: [
+    { french: "moment", english: "moment", syllables: ["mo", "ment"] },
+    { french: "document", english: "document", syllables: ["do", "cu", "ment"] },
+    { french: "monument", english: "monument", syllables: ["mo", "nu", "ment"] },
+    { french: "appartement", english: "apartment", syllables: ["a", "par", "te", "ment"] },
+    { french: "gouvernement", english: "government", syllables: ["gou", "ver", "ne", "ment"] },
+    { french: "instrument", english: "instrument", syllables: ["ins", "tru", "ment"] },
+    { french: "département", english: "department", syllables: ["dé", "par", "te", "ment"] }
+  ],
+
+  // Lesson 4: -able/-ible pattern words
+  lesson_4: [
+    { french: "possible", english: "possible", syllables: ["pos", "si", "ble"] },
+    { french: "terrible", english: "terrible", syllables: ["ter", "ri", "ble"] },
+    { french: "horrible", english: "horrible", syllables: ["hor", "ri", "ble"] },
+    { french: "adorable", english: "adorable", syllables: ["a", "do", "ra", "ble"] },
+    { french: "capable", english: "capable", syllables: ["ca", "pa", "ble"] },
+    { french: "probable", english: "probable", syllables: ["pro", "ba", "ble"] },
+    { french: "invisible", english: "invisible", syllables: ["in", "vi", "si", "ble"] },
+    { french: "acceptable", english: "acceptable", syllables: ["ac", "cep", "ta", "ble"] }
+  ],
+
+  // Lesson 5: Near cognates
+  lesson_5: [
+    { french: "famille", english: "family", syllables: ["fa", "mille"] },
+    { french: "musique", english: "music", syllables: ["mu", "si", "que"] },
+    { french: "différent", english: "different", syllables: ["dif", "fé", "rent"] },
+    { french: "important", english: "important", syllables: ["im", "por", "tant"] },
+    { french: "université", english: "university", syllables: ["u", "ni", "ver", "si", "té"] },
+    { french: "président", english: "president", syllables: ["pré", "si", "dent"] },
+    { french: "populaire", english: "popular", syllables: ["po", "pu", "laire"] },
+    { french: "nécessaire", english: "necessary", syllables: ["né", "ces", "saire"] }
+  ],
+
+  // Lesson 6: -ique pattern words
+  lesson_6: [
+    { french: "magique", english: "magic", syllables: ["ma", "gi", "que"] },
+    { french: "classique", english: "classic", syllables: ["clas", "si", "que"] },
+    { french: "fantastique", english: "fantastic", syllables: ["fan", "tas", "ti", "que"] },
+    { french: "électrique", english: "electric", syllables: ["é", "lec", "tri", "que"] },
+    { french: "romantique", english: "romantic", syllables: ["ro", "man", "ti", "que"] },
+    { french: "automatique", english: "automatic", syllables: ["au", "to", "ma", "ti", "que"] },
+    { french: "historique", english: "historic", syllables: ["his", "to", "ri", "que"] },
+    { french: "scientifique", english: "scientific", syllables: ["sci", "en", "ti", "fi", "que"] }
+  ]
+};
+
+// Generate a syllable reorder question
+function generateSyllableQuestion(tier = 'beginner') {
+  const wordList = SYLLABLE_WORDS[tier] || SYLLABLE_WORDS.beginner;
+  const wordData = wordList[Math.floor(Math.random() * wordList.length)];
+
+  // Shuffle the syllables
+  const shuffledSyllables = [...wordData.syllables].sort(() => Math.random() - 0.5);
+
+  // Ensure shuffled order is different from correct order
+  if (shuffledSyllables.join('') === wordData.syllables.join('') && wordData.syllables.length > 2) {
+    // Swap first two elements if same order
+    [shuffledSyllables[0], shuffledSyllables[1]] = [shuffledSyllables[1], shuffledSyllables[0]];
+  }
+
+  return {
+    type: QuestionTypes.SYLLABLE_REORDER,
+    prompt: 'Arrange the syllables to form the French word:',
+    word: wordData.english, // Show English meaning as reference
+    shuffledSyllables: shuffledSyllables,
+    correctOrder: wordData.syllables,
+    correctAnswer: wordData.french, // The complete French word
+    hint: `Starts with "${wordData.syllables[0]}"`
+  };
+}
 
 // Sentence reorder phrases - short sentences for word ordering practice
 const REORDER_SENTENCES = {
@@ -1290,7 +1475,16 @@ function generateLessonQuestions(lessonId, count = 5) {
   const questions = [];
   const shuffled = [...lesson.words].sort(() => Math.random() - 0.5);
 
-  for (let i = 0; i < Math.min(count, shuffled.length); i++) {
+  // Check if this lesson has specific syllable words
+  const lessonSyllables = SYLLABLE_WORDS[lessonId];
+  const hasSyllables = lessonSyllables && lessonSyllables.length > 0;
+
+  // Reserve 1 slot for syllable question if available (20% of questions)
+  const syllableCount = hasSyllables ? Math.max(1, Math.floor(count * 0.2)) : 0;
+  const vocabCount = count - syllableCount;
+
+  // Generate vocabulary translation questions
+  for (let i = 0; i < Math.min(vocabCount, shuffled.length); i++) {
     const word = shuffled[i];
     const questionType = Math.random() > 0.5 ?
       QuestionTypes.TRANSLATE_TO_ENGLISH :
@@ -1323,7 +1517,18 @@ function generateLessonQuestions(lessonId, count = 5) {
     });
   }
 
-  return questions;
+  // Add syllable questions if lesson has specific syllable words
+  if (hasSyllables) {
+    for (let i = 0; i < syllableCount; i++) {
+      const syllableQ = generateSyllableQuestion(lessonId);
+      syllableQ.lessonId = lessonId;
+      syllableQ.pattern = lesson.pattern;
+      questions.push(syllableQ);
+    }
+  }
+
+  // Shuffle all questions so syllable questions are mixed in
+  return questions.sort(() => Math.random() - 0.5);
 }
 
 // Export for use in other modules
@@ -1334,9 +1539,11 @@ if (typeof module !== 'undefined' && module.exports) {
     QuestionTypes,
     REORDER_SENTENCES,
     FILL_BLANK_SENTENCES,
+    SYLLABLE_WORDS,
     generateQuestions,
     generateReorderQuestion,
     generateFillBlankQuestion,
+    generateSyllableQuestion,
     getLesson,
     getAllLessons,
     generateLessonQuestions
