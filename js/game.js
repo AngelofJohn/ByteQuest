@@ -1367,6 +1367,26 @@ function acceptQuest(questId) {
   GameState.player.activeQuests.push(questState);
   showNotification(`Quest Accepted: ${quest.name}`);
 
+  // Show helpful hint about next step based on first objective
+  const firstObj = quest.objectives[0];
+  if (firstObj) {
+    setTimeout(() => {
+      let hint = '';
+      if (firstObj.type === 'talk') {
+        hint = `Talk to ${firstObj.target || 'the NPC'} to continue`;
+      } else if (firstObj.type === 'lesson') {
+        hint = 'Check the Quest panel (Q) to start your lesson';
+      } else if (firstObj.type === 'travel') {
+        hint = 'Open the Map (M) to travel';
+      } else if (firstObj.type === 'gather') {
+        hint = 'Use the Gather menu to collect resources';
+      }
+      if (hint) {
+        showNotification(hint, 'info');
+      }
+    }, 1500);
+  }
+
   // Handle onAccept rewards (things unlocked immediately when quest starts)
   if (quest.onAccept) {
     // Unlock gathering skills on accept (needed for quests that require gathering)
@@ -2568,6 +2588,12 @@ function closeLessonComplete() {
   // Show pending level ups after a brief delay for smooth transition
   setTimeout(() => {
     showPendingLevelUps();
+    // Show spellbook tutorial after first lesson
+    if (GameState.player.lessonsCompleted === 1) {
+      setTimeout(() => {
+        showTutorialTip('spellbook', '[data-screen="spellbook"]', () => {});
+      }, 500);
+    }
   }, 300);
 }
 
@@ -2891,9 +2917,9 @@ function reviewLessons() {
     return;
   }
   
-  // Build review session
-  const reviewWords = srManager.buildReviewSession(8);
-  
+  // Build review session (4 questions for quicker recovery)
+  const reviewWords = srManager.buildReviewSession(4);
+
   if (reviewWords.length < 4) {
     // Fallback if not enough words
     GameState.player.hp = Math.floor(GameState.player.maxHp * 0.5);
@@ -4202,8 +4228,8 @@ function renderQuestion() {
     renderSyllableReorderQuestion(question);
   } else {
     // Standard multiple choice answers
-    const answersHtml = question.options.map(opt =>
-      `<button class="answer-btn" data-answer="${opt}">${opt}</button>`
+    const answersHtml = question.options.map((opt, i) =>
+      `<button class="answer-btn" data-answer="${opt}"><span class="key-hint">${i + 1}</span>${opt}</button>`
     ).join('');
     document.querySelector('.answer-options').innerHTML = answersHtml;
 
@@ -4505,8 +4531,8 @@ function renderHintBox(question) {
   }
   
   // Render hint charges display
-  const chargesDisplay = `<span class="hint-charges">${hintManager.lessonCharges}/${hintManager.maxCharges} 💡</span>`;
-  
+  const chargesDisplay = `<span class="hint-charges">Hints: ${hintManager.lessonCharges}/${hintManager.maxCharges} 💡</span>`;
+
   if (status.available) {
     // Hint available - show button to reveal
     hintBox.innerHTML = `
@@ -4523,8 +4549,8 @@ function renderHintBox(question) {
     // Hint locked for this word
     hintBox.innerHTML = `
       ${chargesDisplay}
-      <span class="hint-locked">🔒 Hint locked</span>
-      <span class="hint-progress">${progress.current}/${progress.required} correct to unlock</span>
+      <span class="hint-locked">🔒 Word hint locked</span>
+      <span class="hint-progress">(${progress.current}/${progress.required} correct to unlock)</span>
     `;
     hintBox.className = 'hint-box hint-locked-state';
   } else {
@@ -4736,8 +4762,8 @@ function handleAnswer(answer, isCorrectOverride = null) {
   // Update streak display
   renderStreakDisplay();
 
-  // Move to next question after delay (longer for wrong answers so player can read feedback)
-  const feedbackDelay = isCorrect ? 1500 : 2500;
+  // Move to next question after delay (longer for wrong answers so player can study correct answer)
+  const feedbackDelay = isCorrect ? 1500 : 4000;
   setTimeout(() => {
     state.currentQuestion++;
 
@@ -5218,7 +5244,7 @@ const TutorialTips = {
   startLesson: {
     icon: '📚',
     title: 'How Lessons Work',
-    content: 'Answer questions correctly to progress. You must get each question right before moving on. Wrong answers cost HP, but you can try again!',
+    content: 'Answer questions correctly to progress. You must get each question right before moving on. Wrong answers cost HP, but you can try again! Tip: Use number keys 1-4 to answer quickly.',
     position: 'bottom'
   },
   wrongAnswer: {
@@ -5280,6 +5306,12 @@ const TutorialTips = {
     title: 'Gathering Resources',
     content: 'Gathering minigames use French vocabulary! The better you know the words, the more resources you collect. Use these resources for crafting and village projects.',
     position: 'bottom'
+  },
+  spellbook: {
+    icon: '📖',
+    title: 'Your Spellbook',
+    content: 'The Spellbook contains grammar references and lore pages you unlock through quests. Press S or click the Spellbook button in the sidebar to review what you\'ve learned!',
+    position: 'right'
   }
 };
 
@@ -7256,23 +7288,29 @@ function renderReputationTab() {
 
 function claimMilestoneReward(milestoneId) {
   if (!statsManager) return;
-  
+
   const rewards = statsManager.claimMilestoneReward(milestoneId);
-  
-  if (rewards && rewards.length > 0) {
+
+  // If claim returned null, nothing to do
+  if (rewards === null) return;
+
+  // Show notifications for each reward
+  if (rewards.length > 0) {
     rewards.forEach(reward => {
       if (reward.type === 'stat') {
         showNotification(`+${reward.amount} ${reward.statName}!`, 'success');
       }
       if (reward.type === 'title') {
-        showNotification(`Title Unlocked: ${reward.title}!`, 'success');
+        const titleDef = typeof TITLE_DEFINITIONS !== 'undefined' ? TITLE_DEFINITIONS[reward.title] : null;
+        const titleName = titleDef ? titleDef.name : reward.title;
+        showNotification(`Title Unlocked: ${titleName}!`, 'success');
       }
     });
-    
-    // Refresh the screen
-    renderProgressScreen();
-    autoSave();
   }
+
+  // Always refresh and save after successful claim (even if rewards array was empty)
+  renderProgressScreen();
+  autoSave();
 }
 
 // =====================================================

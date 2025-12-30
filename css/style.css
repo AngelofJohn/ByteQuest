@@ -502,7 +502,7 @@ body {
 /* Dialog Box */
 #dialog-box {
   position: absolute;
-  bottom: var(--space-lg);
+  bottom: var(--space-xl);
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 64px);
@@ -513,6 +513,7 @@ body {
   padding: 25px 35px 40px 35px;
   display: none;
   color: var(--text-dark);
+  z-index: 10;
 }
 
 #dialog-box.active {
@@ -533,6 +534,8 @@ body {
   line-height: 1.6;
   margin-bottom: var(--space-md);
   color: #3a3a3a;
+  max-height: 150px;
+  overflow-y: auto;
 }
 
 .dialog-options {
@@ -917,6 +920,21 @@ body {
   opacity: 0.7;
 }
 
+.answer-btn .key-hint {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  font-size: 10px;
+  line-height: 20px;
+  text-align: center;
+  color: var(--text-muted);
+  margin-right: var(--space-sm);
+  vertical-align: middle;
+}
+
 /* Sentence Reorder Question Styles */
 .reorder-container {
   display: flex;
@@ -1201,6 +1219,12 @@ body {
 .hint-box.hint-available {
   border-color: var(--accent-gold);
   border-style: solid;
+  animation: hint-pulse 2s ease-in-out infinite;
+}
+
+@keyframes hint-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(229, 179, 92, 0.4); }
+  50% { box-shadow: 0 0 8px 2px rgba(229, 179, 92, 0.6); }
 }
 
 .hint-box.hint-locked-state {
@@ -9101,14 +9125,14 @@ body.theme-pixel .cs-progress {
   animation: shimmer 3s linear infinite;
 }
 
-/* Tooltip enhancement */
-[data-tooltip] {
+/* Tooltip enhancement - for simple text tooltips using data-simple-tooltip */
+[data-simple-tooltip] {
   position: relative;
   cursor: help;
 }
 
-[data-tooltip]::after {
-  content: attr(data-tooltip);
+[data-simple-tooltip]::after {
+  content: attr(data-simple-tooltip);
   position: absolute;
   bottom: 100%;
   left: 50%;
@@ -9127,7 +9151,7 @@ body.theme-pixel .cs-progress {
   pointer-events: none;
 }
 
-[data-tooltip]:hover::after {
+[data-simple-tooltip]:hover::after {
   opacity: 1;
   visibility: visible;
 }
