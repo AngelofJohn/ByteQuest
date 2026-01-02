@@ -1,5 +1,4 @@
 // ByteQuest - Item System
-// Phase 1: Infrastructure skeleton
 
 // =====================================================
 // Constants
@@ -133,8 +132,8 @@ function createItemTemplate(overrides = {}) {
     
     // Equipment-specific (only if category is EQUIPMENT)
     equipmentSlot: null, // EquipmentSlot value
-    
-    // Stats (all optional, values TBD after playtesting)
+
+    // Stats (all optional)
     stats: {
       stamina: 0,
       strength: 0,

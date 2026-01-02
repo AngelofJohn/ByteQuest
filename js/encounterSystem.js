@@ -616,5 +616,3 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
   }
 });
-
-console.log('Encounter System loaded');

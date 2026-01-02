@@ -28,7 +28,7 @@ const GAME_DATA = {
       name: "Dawnmere",
       description: "A small wooden settlement on the trade routes of the river. New settlers seek opportunity here, away from the great cities.",
       type: "town",
-      level: 1,
+      levelRequired: 1,
       discovered: true,
       hasBossExam: true,  // Zone mastery test
       npcs: ["urma", "rega", "merchant", "baker", "brother_varek", "tommen", "old_jorel", "settlers_rep"],
@@ -82,7 +82,7 @@ const GAME_DATA = {
         "gear_up",
         "community_spirit"
       ],
-      connectedTo: ["haari_fields"],
+      connections: ["haari_fields"],
       atmosphere: "hopeful",
       music: null
     },
@@ -91,7 +91,7 @@ const GAME_DATA = {
       name: "The Haari Fields",
       description: "Golden wheat-colored fields stretch north toward Lurenium. Boar-like creatures roam the wild edges.",
       type: "wilderness",
-      level: 2,
+      levelRequired: 2,
       discovered: false,
       hasBossExam: true,  // Zone mastery test
       npcs: ["dave", "lyra", "venn", "rask", "the_veiled_one", "sage_aldric"],
@@ -119,6 +119,16 @@ const GAME_DATA = {
           searchText: "Beneath one tilted stone, protected from centuries of weather, something waits...",
           artifactId: "silence_bone_carving",
           requiredRep: null
+        },
+        {
+          id: "blighted_grove",
+          name: "Blighted Grove",
+          description: "A patch of dead trees and blackened plants. The corruption is visible here.",
+          searchText: "The plants here are twisted and dark. You carefully collect samples of the corrupted vegetation...",
+          itemReward: { id: "corrupted_sample", count: 2 },
+          repeatable: true,
+          cooldown: 300000,
+          requiredQuest: "corruption_rises"
         }
       ],
       quests: [
@@ -143,7 +153,7 @@ const GAME_DATA = {
         // System tutorial quests
         "first_brew"
       ],
-      connectedTo: ["dawnmere", "lurenium"],
+      connections: ["dawnmere", "lurenium"],
       atmosphere: "pastoral",
       music: null
     },
@@ -152,7 +162,7 @@ const GAME_DATA = {
       name: "Lurenium",
       description: "An ancient city of gold, built before the time of the current world. Its citizens preserve foundations they no longer understand.",
       type: "city",
-      level: 10,
+      levelRequired: 10,
       discovered: false,
       hasBossExam: true,
       npcs: ["magistrate_corinne", "archivist_thelon", "captain_varro", "merchant_liselle", "brother_cassius", "old_jorel"],
@@ -190,7 +200,7 @@ const GAME_DATA = {
         "orders_from_above",
         "hymns_of_light"
       ],
-      connectedTo: ["haari_fields"],
+      connections: ["haari_fields"],
       atmosphere: "ancient",
       music: null
     }
@@ -683,7 +693,8 @@ const GAME_DATA = {
           type: "gather",
           text: "Gather 5 Meadow Leaves",
           target: 5,
-          itemCategory: "herb"
+          itemId: "meadow_leaf",
+          consumeOnComplete: true
         },
         {
           id: "deliver_herbs",
@@ -2375,29 +2386,32 @@ const GAME_DATA = {
       levelRequired: 3,
       prerequisites: ["slime_farming"],
       classRequired: null,
-      reputationRequired: { dawnmere: 100 },
-      
+      reputationRequired: { dawnmere_settlers: 100 },
+
       chainId: "corruption_arc",
       chainOrder: 1,
       chainNext: null,  // TODO: Create corruption_spreads quest to continue arc
-      
+
       timeLimit: null,
       cooldown: null,
       seasonalWindow: null,
-      
+
       description: "Strange blight spreads across the Haari Fields. Dave the Herbalist needs your help investigating.",
       objectives: [
-        { 
-          id: "investigate_blight", 
-          type: "exploration",
-          text: "Investigate the blighted areas", 
-          target: 3
+        {
+          id: "learn_about_blight",
+          type: "lesson",
+          text: "Study the nature of the corruption",
+          lessonType: "vocabulary",
+          lessonId: "farming.intermediate"
         },
-        { 
-          id: "collect_samples", 
-          type: "collect",
-          text: "Collect corrupted samples", 
-          target: 5
+        {
+          id: "collect_samples",
+          type: "gather",
+          text: "Collect corrupted samples",
+          target: 5,
+          itemId: "corrupted_sample",
+          consumeOnComplete: true
         },
         {
           id: "report_dave",
@@ -3133,6 +3147,18 @@ const GAME_DATA = {
       value: 50,
       stackable: true,
       icon: "💎"
+    },
+
+    // Quest Items
+    corrupted_sample: {
+      id: "corrupted_sample",
+      name: "Corrupted Sample",
+      type: "resource",
+      category: "quest",
+      description: "A sample of blighted plant matter. Dark veins pulse within.",
+      value: 0,
+      stackable: true,
+      icon: "🦠"
     },
 
     // Crafting Materials

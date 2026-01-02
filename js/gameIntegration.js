@@ -13,10 +13,6 @@ const accountProgression = new AccountProgressionManager(
   accountProgressionConfig
 );
 
-console.log('✓ Account Progression System Initialized');
-console.log('  Version:', accountProgressionConfig.version);
-console.log('  Upgrades:', accountProgressionConfig.getAllUpgrades().length);
-
 // ============================================
 // APPLY EFFECTS TO NEW GAME
 // ============================================
@@ -46,22 +42,6 @@ function createNewGameWithAccountBonuses(playerName) {
 
   // Apply account progression effects
   const enhancedGameState = accountProgression.applyEffectsToGameState(gameState);
-
-  // Log what was applied
-  const effects = accountProgression.getActiveEffects();
-  console.log('🎮 New game started with account bonuses:');
-  if (effects.xpMultiplier > 1) {
-    console.log(`  XP Multiplier: +${((effects.xpMultiplier - 1) * 100).toFixed(0)}%`);
-  }
-  if (effects.goldMultiplier > 1) {
-    console.log(`  Gold Multiplier: +${((effects.goldMultiplier - 1) * 100).toFixed(0)}%`);
-  }
-  if (effects.maxHealthBonus > 0) {
-    console.log(`  Max Health: +${effects.maxHealthBonus}`);
-  }
-  if (effects.inventorySlots > 0) {
-    console.log(`  Inventory: +${effects.inventorySlots} slots`);
-  }
 
   return enhancedGameState;
 }
@@ -132,13 +112,6 @@ if (BYTEQUEST_DEBUG) {
 
   window.testNewGame = function() {
     const game = createNewGameWithAccountBonuses('TestPlayer');
-    console.log('New game with bonuses:', game);
     return game;
   };
-
-  // Console commands reminder (only in dev)
-  console.log('🔧 Debug mode enabled. Commands:');
-  console.log('  debugAccountProgression()');
-  console.log('  testPurchaseUpgrade(upgradeId)');
-  console.log('  testResetAccount()');
 }

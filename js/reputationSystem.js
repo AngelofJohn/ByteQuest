@@ -1,5 +1,4 @@
 // ByteQuest - Reputation System
-// Phase 1: Infrastructure skeleton
 
 // =====================================================
 // Constants
@@ -312,7 +311,6 @@ class ReputationManager {
     this.state.player.reputation[factionId] = 0;
 
     const faction = FACTION_DEFINITIONS[factionId];
-    console.log(`[REPUTATION] Discovered faction: ${faction.name}`);
 
     return {
       factionId,

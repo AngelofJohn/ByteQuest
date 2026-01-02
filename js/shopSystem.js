@@ -300,12 +300,23 @@ class ShopManager {
 
     return shop.inventory.map(entry => {
       const itemDef = this.itemManager ? this.itemManager.getDefinition(entry.itemId) : null;
-      
+
+      // Check reputation requirement
+      let meetsRepRequirement = true;
+      let playerRep = 0;
+      if (entry.repRequired && shop.faction) {
+        playerRep = this.state.player.reputation?.[shop.faction] || 0;
+        meetsRepRequirement = playerRep >= entry.repRequired;
+      }
+
       return {
         itemId: entry.itemId,
         price: entry.price,
         item: itemDef,
-        available: true // Static inventory is always available
+        available: true, // Static inventory is always available
+        repRequired: entry.repRequired || 0,
+        meetsRepRequirement,
+        playerRep
       };
     }).filter(entry => entry.item !== null);
   }
@@ -329,6 +340,16 @@ class ShopManager {
     if (!shop) return false;
 
     return shop.inventory.some(e => e.itemId === itemId);
+  }
+
+  /**
+   * Get the shop inventory entry for an item (includes price, repRequired, etc.)
+   */
+  getItemEntry(shopId, itemId) {
+    const shop = this.getShop(shopId);
+    if (!shop) return null;
+
+    return shop.inventory.find(e => e.itemId === itemId) || null;
   }
 
   // ===================================================
@@ -371,6 +392,20 @@ class ShopManager {
     // Check if item is in shop
     if (!this.shopHasItem(shopId, itemId)) {
       return { success: false, message: 'Item not available in this shop' };
+    }
+
+    // Check reputation requirement
+    const itemEntry = this.getItemEntry(shopId, itemId);
+    if (itemEntry?.repRequired && shop.faction) {
+      const playerRep = this.state.player.reputation?.[shop.faction] || 0;
+      if (playerRep < itemEntry.repRequired) {
+        return {
+          success: false,
+          message: shop.dialogue?.notEnoughRep || `You need ${itemEntry.repRequired} reputation with this faction.`,
+          repRequired: itemEntry.repRequired,
+          currentRep: playerRep
+        };
+      }
     }
 
     // Get price with Luck discount

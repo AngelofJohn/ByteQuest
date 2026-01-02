@@ -131,8 +131,7 @@ const GameState = {
     confirmActions: true,
     autoSave: true,
     // Learning
-    // TODO: Change back to 5 for launch (currently 3 for testing)
-    questionCount: 3, // 3, 5, 8, 10
+    questionCount: 1, // 1, 3, 5, 8, 10
     showHints: "request", // always, request, never
     reviewReminders: true,
     keyboardShortcuts: true,
@@ -523,19 +522,7 @@ const BonusCalculator = {
 // =====================================================
 
 function saveGame() {
-  const saveData = {
-    player: GameState.player,
-    currentLocation: GameState.currentLocation,
-    tutorial: GameState.tutorial,
-    timestamp: Date.now()
-  };
-  localStorage.setItem('bytequest_save', JSON.stringify(saveData));
-  showNotification("Game Saved!");
-}
-
-// Auto-save respects settings - use this for automatic saves
-function autoSave() {
-  if (GameState.settings?.autoSave !== false) {
+  try {
     const saveData = {
       player: GameState.player,
       currentLocation: GameState.currentLocation,
@@ -543,35 +530,62 @@ function autoSave() {
       timestamp: Date.now()
     };
     localStorage.setItem('bytequest_save', JSON.stringify(saveData));
-    // Silent save - no notification for auto-saves
+    showNotification("Game Saved!");
+  } catch (error) {
+    console.error('Save failed:', error);
+    showNotification("Failed to save game!", 'error');
+  }
+}
+
+// Auto-save respects settings - use this for automatic saves
+function autoSave() {
+  if (GameState.settings?.autoSave !== false) {
+    try {
+      const saveData = {
+        player: GameState.player,
+        currentLocation: GameState.currentLocation,
+        tutorial: GameState.tutorial,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('bytequest_save', JSON.stringify(saveData));
+      // Silent save - no notification for auto-saves
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+    }
   }
 }
 
 function loadGame() {
-  const saveData = localStorage.getItem('bytequest_save');
-  if (saveData) {
-    const data = JSON.parse(saveData);
-    GameState.player = { ...GameState.player, ...data.player };
-    GameState.currentLocation = data.currentLocation;
+  try {
+    const saveData = localStorage.getItem('bytequest_save');
+    if (saveData) {
+      const data = JSON.parse(saveData);
+      GameState.player = { ...GameState.player, ...data.player };
+      GameState.currentLocation = data.currentLocation;
 
-    // Sync player.locations.current with currentLocation for locationManager compatibility
-    if (!GameState.player.locations) {
-      GameState.player.locations = {
-        current: data.currentLocation || 'dawnmere',
-        discovered: GameState.player.discoveredLocations || ['dawnmere'],
-        unlocked: GameState.player.discoveredLocations || ['dawnmere']
-      };
-    } else {
-      GameState.player.locations.current = data.currentLocation || 'dawnmere';
-    }
+      // Sync player.locations.current with currentLocation for locationManager compatibility
+      if (!GameState.player.locations) {
+        GameState.player.locations = {
+          current: data.currentLocation || 'dawnmere',
+          discovered: GameState.player.discoveredLocations || ['dawnmere'],
+          unlocked: GameState.player.discoveredLocations || ['dawnmere']
+        };
+      } else {
+        GameState.player.locations.current = data.currentLocation || 'dawnmere';
+      }
 
-    // Load tutorial state if it exists
-    if (data.tutorial) {
-      GameState.tutorial = { ...GameState.tutorial, ...data.tutorial };
+      // Load tutorial state if it exists
+      if (data.tutorial) {
+        GameState.tutorial = { ...GameState.tutorial, ...data.tutorial };
+      }
+      return true;
     }
-    return true;
+    return false;
+  } catch (error) {
+    console.error('Load failed:', error);
+    showNotification("Failed to load save data!", 'error');
+    return false;
   }
-  return false;
 }
 
 function resetGame() {
@@ -631,21 +645,32 @@ function updateNavButtonVisibility() {
 }
 
 function renderLocation() {
-  // Try to use locationManager first, fallback to GAME_DATA
+  // Get current location ID from multiple sources for robustness
+  let locationId = GameState.currentLocation;
+  if (locationManager) {
+    locationId = locationManager.getCurrentLocationId();
+  } else if (GameState.player.locations?.current) {
+    locationId = GameState.player.locations.current;
+  }
+
+  // Get location data - try locationManager first, then GAME_DATA
   let location;
   if (locationManager) {
-    location = locationManager.getCurrentLocation();
-    console.log('[renderLocation] Using locationManager, got:', location?.id, location?.name);
-  } else {
-    location = GAME_DATA.locations[GameState.currentLocation];
-    console.log('[renderLocation] Using GAME_DATA fallback, got:', location?.id, location?.name);
+    location = locationManager.getLocation(locationId);
+  }
+  if (!location) {
+    location = GAME_DATA.locations[locationId];
+  }
+  if (!location) {
+    location = LOCATION_DEFINITIONS?.[locationId];
   }
 
   if (!location) {
-    console.warn('No location found');
+    console.warn('No location found for:', locationId);
     return;
   }
 
+  // Update location header
   const locName = document.querySelector('.location-name');
   const locDesc = document.querySelector('.location-desc');
   if (locName) locName.textContent = location.name;
@@ -905,8 +930,26 @@ function renderHotspots(location) {
       canAccess = currentRep >= hotspot.requiredRep.amount;
     }
 
-    // Don't show if already searched and artifact found
-    if (isSearched) return;
+    // Check quest requirement
+    if (hotspot.requiredQuest) {
+      const hasQuest = GameState.player.activeQuests?.some(q => q.id === hotspot.requiredQuest) ||
+                       GameState.player.completedQuests?.includes(hotspot.requiredQuest);
+      if (!hasQuest) canAccess = false;
+    }
+
+    // Check repeatable hotspot cooldown
+    if (hotspot.repeatable && hotspot.cooldown) {
+      const lastUsed = GameState.player.hotspotCooldowns?.[hotspot.id];
+      if (lastUsed) {
+        const elapsed = Date.now() - lastUsed;
+        if (elapsed < hotspot.cooldown) {
+          canAccess = false; // Still on cooldown
+        }
+      }
+    }
+
+    // Don't show if already searched (unless repeatable and off cooldown)
+    if (isSearched && !hotspot.repeatable) return;
 
     // Don't show if can't access yet
     if (!canAccess) return;
@@ -1039,14 +1082,36 @@ function claimHotspotArtifact(hotspotId) {
   const modal = document.getElementById('hotspot-discovery-modal');
   if (modal) modal.remove();
 
-  if (!hotspot || !hotspot.artifactId) return;
+  if (!hotspot) return;
 
-  // Unlock the artifact
-  if (typeof unlockArtifact === 'function') {
+  // Unlock artifact if present
+  if (hotspot.artifactId && typeof unlockArtifact === 'function') {
     unlockArtifact(hotspot.artifactId);
   }
 
-  // Re-render to remove the hotspot from scene
+  // Give item reward if present
+  if (hotspot.itemReward) {
+    const itemId = hotspot.itemReward.id;
+    const count = hotspot.itemReward.count || 1;
+    addToInventory(itemId, count);
+    const itemData = GAME_DATA.items[itemId];
+    showNotification(`Found ${count}x ${itemData?.name || itemId}!`, 'success');
+
+    // Track repeatable hotspot cooldowns
+    if (hotspot.repeatable) {
+      if (!GameState.player.hotspotCooldowns) {
+        GameState.player.hotspotCooldowns = {};
+      }
+      GameState.player.hotspotCooldowns[hotspotId] = Date.now();
+      // Remove from searched so it can be searched again after cooldown
+      const searchedIndex = GameState.player.searchedHotspots?.indexOf(hotspotId);
+      if (searchedIndex > -1) {
+        GameState.player.searchedHotspots.splice(searchedIndex, 1);
+      }
+    }
+  }
+
+  // Re-render to remove/update the hotspot in scene
   renderLocation();
 
   // Auto-save
@@ -1183,8 +1248,7 @@ function renderQuestItem(quest, status) {
   // Get type and category info
   const typeInfo = getQuestTypeInfo(questData.type);
   const categoryInfo = getQuestCategoryInfo(questData.category);
-  const statusInfo = getQuestStatusInfo(status);
-  
+
   // Build objectives HTML if selected
   let objectivesHtml = '';
   if (isSelected && questData.objectives) {
@@ -1428,19 +1492,19 @@ function acceptQuest(questId) {
   checkGatherObjectives();
 
   renderQuestPanel();
-  renderNPCs(GAME_DATA.locations[GameState.currentLocation]);
+  renderLocation();  // This properly handles location and NPC rendering
 }
 
-function updateQuestProgress(questId, objectiveId, increment = 1) {
+function updateQuestProgress(questId, objectiveId, increment = 1, deferCompletion = false) {
   const quest = GameState.player.activeQuests.find(q => q.id === questId);
   if (!quest) return;
-  
+
   const objective = quest.objectives.find(o => o.id === objectiveId);
   const questDef = getQuest(questId);
   const objectiveData = questDef?.objectives.find(o => o.id === objectiveId);
-  
+
   if (!objective || objective.completed || !objectiveData) return;
-  
+
   if (objectiveData.target) {
     objective.count += increment;
     if (objective.count >= objectiveData.target) {
@@ -1451,25 +1515,42 @@ function updateQuestProgress(questId, objectiveId, increment = 1) {
     objective.completed = true;
     showNotification(`Objective Complete: ${objectiveData.text}`);
   }
-  
+
   // Check if all objectives are complete
-  checkQuestCompletion(questId);
+  // Pass deferCompletion to delay quest rewards until after lesson screen
+  checkQuestCompletion(questId, deferCompletion);
   renderQuestPanel();
 }
 
-function checkQuestCompletion(questId) {
+// Track pending quest completions to show after lesson screen
+let pendingQuestCompletion = null;
+
+function checkQuestCompletion(questId, defer = false) {
   const quest = GameState.player.activeQuests.find(q => q.id === questId);
   if (!quest) return;
 
   const allComplete = quest.objectives.every(o => o.completed);
   if (allComplete) {
+    if (defer) {
+      // Defer completion until after lesson screen closes
+      pendingQuestCompletion = questId;
+    } else {
+      completeQuest(questId);
+    }
+  }
+}
+
+function processPendingQuestCompletion() {
+  if (pendingQuestCompletion) {
+    const questId = pendingQuestCompletion;
+    pendingQuestCompletion = null;
     completeQuest(questId);
   }
 }
 
 // Auto-complete task objectives when lesson is completed
 // Task objectives are narrative flavor (e.g., "sing along", "find tracks")
-function autoCompleteTaskObjectives(questId) {
+function autoCompleteTaskObjectives(questId, deferCompletion = true) {
   if (!questId) return;
 
   const quest = GameState.player.activeQuests.find(q => q.id === questId);
@@ -1486,7 +1567,8 @@ function autoCompleteTaskObjectives(questId) {
     }
   }
 
-  checkQuestCompletion(questId);
+  // Defer completion check - quest rewards shown after lesson screen
+  checkQuestCompletion(questId, deferCompletion);
 }
 
 /**
@@ -1555,8 +1637,20 @@ function completeQuest(questId) {
   // Remove from active
   GameState.player.activeQuests.splice(questIndex, 1);
 
-  // Add to completed
-  GameState.player.completedQuests.push(questId);
+  // Add to completed (avoid duplicates for repeatable quests)
+  if (!GameState.player.completedQuests.includes(questId)) {
+    GameState.player.completedQuests.push(questId);
+  }
+
+  // Track completion timestamp for repeatable/daily/weekly quests
+  if (!GameState.player.questCompletions) {
+    GameState.player.questCompletions = {};
+  }
+  if (!GameState.player.questCompletions[questId]) {
+    GameState.player.questCompletions[questId] = { count: 0 };
+  }
+  GameState.player.questCompletions[questId].count++;
+  GameState.player.questCompletions[questId].lastCompletedAt = Date.now();
 
   // Consume items for gather objectives marked with consumeOnComplete
   if (questData.objectives) {
@@ -1739,10 +1833,10 @@ function completeQuest(questId) {
 
   // Unlock next quests
   unlockDependentQuests(questId);
-  
-  // Re-render NPCs (visibility may have changed)
-  renderNPCs(GAME_DATA.locations[GameState.currentLocation]);
-  
+
+  // Re-render location (NPC visibility may have changed)
+  renderLocation();
+
   renderHUD();
   renderQuestPanel();
   autoSave();
@@ -1912,9 +2006,6 @@ function addItemToInventorySilent(itemId, count = 1) {
 function checkGatherObjectives(itemId = null) {
   if (!GameState.player.activeQuests) return;
 
-  console.log('[GatherCheck] Checking gather objectives, itemId:', itemId);
-  console.log('[GatherCheck] Active quests:', GameState.player.activeQuests.map(q => q.id));
-
   for (const questProgress of GameState.player.activeQuests) {
     const questData = getQuest(questProgress.id);
     if (!questData) continue;
@@ -1938,12 +2029,10 @@ function checkGatherObjectives(itemId = null) {
             currentCount += invItem.count || 1;
           }
         }
-        console.log(`[GatherCheck] Quest ${questProgress.id}, objective ${objData.id}: category=${objData.itemCategory}, count=${currentCount}/${targetCount}`);
       } else if (objData.itemId) {
         // Skip if we're checking a specific item and it doesn't match
         if (itemId && objData.itemId !== itemId) continue;
         currentCount = getItemCount(objData.itemId);
-        console.log(`[GatherCheck] Quest ${questProgress.id}, objective ${objData.id}: itemId=${objData.itemId}, count=${currentCount}/${targetCount}`);
       }
 
       // Update progress
@@ -1966,67 +2055,6 @@ function checkGatherObjectives(itemId = null) {
   // Update quest panel to reflect changes
   renderQuestPanel();
 }
-
-/**
- * Debug function to verify gather objectives - call from console: debugGatherObjectives()
- */
-function debugGatherObjectives() {
-  console.log('=== GATHER OBJECTIVES DEBUG ===');
-  console.log('Inventory:', GameState.player.inventory);
-
-  // Count items by category
-  const categoryCount = {};
-  for (const invItem of GameState.player.inventory || []) {
-    const itemData = GAME_DATA.items[invItem.id];
-    if (itemData) {
-      const cat = itemData.category || 'unknown';
-      categoryCount[cat] = (categoryCount[cat] || 0) + (invItem.count || 1);
-      console.log(`  ${invItem.id}: count=${invItem.count}, category=${cat}`);
-    }
-  }
-  console.log('Category totals:', categoryCount);
-
-  // Check active quests with gather objectives
-  console.log('\nActive quests with gather objectives:');
-  for (const questProgress of GameState.player.activeQuests || []) {
-    const questData = getQuest(questProgress.id);
-    if (!questData) continue;
-
-    for (let i = 0; i < questProgress.objectives.length; i++) {
-      const objProgress = questProgress.objectives[i];
-      const objData = questData.objectives[i];
-
-      if (objData && objData.type === 'gather') {
-        console.log(`  Quest: ${questProgress.id}`);
-        console.log(`    Objective: ${objData.text}`);
-        console.log(`    itemId: ${objData.itemId || 'N/A'}, itemCategory: ${objData.itemCategory || 'N/A'}`);
-        console.log(`    Progress: ${objProgress.count || 0}/${objData.target}`);
-        console.log(`    Completed: ${objProgress.completed}`);
-
-        // Calculate what it should be
-        if (objData.itemCategory) {
-          console.log(`    Actual category count: ${categoryCount[objData.itemCategory] || 0}`);
-        } else if (objData.itemId) {
-          console.log(`    Actual item count: ${getItemCount(objData.itemId)}`);
-        }
-      }
-    }
-  }
-  console.log('=== END DEBUG ===');
-}
-
-// Make it globally accessible
-window.debugGatherObjectives = debugGatherObjectives;
-
-/**
- * Force recalculate all gather objectives - call from console: fixGatherObjectives()
- */
-function fixGatherObjectives() {
-  console.log('Recalculating all gather objectives...');
-  checkGatherObjectives();
-  console.log('Done. Check quest panel for updated values.');
-}
-window.fixGatherObjectives = fixGatherObjectives;
 
 /**
  * Check quest objectives for equipping items
@@ -2582,12 +2610,23 @@ function showLessonCompletionScreen(data) {
   `);
 }
 
-// Close lesson complete modal and show any pending level ups
+// Close lesson complete modal and show any pending quest completions/level ups
 function closeLessonComplete() {
   hideModal('lesson-complete-modal');
-  // Show pending level ups after a brief delay for smooth transition
+  // Process pending quest completion first, then level ups
   setTimeout(() => {
-    showPendingLevelUps();
+    // Check if there's a pending quest completion
+    const hasQuestPending = pendingQuestCompletion !== null;
+
+    // Show quest completion screen if a quest was completed during this lesson
+    processPendingQuestCompletion();
+
+    // Show pending level ups only if no quest screen was shown
+    // (quest screen will handle level ups after it closes)
+    if (!hasQuestPending) {
+      showPendingLevelUps();
+    }
+
     // Show spellbook tutorial after first lesson
     if (GameState.player.lessonsCompleted === 1) {
       setTimeout(() => {
@@ -2690,7 +2729,7 @@ function showLevelUpScreen(newLevel, statResult) {
   // Find newly accessible locations at this level
   const newLocations = [];
   Object.values(GAME_DATA.locations).forEach(loc => {
-    if (loc.level === newLevel && !loc.discovered) {
+    if (loc.levelRequired === newLevel && !loc.discovered) {
       newLocations.push(loc);
     }
   });
@@ -3588,8 +3627,6 @@ function startLesson(questId, objectiveId) {
     lessonData = LESSONS[lessonId];
     allVocab = lessonData.words;
 
-    console.log('Starting structured lesson:', lessonId, '-', lessonData.title);
-
     // Generate questions from the lesson
     questions = generateLessonQuestions(lessonId, questionCount);
 
@@ -3603,12 +3640,9 @@ function startLesson(questId, objectiveId) {
     // Fall back to old vocabulary category system
     const vocabCategories = quest.vocabulary || [];
 
-    console.log('Starting lesson for quest:', questId, 'with vocabulary categories:', vocabCategories);
-
     vocabCategories.forEach(cat => {
       const [category, subcategory] = cat.split('.');
       const vocab = VOCABULARY[category]?.[subcategory] || [];
-      console.log(`Vocabulary category ${cat}: found ${vocab.length} words`);
       allVocab = allVocab.concat(vocab);
     });
 
@@ -3621,9 +3655,7 @@ function startLesson(questId, objectiveId) {
 
     questions = generateQuestionsFromVocab(allVocab, questionCount, vocabCategories);
   }
-  
-  console.log('Generated', questions.length, 'questions');
-  
+
   if (questions.length === 0) {
     showNotification('Error: Could not generate questions!', 'error');
     return;
@@ -3772,9 +3804,7 @@ function startGrammarLesson(questId, objectiveId) {
     showNotification('Error: Could not generate grammar questions!', 'error');
     return;
   }
-  
-  console.log('Generated', questions.length, 'grammar questions');
-  
+
   // Initialize hint system
   let hintInfo = { charges: 0, maxCharges: 0 };
   if (hintManager) {
@@ -4247,245 +4277,155 @@ function renderQuestion() {
   document.querySelector('.lesson-feedback').className = 'lesson-feedback';
 }
 
-// Sentence Reorder Question State
-let reorderState = {
-  selectedWords: [],
-  availableWords: [],
-  correctOrder: []
+// =====================================================
+// Unified Reorder System (words and syllables)
+// =====================================================
+
+const reorderSystem = {
+  state: {
+    selected: [],
+    available: [],
+    correctOrder: [],
+    type: 'word', // 'word' or 'syllable'
+    joiner: ' '   // ' ' for words, '' for syllables
+  },
+
+  init(items, correctOrder, type) {
+    this.state = {
+      selected: [],
+      available: [...items],
+      correctOrder: correctOrder,
+      type: type,
+      joiner: type === 'syllable' ? '' : ' '
+    };
+  },
+
+  render() {
+    const s = this.state;
+    const prefix = s.type === 'syllable' ? 'syllable' : 'reorder';
+    const itemName = s.type === 'syllable' ? 'syllables' : 'words';
+    const placeholder = s.type === 'syllable'
+      ? 'Click syllables to build the word...'
+      : 'Click words to build the sentence...';
+
+    const answersContainer = document.querySelector('.answer-options');
+    answersContainer.innerHTML = `
+      <div class="${prefix}-container">
+        <div class="${prefix}-selected" id="${prefix}-selected">
+          <span class="${prefix}-placeholder">${placeholder}</span>
+        </div>
+        <div class="${prefix}-available" id="${prefix}-available">
+          ${s.available.map((item, idx) =>
+            `<button class="${prefix}-btn ${prefix}-word-btn" data-item="${item}" data-index="${idx}">${item}</button>`
+          ).join('')}
+        </div>
+        <div class="${prefix}-actions">
+          <button class="pixel-btn ${prefix}-clear-btn" onclick="reorderSystem.clear()">Clear</button>
+          <button class="pixel-btn ${prefix}-submit-btn" onclick="reorderSystem.submit()">Submit</button>
+        </div>
+      </div>
+    `;
+
+    // Add click handlers
+    document.querySelectorAll(`.${prefix}-btn`).forEach(btn => {
+      btn.addEventListener('click', () => this.select(btn));
+    });
+
+    this.updateDisplay();
+  },
+
+  select(btn) {
+    const item = btn.dataset.item;
+    const index = parseInt(btn.dataset.index);
+
+    this.state.selected.push({ item, originalIndex: index });
+    btn.classList.add('used');
+    btn.disabled = true;
+
+    this.updateDisplay();
+  },
+
+  remove(selectedIndex) {
+    const removed = this.state.selected.splice(selectedIndex, 1)[0];
+    const prefix = this.state.type === 'syllable' ? 'syllable' : 'reorder';
+    const btn = document.querySelector(`.${prefix}-btn[data-index="${removed.originalIndex}"]`);
+    if (btn) {
+      btn.classList.remove('used');
+      btn.disabled = false;
+    }
+    this.updateDisplay();
+  },
+
+  updateDisplay() {
+    const s = this.state;
+    const prefix = s.type === 'syllable' ? 'syllable' : 'reorder';
+    const selectedContainer = document.getElementById(`${prefix}-selected`);
+    const placeholder = s.type === 'syllable'
+      ? 'Click syllables to build the word...'
+      : 'Click words to build the sentence...';
+
+    if (s.selected.length === 0) {
+      selectedContainer.innerHTML = `<span class="${prefix}-placeholder">${placeholder}</span>`;
+    } else if (s.type === 'syllable') {
+      selectedContainer.innerHTML = s.selected.map((item, idx) =>
+        `<span class="syllable-selected-part" onclick="reorderSystem.remove(${idx})">${item.item}</span>`
+      ).join('<span class="syllable-connector">·</span>');
+    } else {
+      selectedContainer.innerHTML = s.selected.map((item, idx) =>
+        `<span class="reorder-selected-word" onclick="reorderSystem.remove(${idx})">${item.item}</span>`
+      ).join('');
+    }
+  },
+
+  clear() {
+    const prefix = this.state.type === 'syllable' ? 'syllable' : 'reorder';
+    document.querySelectorAll(`.${prefix}-btn`).forEach(btn => {
+      btn.classList.remove('used');
+      btn.disabled = false;
+    });
+    this.state.selected = [];
+    this.updateDisplay();
+  },
+
+  submit() {
+    const s = this.state;
+    const userAnswer = s.selected.map(item => item.item);
+    const userAnswerStr = userAnswer.join(s.joiner);
+    const itemName = s.type === 'syllable' ? 'syllables' : 'words';
+
+    if (userAnswer.length !== s.correctOrder.length) {
+      showNotification(`Use all the ${itemName}!`, 'warning');
+      return;
+    }
+
+    const isCorrect = userAnswer.every((item, idx) => item === s.correctOrder[idx]);
+    handleAnswer(userAnswerStr, isCorrect);
+  }
 };
 
+// Legacy function wrappers for compatibility
 function renderSentenceReorderQuestion(question) {
-  // Initialize reorder state
-  reorderState = {
-    selectedWords: [],
-    availableWords: [...question.shuffledWords],
-    correctOrder: question.correctOrder
-  };
-
-  const answersContainer = document.querySelector('.answer-options');
-
-  // Build the reorder UI
-  answersContainer.innerHTML = `
-    <div class="reorder-container">
-      <div class="reorder-selected" id="reorder-selected">
-        <span class="reorder-placeholder">Click words to build the sentence...</span>
-      </div>
-      <div class="reorder-available" id="reorder-available">
-        ${reorderState.availableWords.map((word, idx) =>
-          `<button class="reorder-word-btn" data-word="${word}" data-index="${idx}">${word}</button>`
-        ).join('')}
-      </div>
-      <div class="reorder-actions">
-        <button class="pixel-btn reorder-clear-btn" onclick="clearReorderSelection()">Clear</button>
-        <button class="pixel-btn reorder-submit-btn" onclick="submitReorderAnswer()">Submit</button>
-      </div>
-    </div>
-  `;
-
-  // Add click handlers for word buttons
-  document.querySelectorAll('.reorder-word-btn').forEach(btn => {
-    btn.addEventListener('click', () => selectReorderWord(btn));
-  });
-
-  // Add click handlers for selected words (to remove them)
-  updateReorderDisplay();
+  reorderSystem.init(question.shuffledWords, question.correctOrder, 'word');
+  reorderSystem.render();
 }
-
-function selectReorderWord(btn) {
-  const word = btn.dataset.word;
-  const index = parseInt(btn.dataset.index);
-
-  // Add to selected words
-  reorderState.selectedWords.push({ word, originalIndex: index });
-
-  // Remove from available
-  btn.classList.add('used');
-  btn.disabled = true;
-
-  updateReorderDisplay();
-}
-
-function removeReorderWord(selectedIndex) {
-  // Get the word being removed
-  const removed = reorderState.selectedWords.splice(selectedIndex, 1)[0];
-
-  // Re-enable the original button
-  const btn = document.querySelector(`.reorder-word-btn[data-index="${removed.originalIndex}"]`);
-  if (btn) {
-    btn.classList.remove('used');
-    btn.disabled = false;
-  }
-
-  updateReorderDisplay();
-}
-
-function updateReorderDisplay() {
-  const selectedContainer = document.getElementById('reorder-selected');
-
-  if (reorderState.selectedWords.length === 0) {
-    selectedContainer.innerHTML = '<span class="reorder-placeholder">Click words to build the sentence...</span>';
-  } else {
-    selectedContainer.innerHTML = reorderState.selectedWords.map((item, idx) =>
-      `<span class="reorder-selected-word" onclick="removeReorderWord(${idx})">${item.word}</span>`
-    ).join('');
-  }
-}
-
-function clearReorderSelection() {
-  // Reset all buttons
-  document.querySelectorAll('.reorder-word-btn').forEach(btn => {
-    btn.classList.remove('used');
-    btn.disabled = false;
-  });
-
-  // Clear selected words
-  reorderState.selectedWords = [];
-  updateReorderDisplay();
-}
-
-function submitReorderAnswer() {
-  const state = GameState.lessonState;
-  const question = state.questions[state.currentQuestion];
-
-  // Build the answer from selected words
-  const userAnswer = reorderState.selectedWords.map(item => item.word);
-  const userAnswerStr = userAnswer.join(' ');
-
-  // Check if all words were used
-  if (userAnswer.length !== reorderState.correctOrder.length) {
-    showNotification('Use all the words!', 'warning');
-    return;
-  }
-
-  // Check if correct
-  const isCorrect = userAnswer.every((word, idx) => word === reorderState.correctOrder[idx]);
-
-  // Use the standard answer handler with the constructed answer
-  handleAnswer(userAnswerStr, isCorrect);
-}
-
-// =====================================================
-// Syllable Reorder Question System
-// =====================================================
-
-let syllableState = {
-  selectedSyllables: [],
-  availableSyllables: [],
-  correctOrder: []
-};
 
 function renderSyllableReorderQuestion(question) {
-  // Initialize syllable state
-  syllableState = {
-    selectedSyllables: [],
-    availableSyllables: [...question.shuffledSyllables],
-    correctOrder: question.correctOrder
-  };
-
-  const answersContainer = document.querySelector('.answer-options');
-
-  // Build the syllable reorder UI
-  answersContainer.innerHTML = `
-    <div class="syllable-container">
-      <div class="syllable-selected" id="syllable-selected">
-        <span class="syllable-placeholder">Click syllables to build the word...</span>
-      </div>
-      <div class="syllable-available" id="syllable-available">
-        ${syllableState.availableSyllables.map((syl, idx) =>
-          `<button class="syllable-btn" data-syllable="${syl}" data-index="${idx}">${syl}</button>`
-        ).join('')}
-      </div>
-      <div class="syllable-actions">
-        <button class="pixel-btn syllable-clear-btn" onclick="clearSyllableSelection()">Clear</button>
-        <button class="pixel-btn syllable-submit-btn" onclick="submitSyllableAnswer()">Submit</button>
-      </div>
-    </div>
-  `;
-
-  // Add click handlers for syllable buttons
-  document.querySelectorAll('.syllable-btn').forEach(btn => {
-    btn.addEventListener('click', () => selectSyllable(btn));
-  });
-
-  updateSyllableDisplay();
-
-  // Show tutorial on first syllable question
+  reorderSystem.init(question.shuffledSyllables, question.correctOrder, 'syllable');
+  reorderSystem.render();
   showTutorialTip('syllableQuestion', '.syllable-container', () => {});
 }
 
-function selectSyllable(btn) {
-  const syllable = btn.dataset.syllable;
-  const index = parseInt(btn.dataset.index);
-
-  // Add to selected syllables
-  syllableState.selectedSyllables.push({ syllable, originalIndex: index });
-
-  // Mark as used
-  btn.classList.add('used');
-  btn.disabled = true;
-
-  updateSyllableDisplay();
-}
-
-function removeSyllable(selectedIndex) {
-  // Get the syllable being removed
-  const removed = syllableState.selectedSyllables.splice(selectedIndex, 1)[0];
-
-  // Re-enable the original button
-  const btn = document.querySelector(`.syllable-btn[data-index="${removed.originalIndex}"]`);
-  if (btn) {
-    btn.classList.remove('used');
-    btn.disabled = false;
-  }
-
-  updateSyllableDisplay();
-}
-
-function updateSyllableDisplay() {
-  const selectedContainer = document.getElementById('syllable-selected');
-
-  if (syllableState.selectedSyllables.length === 0) {
-    selectedContainer.innerHTML = '<span class="syllable-placeholder">Click syllables to build the word...</span>';
-  } else {
-    // Show syllables joined together like a word being formed
-    selectedContainer.innerHTML = syllableState.selectedSyllables.map((item, idx) =>
-      `<span class="syllable-selected-part" onclick="removeSyllable(${idx})">${item.syllable}</span>`
-    ).join('<span class="syllable-connector">·</span>');
-  }
-}
-
-function clearSyllableSelection() {
-  // Reset all buttons
-  document.querySelectorAll('.syllable-btn').forEach(btn => {
-    btn.classList.remove('used');
-    btn.disabled = false;
-  });
-
-  // Clear selected syllables
-  syllableState.selectedSyllables = [];
-  updateSyllableDisplay();
-}
-
-function submitSyllableAnswer() {
-  const state = GameState.lessonState;
-  const question = state.questions[state.currentQuestion];
-
-  // Build the answer from selected syllables
-  const userAnswer = syllableState.selectedSyllables.map(item => item.syllable);
-  const userAnswerStr = userAnswer.join(''); // Join without spaces for word
-
-  // Check if all syllables were used
-  if (userAnswer.length !== syllableState.correctOrder.length) {
-    showNotification('Use all the syllables!', 'warning');
-    return;
-  }
-
-  // Check if correct
-  const isCorrect = userAnswer.every((syl, idx) => syl === syllableState.correctOrder[idx]);
-
-  // Use the standard answer handler with the constructed answer
-  handleAnswer(userAnswerStr, isCorrect);
-}
+// Legacy functions that redirect to unified system
+function selectReorderWord(btn) { reorderSystem.select(btn); }
+function removeReorderWord(idx) { reorderSystem.remove(idx); }
+function updateReorderDisplay() { reorderSystem.updateDisplay(); }
+function clearReorderSelection() { reorderSystem.clear(); }
+function submitReorderAnswer() { reorderSystem.submit(); }
+function selectSyllable(btn) { reorderSystem.select(btn); }
+function removeSyllable(idx) { reorderSystem.remove(idx); }
+function updateSyllableDisplay() { reorderSystem.updateDisplay(); }
+function clearSyllableSelection() { reorderSystem.clear(); }
+function submitSyllableAnswer() { reorderSystem.submit(); }
 
 function renderHintBox(question) {
   const hintBox = document.querySelector('.hint-box');
@@ -4929,8 +4869,8 @@ function completeLessonSession() {
   let essenceEarned = null;
 
   if (passed) {
-    // Update quest progress
-    updateQuestProgress(state.questId, state.objectiveId);
+    // Update quest progress - defer quest completion until after lesson screen
+    updateQuestProgress(state.questId, state.objectiveId, 1, true);
 
     // Auto-complete any task objectives in the same quest
     autoCompleteTaskObjectives(state.questId);
@@ -5795,15 +5735,25 @@ function renderShopScreen(shopId, tab = 'buy') {
         const item = entry.item;
         const discountedPrice = Math.floor(entry.price * (1 - discount));
         const canAfford = playerGold >= discountedPrice;
+        const meetsRep = entry.meetsRepRequirement;
+        const canBuy = canAfford && meetsRep;
         const rarityInfo = ItemRarityInfo[item.rarity] || { color: '#ffffff', name: 'Common' };
         const hasDiscount = discount > 0;
 
+        // Reputation requirement display
+        const repDisplay = entry.repRequired > 0
+          ? `<div class="shop-item-rep ${meetsRep ? 'met' : 'unmet'}">
+               ${meetsRep ? '✓' : '🔒'} Rep: ${entry.playerRep}/${entry.repRequired}
+             </div>`
+          : '';
+
         return `
-          <div class="shop-item ${canAfford ? '' : 'cannot-afford'}">
+          <div class="shop-item ${canBuy ? '' : 'cannot-afford'}">
             <div class="shop-item-icon">${item.icon || '❓'}</div>
             <div class="shop-item-info">
               <div class="shop-item-name" style="color: ${rarityInfo.color};">${item.name}</div>
               <div class="shop-item-desc">${item.description || ''}</div>
+              ${repDisplay}
             </div>
             <div class="shop-item-price">
               ${hasDiscount ? `<span class="price-original" style="text-decoration: line-through; color: var(--text-muted); font-size: 10px;">${entry.price}</span> ` : ''}
@@ -5812,8 +5762,8 @@ function renderShopScreen(shopId, tab = 'buy') {
             </div>
             <button class="pixel-btn shop-buy-btn"
                     onclick="buyFromShop('${shopId}', '${entry.itemId}')"
-                    ${canAfford ? '' : 'disabled'}>
-              Buy
+                    ${canBuy ? '' : 'disabled'}>
+              ${meetsRep ? 'Buy' : '🔒'}
             </button>
           </div>
         `;
@@ -6891,6 +6841,7 @@ function showProfileScreen() {
       </div>
       
       <div style="text-align: right; margin-top: 16px;">
+        <button class="pixel-btn" onclick="showCosmeticsScreen()">Cosmetics</button>
         <button class="pixel-btn" onclick="hideModal('profile-modal')">Close</button>
       </div>
     </div>
@@ -7049,18 +7000,27 @@ function renderMilestonesTab() {
     const nextTier = progress.nextTier;
     
     // Calculate progress bar
+    // If there's an unclaimed reward, show progress toward the UNCLAIMED tier (not next tier)
+    // This makes the bar fill to 100% when reward is ready
     let progressPercent = 0;
     let progressText = '';
-    
-    if (progress.isMaxed) {
+    let claimable = progress.hasUnclaimedReward;
+
+    if (claimable) {
+      // Show the completed tier's progress (100% since we reached it)
+      const unclaimedTierIndex = progress.claimedTier + 1;
+      const unclaimedTier = milestone.tiers[unclaimedTierIndex];
+      if (unclaimedTier) {
+        progressPercent = 100;
+        progressText = `${progress.currentValue} / ${unclaimedTier.threshold} ✓`;
+      }
+    } else if (progress.isMaxed) {
       progressPercent = 100;
       progressText = 'MAXED';
     } else if (nextTier) {
       progressPercent = Math.min(100, (progress.currentValue / nextTier.threshold) * 100);
       progressText = `${progress.currentValue} / ${nextTier.threshold}`;
     }
-    
-    const claimable = progress.hasUnclaimedReward;
     
     return `
       <div class="milestone-item ${claimable ? 'claimable' : ''}">
@@ -7627,10 +7587,7 @@ function startGame() {
   // Check for locations that should be discovered based on completed quests
   // This is a recovery for saves before location discovery was implemented
   if (locationManager) {
-    const discovered = locationManager.checkQuestBasedDiscovery();
-    if (discovered.length > 0) {
-      console.log('Recovered location discovery:', discovered.map(l => l.name));
-    }
+    locationManager.checkQuestBasedDiscovery();
   }
 
   renderHUD();
@@ -7719,7 +7676,12 @@ function initGame() {
   if (typeof SpellbookManager !== 'undefined') {
     spellbookManager = new SpellbookManager(GameState);
   }
-  
+
+  // Initialize Cosmetic Manager
+  if (typeof CosmeticManager !== 'undefined') {
+    cosmeticManager = new CosmeticManager(GameState);
+  }
+
   // Title screen buttons
   document.getElementById('new-game-btn').addEventListener('click', showCharacterCreation);
   document.getElementById('continue-btn').addEventListener('click', () => {
@@ -7822,7 +7784,7 @@ function handleAcceptQuest(questId) {
       showNotification(result.message, 'success');
       GameState.selectedQuest = questId;
       renderQuestPanel();
-      renderNPCs(GAME_DATA.locations[GameState.currentLocation]);
+      renderLocation();
       autoSave();
     } else {
       showNotification(result.message, 'error');
@@ -7857,7 +7819,7 @@ function handleCompleteQuest(questId) {
       GameState.selectedQuest = null;
       renderHUD();
       renderQuestPanel();
-      renderNPCs(GAME_DATA.locations[GameState.currentLocation]);
+      renderLocation();
       autoSave();
     } else {
       showNotification(result.message, 'error');
@@ -8757,9 +8719,6 @@ function showMapScreen() {
   const currentLocation = locationManager.getCurrentLocation();
   const allStatuses = locationManager.getAllLocationStatuses();
 
-  console.log('[Map] Current location:', currentLocation?.id);
-  console.log('[Map] All statuses:', allStatuses.map(s => ({ id: s.location.id, unlocked: s.unlocked, discovered: s.discovered, isCurrent: s.isCurrent })));
-  
   // Generate location cards
   const locationsHtml = allStatuses.map(status => {
     const loc = status.location;
@@ -8851,10 +8810,7 @@ function showMapScreen() {
 function travelToLocation(locationId, fastTravel = false) {
   if (!locationManager) return;
 
-  console.log('[Travel] Starting travel to:', locationId);
   const result = locationManager.travelTo(locationId, fastTravel);
-  console.log('[Travel] Result:', result);
-  console.log('[Travel] Current location after travel:', locationManager.getCurrentLocationId());
 
   if (result.success) {
     hideModal('map-modal');
@@ -8993,6 +8949,138 @@ function unequipTitle() {
     renderHUD();
     autoSave();
   }
+}
+
+// =====================================================
+// Cosmetics Screen
+// =====================================================
+
+let cosmeticsTab = 'frames';
+
+function showCosmeticsScreen() {
+  if (!cosmeticManager) {
+    showNotification("Cosmetic system not available!", 'error');
+    return;
+  }
+
+  cosmeticManager.ensureStructure();
+  renderCosmeticsScreen();
+}
+
+function renderCosmeticsScreen() {
+  const categories = ['frames', 'backgrounds', 'accents', 'badges'];
+  const categoryLabels = {
+    frames: 'Frames',
+    backgrounds: 'Backgrounds',
+    accents: 'Accents',
+    badges: 'Badges'
+  };
+
+  // Build tabs
+  const tabsHtml = categories.map(cat => `
+    <button class="cosmetic-tab ${cosmeticsTab === cat ? 'active' : ''}"
+            onclick="switchCosmeticsTab('${cat}')">
+      ${categoryLabels[cat]}
+    </button>
+  `).join('');
+
+  // Get cosmetics for current tab
+  const allCosmetics = cosmeticManager.getCosmeticsForCategory(cosmeticsTab);
+  const unlockedIds = cosmeticManager.getUnlocked(cosmeticsTab);
+  const equipped = cosmeticManager.getEquipped(cosmeticsTab);
+
+  // Build cosmetics grid
+  let cosmeticsHtml = '';
+  if (allCosmetics.length === 0) {
+    cosmeticsHtml = '<div class="cosmetics-empty">No cosmetics in this category yet.</div>';
+  } else {
+    cosmeticsHtml = '<div class="cosmetics-grid">';
+    allCosmetics.forEach(cosmetic => {
+      const isUnlocked = unlockedIds.includes(cosmetic.id);
+      const isEquipped = cosmeticsTab === 'badges'
+        ? (equipped || []).includes(cosmetic.id)
+        : equipped === cosmetic.id;
+      const rarityColor = cosmeticManager.getRarityColor(cosmetic.rarity);
+
+      cosmeticsHtml += `
+        <div class="cosmetic-item ${isUnlocked ? 'unlocked' : 'locked'} ${isEquipped ? 'equipped' : ''}"
+             onclick="${isUnlocked ? `toggleCosmetic('${cosmetic.id}')` : ''}"
+             style="--rarity-color: ${rarityColor}">
+          <div class="cosmetic-preview">${cosmetic.preview || '?'}</div>
+          <div class="cosmetic-name">${isUnlocked ? cosmetic.name : '???'}</div>
+          <div class="cosmetic-rarity" style="color: ${rarityColor};">${cosmetic.rarity}</div>
+          ${isEquipped ? '<div class="cosmetic-equipped-badge">✓</div>' : ''}
+          ${!isUnlocked ? '<div class="cosmetic-lock">🔒</div>' : ''}
+        </div>
+      `;
+    });
+    cosmeticsHtml += '</div>';
+  }
+
+  // Progress for this category
+  const progress = cosmeticManager.getCategoryProgress(cosmeticsTab);
+  const totalProgress = cosmeticManager.getTotalProgress();
+
+  showModal('cosmetics-modal', `
+    <div class="cosmetics-screen">
+      <h2 style="font-family: var(--font-display); font-size: 14px; color: var(--accent-gold); margin-bottom: 8px;">
+        ✨ COSMETICS
+      </h2>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
+        Collection: ${totalProgress.unlocked}/${totalProgress.total} (${totalProgress.percent}%)
+      </p>
+
+      <div class="cosmetics-tabs">
+        ${tabsHtml}
+      </div>
+
+      <div class="cosmetics-progress">
+        <span>${categoryLabels[cosmeticsTab]}: ${progress.unlocked}/${progress.total}</span>
+        <div class="progress-bar-mini">
+          <div class="progress-fill" style="width: ${progress.percent}%;"></div>
+        </div>
+      </div>
+
+      <div class="cosmetics-content">
+        ${cosmeticsHtml}
+      </div>
+
+      <div style="text-align: right; margin-top: 16px;">
+        <button class="pixel-btn" onclick="hideModal('cosmetics-modal')">Close</button>
+      </div>
+    </div>
+  `);
+}
+
+function switchCosmeticsTab(tab) {
+  cosmeticsTab = tab;
+  renderCosmeticsScreen();
+}
+
+function toggleCosmetic(cosmeticId) {
+  if (!cosmeticManager) return;
+
+  const cosmetic = cosmeticManager.getCosmetic(cosmeticId);
+  if (!cosmetic) return;
+
+  if (cosmetic.category === 'badges') {
+    // Toggle badge equip/unequip
+    const equipped = cosmeticManager.getEquipped('badges') || [];
+    if (equipped.includes(cosmeticId)) {
+      const result = cosmeticManager.unequipBadge(cosmeticId);
+      showNotification(result.message, result.success ? 'info' : 'error');
+    } else {
+      const result = cosmeticManager.equipBadge(cosmeticId);
+      showNotification(result.message, result.success ? 'success' : 'error');
+    }
+  } else {
+    // Equip frame/background/accent
+    const result = cosmeticManager.equip(cosmeticId);
+    showNotification(result.message, result.success ? 'success' : 'error');
+  }
+
+  renderCosmeticsScreen();
+  autoSave();
 }
 
 // =====================================================
@@ -9433,13 +9521,15 @@ function renderLearningSettings(settings) {
         <label class="setting-label">Questions Per Lesson</label>
         <div class="setting-control">
           <div class="setting-options">
-            <button class="setting-option ${settings.questionCount === 3 ? 'active' : ''}" 
+            <button class="setting-option ${settings.questionCount === 1 ? 'active' : ''}"
+                    onclick="updateSetting('questionCount', 1)">1</button>
+            <button class="setting-option ${settings.questionCount === 3 ? 'active' : ''}"
                     onclick="updateSetting('questionCount', 3)">3</button>
-            <button class="setting-option ${settings.questionCount === 5 ? 'active' : ''}" 
+            <button class="setting-option ${settings.questionCount === 5 ? 'active' : ''}"
                     onclick="updateSetting('questionCount', 5)">5</button>
-            <button class="setting-option ${settings.questionCount === 8 ? 'active' : ''}" 
+            <button class="setting-option ${settings.questionCount === 8 ? 'active' : ''}"
                     onclick="updateSetting('questionCount', 8)">8</button>
-            <button class="setting-option ${settings.questionCount === 10 ? 'active' : ''}" 
+            <button class="setting-option ${settings.questionCount === 10 ? 'active' : ''}"
                     onclick="updateSetting('questionCount', 10)">10</button>
           </div>
         </div>
@@ -9529,8 +9619,6 @@ function renderAccessibilitySettings(settings) {
 }
 
 function renderDataSettings() {
-  const saveExists = localStorage.getItem('bytequest_save') !== null;
-  
   return `
     <div class="settings-section">
       <div class="setting-item">
@@ -9604,14 +9692,23 @@ function toggleSetting(key) {
 }
 
 function saveSettings() {
-  localStorage.setItem('bytequest_settings', JSON.stringify(GameState.settings));
+  try {
+    localStorage.setItem('bytequest_settings', JSON.stringify(GameState.settings));
+  } catch (error) {
+    console.error('Failed to save settings:', error);
+  }
 }
 
 function loadSettings() {
-  const saved = localStorage.getItem('bytequest_settings');
-  if (saved) {
-    const parsed = JSON.parse(saved);
-    GameState.settings = { ...GameState.settings, ...parsed };
+  try {
+    const saved = localStorage.getItem('bytequest_settings');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      GameState.settings = { ...GameState.settings, ...parsed };
+    }
+  } catch (error) {
+    console.error('Failed to load settings:', error);
+    // Use defaults if settings are corrupted
   }
 }
 

@@ -292,9 +292,24 @@ class LocationManager {
     // Mark route as visited
     this.markRouteVisited(previousLocation, locationId);
 
-    // Update current location in both places for compatibility
+    // Ensure player.locations exists before updating
+    if (!this.state.player.locations) {
+      this.state.player.locations = {
+        current: locationId,
+        discovered: ['dawnmere'],
+        unlocked: ['dawnmere'],
+        visitedRoutes: []
+      };
+    }
+
+    // Update current location in ALL places for compatibility
     this.state.player.locations.current = locationId;
     this.state.currentLocation = locationId;  // Also update GameState.currentLocation
+
+    // Also update the deprecated discoveredLocations array if it exists
+    if (this.state.player.discoveredLocations && !this.state.player.discoveredLocations.includes(locationId)) {
+      this.state.player.discoveredLocations.push(locationId);
+    }
 
     return {
       success: true,
@@ -481,11 +496,11 @@ class LocationManager {
     }
 
     // Also discover connected locations from current location
+    // Discovery happens regardless of level - unlocking requires meeting level requirement
     const currentLoc = this.getCurrentLocation();
     if (currentLoc?.connections) {
       for (const connectedId of currentLoc.connections) {
-        // If player meets level requirement, auto-discover connected locations
-        if (!this.isDiscovered(connectedId) && this.meetsLevelRequirement(connectedId)) {
+        if (!this.isDiscovered(connectedId)) {
           const result = this.discoverLocation(connectedId);
           if (result.success) {
             newlyDiscovered.push(result.location);

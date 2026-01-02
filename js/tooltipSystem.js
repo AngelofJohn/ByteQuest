@@ -32,11 +32,9 @@ const TooltipSystem = {
     
     // Add global mouse move listener for positioning
     document.addEventListener('mousemove', (e) => this.updatePosition(e));
-    
+
     // Initialize all tooltips
     this.bindTooltips();
-    
-    console.log('TooltipSystem initialized');
   },
   
   // =====================================================

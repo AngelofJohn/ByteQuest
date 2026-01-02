@@ -1,5 +1,4 @@
 // ByteQuest - Stats, Milestones, and Achievements System
-// Phase 1: Skeleton with placeholder values
 
 // =====================================================
 // Stat Definitions

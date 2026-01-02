@@ -7,8 +7,7 @@
 
 const BOSS_EXAM_CONFIG = {
   // Question count
-  // TODO: Change back to 15 for production
-  questionCount: 5,
+  questionCount: 15,
   
   // Pass threshold (percentage)
   passThreshold: 80,

@@ -552,11 +552,11 @@ class QuestManager {
 
     // Also check if quest itself unlocks a location (special case for travel quests)
     if (quest.type === 'travel' && quest.location !== this.state.currentLocation) {
-      // Check connected locations from current location
-      const currentLoc = GAME_DATA.locations[this.state.currentLocation];
-      if (currentLoc?.connectedTo) {
-        for (const connectedId of currentLoc.connectedTo) {
-          if (typeof locationManager !== 'undefined' && locationManager) {
+      // Check connected locations from current location using LocationManager
+      if (typeof locationManager !== 'undefined' && locationManager) {
+        const currentLoc = locationManager.getCurrentLocation();
+        if (currentLoc?.connections) {
+          for (const connectedId of currentLoc.connections) {
             if (!locationManager.isDiscovered(connectedId)) {
               const result = locationManager.discoverLocation(connectedId);
               if (result.success) {
